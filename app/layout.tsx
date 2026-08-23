@@ -18,16 +18,16 @@ export async function generateMetadata(): Promise<Metadata> {
   const host = requestHeaders.get("x-forwarded-host") ?? requestHeaders.get("host") ?? "localhost:3000";
   const protocol = requestHeaders.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
   const origin = `${protocol}://${host}`;
-  const title = "Python 框架修炼场";
-  const description = "过关斩将，练成 AI 时代的 Python 框架判断力。";
+  const title = "测试能力修炼场";
+  const description = "公认基础、实时技术与本地项目共同驱动的持续成长型测试学习平台。";
 
   return {
     metadataBase: new URL(origin),
     title,
     description,
     icons: { icon: "/favicon.svg", shortcut: "/favicon.svg" },
-    openGraph: { title, description, type: "website", images: [`${origin}/og.png`] },
-    twitter: { card: "summary_large_image", title, description, images: [`${origin}/og.png`] },
+    openGraph: { title, description, type: "website", images: [`${origin}/og-platform.png`] },
+    twitter: { card: "summary_large_image", title, description, images: [`${origin}/og-platform.png`] },
   };
 }
 

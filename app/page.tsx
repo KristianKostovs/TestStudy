@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { learningModules, sourceKindMeta, sourcesForModule, type SourceKind } from "./learning-registry";
 
 type Level = {
   id: number;
@@ -713,6 +714,7 @@ export default function Home() {
   const [quizSelections, setQuizSelections] = useState<Record<number, number>>({});
   const [quizFeedback, setQuizFeedback] = useState<Record<number, string>>({});
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
+  const [selectedModuleId, setSelectedModuleId] = useState("python-framework");
   const [openId, setOpenId] = useState(1);
   const [ready, setReady] = useState(false);
 
@@ -757,6 +759,8 @@ export default function Home() {
 
   const progress = Math.round((completed.length / levels.length) * 100);
   const nextLevel = levels.find((level) => !completed.includes(level.id));
+  const selectedModule = learningModules.find((module) => module.id === selectedModuleId) ?? learningModules[0];
+  const selectedSources = sourcesForModule(selectedModule);
   const rank = useMemo(() => {
     if (completed.length === 10) return "框架宗师";
     if (completed.length >= 7) return "破阵高手";
@@ -766,6 +770,11 @@ export default function Home() {
 
   function isUnlocked(id: number) {
     return id === 1 || completed.includes(id - 1) || completed.includes(id);
+  }
+
+  function selectModule(moduleId: string) {
+    setSelectedModuleId(moduleId);
+    window.setTimeout(() => document.getElementById("module-detail")?.scrollIntoView({ behavior: "smooth", block: "start" }), 80);
   }
 
   function saveProgress(nextCompleted: number[], nextQuizPassed: number[]) {
@@ -822,34 +831,114 @@ export default function Home() {
     <main className={ready ? "ready" : ""}>
       <header className="hero">
         <nav>
-          <a className="brand" href="#roadmap"><i>PY</i> 框架修炼场</a>
+          <a className="brand" href="#modules"><i>AT</i> 测试能力修炼场</a>
           <div className="nav-actions">
-            <span className="rank">当前段位 <b>{rank}</b></span>
+            <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={resetProgress}>重置进度</button>
           </div>
         </nav>
         <div className="hero-grid">
           <section>
-            <p className="eyebrow">PYTHON FRAMEWORK QUEST</p>
-            <h1>过关斩将，<br /><em>练成框架判断力</em></h1>
-            <p className="lead">不背语法大全。沿着 YAML → Runner → Adapter → HTTP 的真实链路，每关学一组知识，完成一个可验证任务。</p>
-            <a className="hero-cta" href={nextLevel ? `#level-${nextLevel.id}` : "#roadmap"}>{nextLevel ? `继续第 ${nextLevel.id} 关` : "回看修炼地图"} <span>↓</span></a>
+            <p className="eyebrow">AI TESTING LEARNING PLATFORM</p>
+            <h1>从基础出发，<br /><em>练成测试判断力</em></h1>
+            <p className="lead">公认基础打底，官方新技术持续更新，本地项目提供真实案例。每个模块都从小白能理解的知识开始，最后用可验证任务证明掌握。</p>
+            <a className="hero-cta" href="#modules">选择修炼模块 <span>↓</span></a>
           </section>
           <aside className="progress-card">
-            <div className="progress-top"><span>修炼进度</span><strong>{progress}%</strong></div>
+            <div className="progress-top"><span>Python 当前进度</span><strong>{progress}%</strong></div>
             <div className="bar"><i style={{ width: `${progress}%` }} /></div>
-            <p>{completed.length} / {levels.length} 关已通过</p>
+            <p>{completed.length} / {levels.length} 关已通过 · 其他模块正在建立学习闭环</p>
             <ol>{levels.map((level) => <li className={completed.includes(level.id) ? "lit" : ""} key={level.id} title={level.title}>{level.id}</li>)}</ol>
           </aside>
         </div>
       </header>
 
       <section className="principles" aria-label="学习方法">
-        <article><b>01</b><div><h2>先懂边界</h2><p>代码由 AI 加速，契约、副作用和失败语义由你把关。</p></div></article>
-        <article><b>02</b><div><h2>每关一个产物</h2><p>不以“看完”为通关，只以可运行、可验证的任务为通关。</p></div></article>
-        <article><b>03</b><div><h2>强制逐关解锁</h2><p>前一关通过后才开放下一关，避免架构概念没有基础支撑。</p></div></article>
+        <article><b>01</b><div><h2>公认基础打底</h2><p>语言、框架官方文档和正式标准构成课程主干。</p></div></article>
+        <article><b>02</b><div><h2>实时技术更新</h2><p>只跟踪官方发布、标准变化和权威研究，热点先进入雷达。</p></div></article>
+        <article><b>03</b><div><h2>项目实战验证</h2><p>真实项目用于案例和任务；没有项目也不阻断基础学习。</p></div></article>
       </section>
 
+      <section className="module-section" id="modules">
+        <div className="section-heading">
+          <p>LEARNING MODULES</p>
+          <h2>选择你的修炼方向</h2>
+          <span>课程由统一注册表发现；以后增加模块或关卡，不需要重做整站。</span>
+        </div>
+        <div className="module-grid" role="list">
+          {learningModules.map((module) => {
+            const selected = selectedModule.id === module.id;
+            const sourceKinds = new Set(sourcesForModule(module).map((source) => source.kind));
+            return (
+              <button
+                className={`module-card ${selected ? "selected" : ""}`}
+                type="button"
+                role="listitem"
+                key={module.id}
+                onClick={() => selectModule(module.id)}
+                aria-pressed={selected}
+              >
+                <span className="module-sigil">{module.sigil}</span>
+                <span className="module-state">{module.status === "active" ? "已开放" : "蓝图已建立"}</span>
+                <h3>{module.title}</h3>
+                <p>{module.subtitle}</p>
+                <span className="module-source-badges">
+                  {(["foundation", "technology_radar", "local_project"] as SourceKind[]).map((kind) => sourceKinds.has(kind) && <i key={kind}>{sourceKindMeta[kind].short}</i>)}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+
+        <article className="module-detail" id="module-detail">
+          <div className="module-detail-copy">
+            <span className="module-kicker">当前模块 · {selectedModule.status === "active" ? "可立即学习" : "关卡蓝图"}</span>
+            <h2><i>{selectedModule.sigil}</i>{selectedModule.title}</h2>
+            <p>{selectedModule.subtitle}</p>
+            <div className="module-rule"><b>内容更新规则</b><span>{selectedModule.updateRule}</span></div>
+            {selectedModule.status === "active" ? (
+              <a className="module-action" href={nextLevel ? `#level-${nextLevel.id}` : "#roadmap"}>{nextLevel ? `继续 Python 第 ${nextLevel.id} 关` : "回看 Python 十关"} <span>→</span></a>
+            ) : (
+              <span className="module-action muted">已建立 10 关能力路线，下一步逐关补齐讲解、任务和自动验证</span>
+            )}
+          </div>
+          <ol className="module-roadmap">
+            {selectedModule.roadmap.map((item, index) => <li key={item}><b>{String(index + 1).padStart(2, "0")}</b><span>{item}</span></li>)}
+          </ol>
+        </article>
+      </section>
+
+      <section className="source-section" aria-labelledby="source-title">
+        <div className="section-heading">
+          <p>KNOWLEDGE SOURCES</p>
+          <h2 id="source-title">{selectedModule.title}的知识从哪里来</h2>
+          <span>每条内容带来源类型与核对日期；本地项目增强实战，但不决定课程是否存在。</span>
+        </div>
+        <div className="source-columns">
+          {(["foundation", "technology_radar", "local_project"] as SourceKind[]).map((kind) => {
+            const sources = selectedSources.filter((source) => source.kind === kind);
+            return (
+              <section className={`source-column ${kind}`} key={kind}>
+                <header><span>{sourceKindMeta[kind].short}</span><div><h3>{sourceKindMeta[kind].label}</h3><p>{kind === "foundation" ? "课程长期骨架" : kind === "technology_radar" ? "官方变化候选" : "真实案例与证据"}</p></div></header>
+                {sources.length > 0 ? sources.map((source) => (
+                  <article className="source-card" key={source.id}>
+                    <div><b>{source.title}</b><small>{source.provider}</small></div>
+                    <p>{source.description}</p>
+                    {source.href ? <a href={source.href} target="_blank" rel="noreferrer">查看官方来源 ↗</a> : <span>{source.location}</span>}
+                    <time>最近核对 {source.checkedAt}</time>
+                  </article>
+                )) : <div className="source-empty">当前没有本地项目来源，课程仍由基础知识和技术雷达完整支撑。</div>}
+              </section>
+            );
+          })}
+        </div>
+        <div className="source-policy">
+          <b>进入课程的门槛</b>
+          <span>基础缺失 → 补基础</span><i>·</i><span>稳定新能力 → 加进阶关</span><i>·</i><span>新项目案例 → 更新练习</span><i>·</i><span>实验技术 → 留在雷达</span><i>·</i><span>纯业务变化 → 忽略</span>
+        </div>
+      </section>
+
+      {selectedModule.id === "python-framework" && (
       <section className="map-section" id="roadmap">
         <div className="section-heading">
           <p>THE ROADMAP</p>
@@ -989,6 +1078,7 @@ export default function Home() {
           })}
         </div>
       </section>
+      )}
 
       {activeKnowledge && (
         <div className="knowledge-overlay" onMouseDown={() => setActiveKnowledge(null)}>
@@ -1023,9 +1113,9 @@ export default function Home() {
       )}
 
       <footer>
-        <p>PYTHON FRAMEWORK QUEST</p>
-        <h2>{completed.length === levels.length ? "你已出师。现在，让 AI 写代码，你来守住框架。" : "学习不靠收藏，通关只看可验证的产物。"}</h2>
-        <span>进度仅保存在当前浏览器。</span>
+        <p>AI TESTING LEARNING PLATFORM</p>
+        <h2>{completed.length === levels.length ? "Python 已出师。下一站，继续扩展你的测试能力图谱。" : "基础、技术与实战汇合，最终都要变成你真正掌握的能力。"}</h2>
+        <span>当前进度保存在本浏览器；新增模块和关卡不会清空已有记录。</span>
       </footer>
     </main>
   );

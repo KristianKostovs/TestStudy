@@ -31,7 +31,7 @@ main.ready { opacity: 1; }
   overflow: hidden;
 }
 .hero::before { content: ""; position: absolute; inset: 0; opacity: .16; background-image: repeating-linear-gradient(115deg, transparent 0 19px, rgba(255,255,255,.08) 20px); }
-.hero::after { content: "PY"; position: absolute; right: -3vw; bottom: -128px; font: 900 350px/1 Georgia, serif; color: rgba(255,255,255,.035); }
+.hero::after { content: "AT"; position: absolute; right: -3vw; bottom: -128px; font: 900 350px/1 Georgia, serif; color: rgba(255,255,255,.035); }
 nav { max-width: 1180px; margin: auto; display: flex; justify-content: space-between; align-items: center; position: relative; z-index: 2; }
 .brand { font-weight: 800; letter-spacing: .08em; }
 .brand i { display: inline-grid; place-items: center; width: 42px; height: 42px; margin-right: 9px; font-style: normal; color: var(--ink); background: var(--gold); border-radius: 50% 50% 46% 54%; transform: rotate(-4deg); }
@@ -65,6 +65,63 @@ h1 em { color: #f4c752; font-style: normal; }
 .principles b { color: var(--red); font: 800 23px Georgia; }
 .principles h2 { margin: 0 0 9px; font: 800 19px Georgia, "Songti SC", serif; }
 .principles p { margin: 0; color: #647067; font-size: 13px; line-height: 1.75; }
+
+.module-section { max-width: 1180px; margin: 0 auto; padding: 100px 28px 42px; scroll-margin-top: 20px; }
+.module-section .section-heading { margin-bottom: 42px; }
+.module-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
+.module-card { position: relative; min-height: 245px; padding: 20px; border: 1px solid #d7cbb4; text-align: left; background: #fffdf7; cursor: pointer; transition: .22s; overflow: hidden; }
+.module-card::after { content: ""; position: absolute; inset: auto -25px -50px auto; width: 110px; height: 110px; border: 18px solid rgba(33,75,61,.045); border-radius: 50%; }
+.module-card:hover { transform: translateY(-3px); border-color: #a98a52; box-shadow: 0 14px 34px rgba(32,47,38,.1); }
+.module-card.selected { color: #f6f0df; border-color: var(--green); background: var(--green); box-shadow: 5px 5px 0 #cfad64; }
+.module-sigil { display: inline-grid; place-items: center; min-width: 42px; height: 42px; padding: 0 8px; color: var(--green); border: 1px solid #9db1a5; font: 800 14px Georgia; }
+.module-card.selected .module-sigil { color: #18382c; border-color: #e9bd58; background: #e9bd58; }
+.module-state { float: right; margin-top: 4px; color: #91764b; font-size: 10px; font-weight: 800; letter-spacing: .08em; }
+.module-card.selected .module-state { color: #f3ca68; }
+.module-card h3 { margin: 20px 0 8px; font: 800 21px Georgia, "Songti SC", serif; }
+.module-card p { margin: 0; min-height: 78px; color: #68736b; font-size: 12px; line-height: 1.7; }
+.module-card.selected p { color: #d8e2db; }
+.module-source-badges { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 16px; }
+.module-source-badges i { padding: 4px 7px; color: #765722; background: #f3e6c9; font-size: 10px; font-style: normal; font-weight: 800; }
+.module-card.selected .module-source-badges i { color: #17382c; background: #e8bf61; }
+.module-detail { display: grid; grid-template-columns: .82fr 1.18fr; gap: 38px; margin-top: 20px; padding: 34px; color: #edf3ee; background: var(--dark-green); scroll-margin-top: 24px; }
+.module-kicker { color: #e5b951; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+.module-detail h2 { display: flex; align-items: center; gap: 12px; margin: 15px 0 12px; font: 800 31px Georgia, "Songti SC", serif; }
+.module-detail h2 i { display: grid; place-items: center; min-width: 43px; height: 43px; padding: 0 7px; color: #17382c; background: #e7bb58; font: 800 13px Georgia; font-style: normal; }
+.module-detail-copy > p { color: #cddad1; line-height: 1.75; }
+.module-rule { margin: 22px 0; padding: 15px; border-left: 3px solid #dbab43; background: rgba(255,255,255,.06); }
+.module-rule b { display: block; margin-bottom: 7px; color: #e8bc59; font-size: 11px; letter-spacing: .1em; }
+.module-rule span { color: #d1dbd4; font-size: 13px; line-height: 1.65; }
+.module-action { display: inline-flex; align-items: center; gap: 20px; padding: 11px 15px; border: 1px solid #79978a; color: #fff0bd; font-size: 12px; font-weight: 800; }
+.module-action span { color: #eabf5f; }
+.module-action.muted { color: #b7c7bd; border-style: dashed; font-weight: 500; line-height: 1.6; }
+.module-roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.module-roadmap li { display: flex; align-items: center; gap: 11px; padding: 11px 12px; border: 1px solid #2f4c40; background: #112a21; }
+.module-roadmap b { color: #d7aa47; font: 800 11px Georgia; }
+.module-roadmap span { color: #d6dfd8; font-size: 12px; }
+
+.source-section { max-width: 1180px; margin: 0 auto; padding: 70px 28px 65px; }
+.source-section .section-heading { margin-bottom: 38px; }
+.source-columns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; align-items: start; }
+.source-column { min-width: 0; padding: 20px; border-top: 4px solid var(--green); background: #fffdf7; box-shadow: 0 10px 28px rgba(35,49,40,.07); }
+.source-column.technology_radar { border-top-color: var(--gold); }
+.source-column.local_project { border-top-color: var(--red); }
+.source-column > header { display: flex; align-items: center; gap: 13px; margin-bottom: 17px; }
+.source-column > header > span { display: grid; place-items: center; width: 45px; height: 45px; border-radius: 50%; color: white; background: var(--green); font-size: 11px; font-weight: 900; }
+.source-column.technology_radar > header > span { color: #3f3118; background: var(--gold); }
+.source-column.local_project > header > span { background: var(--red); }
+.source-column h3 { margin: 0; font: 800 17px Georgia, "Songti SC", serif; }
+.source-column header p { margin: 4px 0 0; color: #7c837d; font-size: 11px; }
+.source-card { margin-top: 10px; padding: 15px; border: 1px solid #e1d8c5; background: #fffaf0; }
+.source-card > div { display: flex; justify-content: space-between; gap: 12px; }
+.source-card b { color: #263c31; font-size: 13px; }
+.source-card small { color: #8b8170; text-align: right; font-size: 9px; }
+.source-card p { margin: 9px 0; color: #68726b; font-size: 12px; line-height: 1.65; }
+.source-card a, .source-card > span { display: block; overflow-wrap: anywhere; color: #9b3425; font-size: 10px; line-height: 1.5; }
+.source-card time { display: block; margin-top: 10px; padding-top: 8px; border-top: 1px dashed #d9cfbc; color: #948a79; font-size: 9px; }
+.source-empty { padding: 22px 15px; color: #797467; border: 1px dashed #cabd9f; font-size: 12px; line-height: 1.7; }
+.source-policy { display: flex; flex-wrap: wrap; justify-content: center; gap: 9px; margin-top: 18px; padding: 17px; color: #566159; border: 1px solid #d8cdae; background: #f7f0df; font-size: 12px; }
+.source-policy b { color: #8d2e21; margin-right: 8px; }
+.source-policy i { color: #b79a5e; font-style: normal; }
 
 .map-section { max-width: 1120px; margin: 0 auto; padding: 95px 28px 110px; }
 .section-heading { text-align: center; margin-bottom: 66px; }
@@ -212,6 +269,9 @@ footer span { color: #9aafa3; font-size: 12px; }
   .progress-card { max-width: 500px; }
   .principles { grid-template-columns: 1fr; margin-top: -35px; }
   .principles article { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .module-grid { grid-template-columns: repeat(2, 1fr); }
+  .module-detail { grid-template-columns: 1fr; }
+  .source-columns { grid-template-columns: 1fr; }
   .lesson-grid { grid-template-columns: 1fr; }
   .learning-steps { grid-template-columns: repeat(3, 1fr); }
   .learning-steps li:nth-child(3) { border-right: 0; }
@@ -225,6 +285,12 @@ footer span { color: #9aafa3; font-size: 12px; }
   h1 { font-size: 47px; }
   .lead { font-size: 15px; }
   .principles { padding: 0 14px; }
+  .module-section, .source-section { padding-left: 14px; padding-right: 14px; }
+  .module-grid { grid-template-columns: 1fr; }
+  .module-card { min-height: 0; }
+  .module-card p { min-height: 0; }
+  .module-detail { padding: 24px 18px; }
+  .module-roadmap { grid-template-columns: 1fr; }
   .map-section { padding-left: 14px; padding-right: 14px; }
   .section-heading h2 { font-size: 33px; }
   .level { grid-template-columns: 50px 1fr; gap: 14px; }
