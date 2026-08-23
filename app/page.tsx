@@ -32,6 +32,13 @@ type LearningSupport = {
   quiz: { question: string; options: string[]; correct: number; explanation: string };
 };
 
+type KnowledgePoint = {
+  term: string;
+  plain: string;
+  role: string;
+  example?: string;
+};
+
 const levels: Level[] = [
   {
     id: 1,
@@ -626,6 +633,72 @@ teardown.always -> fixture.restore
   },
 };
 
+const knowledgeByLevel: Record<number, KnowledgePoint[]> = {
+  1: [
+    { term: "path: str", plain: "path 是函数接收的参数，str 表示它应该是字符串。", role: "传入 data.flowNo，告诉函数要沿哪条字段路线查找。", example: `path = "data.flowNo"` },
+    { term: "split(\".\")", plain: "split() 按照指定符号拆分字符串，并返回一个 list。", role: "把 data.flowNo 拆成 data 和 flowNo，函数才能逐层查找。", example: `"data.flowNo".split(".")  →  ["data", "flowNo"]` },
+    { term: "for ... in ...", plain: "for 循环会把一组数据中的元素依次取出来。", role: "第一次取到 data，第二次取到 flowNo，每次向字典内部走一层。", example: `for part in ["data", "flowNo"]: print(part)` },
+    { term: "isinstance()", plain: "isinstance(对象, 类型) 判断对象是不是指定类型，结果是 True 或 False。", role: "继续查字段前确认 current 是 dict，避免对 None 或字符串使用字典取值。", example: `isinstance({"a": 1}, dict)  # True` },
+    { term: "not / or", plain: "not 会把真假反过来；or 表示两个条件只要有一个成立，整体就成立。", role: "current 不是字典，或者字段不存在，任一情况都应该报错。", example: `if not is_dict or field_missing: ...` },
+    { term: "raise KeyError", plain: "raise 用来主动抛出错误；KeyError 表示查找的键不存在。", role: "明确告诉你是哪条路径找不到，避免程序在更后面神秘失败。", example: `raise KeyError("找不到字段: data.flowNo")` },
+  ],
+  2: [
+    { term: "deepcopy()", plain: "deepcopy() 会把外层和内部嵌套对象一起复制。", role: "让两条用例拥有独立的 request，修改一条不会污染另一条。", example: `case_a = deepcopy(fixture)` },
+    { term: "变量赋值 =", plain: "等号右边先计算，再把结果交给左边的变量名。", role: "body 保存复制后的数据，后续修改针对 body，不碰原 fixture。", example: `body = deepcopy(case["fixture"])` },
+    { term: "字典取值 []", plain: "字典可以用方括号和键名读取或修改字段。", role: "找到 businessStatus 字段，再把它改为 710。", example: `body["businessStatus"] = 710` },
+    { term: "try / finally", plain: "try 放主要工作，finally 放无论成功失败都必须执行的清理。", role: "即使 call_api() 报错，client.close() 仍会执行。", example: `try: call_api(body)  →  finally: client.close()` },
+  ],
+  3: [
+    { term: "import_module()", plain: "根据字符串动态导入一个 Python 模块。", role: "YAML 保存函数地址，运行时再加载对应 adapters 模块。", example: `module = import_module("shop.adapters")` },
+    { term: "split(\":\", 1)", plain: "第二个参数 1 表示最多只拆一次。", role: "把 module:function 分成模块地址和函数名两部分。", example: `"shop.adapters:run".split(":", 1)` },
+    { term: "getattr()", plain: "getattr(对象, 名称) 按字符串名称读取对象的属性。", role: "从已导入模块中取出 function_name 对应的函数。", example: `handler = getattr(module, "run")` },
+    { term: "callable()", plain: "判断一个对象能不能像函数一样用括号调用。", role: "避免把普通变量误当成 adapter 执行。", example: `callable(print)  # True` },
+  ],
+  4: [
+    { term: "类型标注 :", plain: "冒号后的类型描述变量或参数预期装什么。", role: "让人、编辑器和 AI 更早发现传错结构的问题。", example: `name: str` },
+    { term: "@dataclass", plain: "把一组相关字段快速变成结构清楚的数据类。", role: "适合表示 QueryRequest、ActionResult 等稳定结果。", example: `@dataclass  class Result: ...` },
+    { term: "Protocol", plain: "Protocol 描述对象必须具备哪些方法，不限定具体实现类。", role: "真实数据库和 Mock 数据库只要都有 query()，就能被同一套代码使用。", example: `class Database(Protocol): ...` },
+    { term: "默认值 = ()", plain: "调用者不传这个字段时，Python 使用等号右边的默认值。", role: "params 默认是空 tuple，不必每次手动传空参数。", example: `params: tuple = ()` },
+  ],
+  5: [
+    { term: "@pytest.fixture", plain: "fixture 是 pytest 在测试前自动准备的依赖。", role: "测试函数写上 api_client 参数，pytest 就会创建并注入 Client。", example: `def test_api(api_client): ...` },
+    { term: "yield", plain: "yield 暂时把资源交出去，等使用结束后再从下一行继续。", role: "yield 前创建 Client，yield 后关闭 Client，形成完整生命周期。", example: `create → yield client → close` },
+    { term: "parametrize", plain: "用多组输入重复执行同一个测试函数。", role: "一个测试函数分别以 710 和 720 运行，收集成两条用例。", example: `@pytest.mark.parametrize("status", [710, 720])` },
+    { term: "assert", plain: "assert 检查条件是否为 True，否则测试失败。", role: "把“状态只能是 710 或 720”变成自动判定规则。", example: `assert status in (710, 720)` },
+  ],
+  6: [
+    { term: "class", plain: "class 用来定义一种对象的结构和行为。", role: "FlowEntry 类集中声明每个 YAML 步骤允许有哪些字段。", example: `class FlowEntry(BaseModel): ...` },
+    { term: "| None", plain: "表示字段既可以是前面的类型，也可以没有值 None。", role: "action 和 request 单独看都可选，但组合规则要求至少存在一个。", example: `action: str | None = None` },
+    { term: "装饰器 @", plain: "@ 开头的装饰器会给下面的函数或类附加能力。", role: "model_validator 告诉 Pydantic：这是模型级校验规则。", example: `@model_validator(mode="after")` },
+    { term: "self", plain: "self 表示当前正在被创建或操作的这个对象。", role: "通过 self.action 和 self.request 读取当前步骤的字段。", example: `if not self.action and not self.request:` },
+  ],
+  7: [
+    { term: "signature()", plain: "读取函数签名，也就是它声明了哪些参数。", role: "Runner 判断 handler 是否需要 action、context 或 runtime。", example: `params = signature(handler).parameters` },
+    { term: ".parameters", plain: "点号表示访问对象属性；parameters 是签名中的参数集合。", role: "可以判断函数有没有 context 参数。", example: `if "context" in params:` },
+    { term: "kwargs 字典", plain: "kwargs 是常见变量名，表示准备按名字传入函数的一组参数。", role: "Runner 根据 handler 签名逐个加入需要的值。", example: `kwargs["runtime"] = runtime` },
+    { term: "**kwargs", plain: "两个星号会把字典展开成具名参数。", role: "context 字段会变成 handler(context=context)。", example: `handler(**kwargs)` },
+  ],
+  8: [
+    { term: "回调 handler", plain: "回调是先交给另一个对象，等事件发生时再被调用的函数。", role: "MockTransport 收到请求后调用 handler，由它返回模拟响应。", example: `httpx.MockTransport(handler)` },
+    { term: "request.url.path", plain: "点号逐层读取对象属性，最终得到 URL 的路径部分。", role: "确认代码请求的是正确接口，而不是只检查响应。", example: `assert request.url.path == "/app/stock/..."` },
+    { term: "json={...}", plain: "这里把 Python dict 作为 JSON 响应体交给 HTTPX。", role: "模拟真实后端返回 success 和 flowNo。", example: `httpx.Response(200, json={"success": True})` },
+    { term: "Client / Transport", plain: "Client 负责发请求，Transport 决定请求真正送到哪里。", role: "换成 MockTransport 后，测试不会访问外部系统。", example: `httpx.Client(transport=transport)` },
+  ],
+  9: [
+    { term: "类与实例", plain: "class 是模板；根据模板创建出来的具体对象叫实例。", role: "DatabaseProvider 描述能力，真实数据库对象是它的一种实现。", example: `class DatabaseProvider: ...` },
+    { term: "方法参数 self", plain: "类里的普通方法第一个参数通常是 self，代表当前实例。", role: "query() 可以通过 self 使用当前 Provider 的连接或配置。", example: `def query(self, request): ...` },
+    { term: "函数参数", plain: "括号中的名称是函数需要的输入。", role: "resolve 明确依赖 database 和 constraints，不偷偷读取全局变量。", example: `def resolve(database, constraints): ...` },
+    { term: "return", plain: "return 结束函数，并把结果交回调用它的地方。", role: "resolve 返回最终选中的安全库存数据。", example: `return select_safe_inventory(rows)` },
+  ],
+  10: [
+    { term: "YAML 缩进", plain: "YAML 使用空格表达层级，同级内容必须对齐。", role: "setup、steps、assertions 和 teardown 是 common_flow 下的同级结构。", example: `common_flow: → 两个空格 → setup:` },
+    { term: "冒号 :", plain: "YAML 中冒号左边是字段名，右边是字段值。", role: "action: fixture.resolve 表示 action 字段的值是 fixture.resolve。", example: `save_as: resolved_fixture` },
+    { term: "短横线 -", plain: "YAML 中短横线表示列表里的一个元素。", role: "每个 - action 都是 setup 或 steps 列表中的一个步骤。", example: `- action: inventory.snapshot` },
+    { term: "true", plain: "YAML 的 true 会被解析成 Python 的 True 布尔值。", role: "要求响应中的 success 字段必须为真。", example: `success: true` },
+    { term: "点路径", plain: "用点号连接多个层级的字段名。", role: "先取 processing_result，再进入它的 response。", example: `source: processing_result.response` },
+  ],
+};
+
 const storageKey = "python-framework-quest-v2";
 const legacyStorageKey = "python-framework-quest-v1";
 
@@ -639,6 +712,7 @@ export default function Home() {
   const [quizPassed, setQuizPassed] = useState<number[]>([]);
   const [quizSelections, setQuizSelections] = useState<Record<number, number>>({});
   const [quizFeedback, setQuizFeedback] = useState<Record<number, string>>({});
+  const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(1);
   const [ready, setReady] = useState(false);
 
@@ -667,6 +741,19 @@ export default function Home() {
       setReady(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!activeKnowledge) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setActiveKnowledge(null);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", closeOnEscape);
+      document.body.style.overflow = "";
+    };
+  }, [activeKnowledge]);
 
   const progress = Math.round((completed.length / levels.length) * 100);
   const nextLevel = levels.find((level) => !completed.includes(level.id));
@@ -774,6 +861,7 @@ export default function Home() {
           {levels.map((level, index) => {
             const done = completed.includes(level.id);
             const support = supportByLevel[level.id];
+            const knowledge = knowledgeByLevel[level.id];
             const passedQuiz = quizPassed.includes(level.id);
             const unlocked = isUnlocked(level.id);
             const open = openId === level.id;
@@ -806,7 +894,19 @@ export default function Home() {
                           <div className="subheading"><span>不懂就查</span><h4>本关术语表</h4></div>
                           <div className="glossary-grid">
                             {support.glossary.map((item) => (
-                              <article className="glossary-card" key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>
+                              <button
+                                className="glossary-card"
+                                type="button"
+                                key={item.term}
+                                onClick={() => setActiveKnowledge({
+                                  term: item.term,
+                                  plain: item.meaning,
+                                  role: `这是第 ${level.id} 关会反复遇到的术语。先理解它的含义，再回到例子中找它出现的位置。`,
+                                })}
+                              >
+                                <span><b>{item.term}</b><i>点击展开</i></span>
+                                <p>{item.meaning}</p>
+                              </button>
                             ))}
                           </div>
                         </section>
@@ -824,6 +924,17 @@ export default function Home() {
                           </section>
                           <aside className="ai-lens"><span>AI 审查镜</span><p>{level.aiLens}</p></aside>
                         </div>
+                        <section className="knowledge-shelf">
+                          <div className="subheading"><span>代码看不懂就点</span><h4>隐藏的基础知识</h4></div>
+                          <p>不用离开本关查资料。点击代码中的概念，弹窗会解释“它是什么、在这里做什么”。</p>
+                          <div className="knowledge-buttons">
+                            {knowledge.map((item) => (
+                              <button type="button" key={item.term} onClick={() => setActiveKnowledge(item)}>
+                                <code>{item.term}</code><span>?</span>
+                              </button>
+                            ))}
+                          </div>
+                        </section>
                         <div className="code-wrap"><div><span>PYTHON / YAML</span><i>完整示范</i></div><pre><code>{level.code}</code></pre></div>
                         <div className="task">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
@@ -878,6 +989,38 @@ export default function Home() {
           })}
         </div>
       </section>
+
+      {activeKnowledge && (
+        <div className="knowledge-overlay" onMouseDown={() => setActiveKnowledge(null)}>
+          <section
+            className="knowledge-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="knowledge-title"
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <button className="knowledge-close" type="button" aria-label="关闭基础知识弹窗" onClick={() => setActiveKnowledge(null)}>×</button>
+            <span className="knowledge-kicker">基础知识 · 随点随查</span>
+            <h2 id="knowledge-title">{activeKnowledge.term}</h2>
+            <div className="knowledge-answer">
+              <b>先用一句话理解</b>
+              <p>{activeKnowledge.plain}</p>
+            </div>
+            <div className="knowledge-answer role-answer">
+              <b>它在当前代码里做什么</b>
+              <p>{activeKnowledge.role}</p>
+            </div>
+            {activeKnowledge.example && (
+              <div className="knowledge-example">
+                <b>最小例子</b>
+                <pre><code>{activeKnowledge.example}</code></pre>
+              </div>
+            )}
+            <button className="knowledge-return" type="button" onClick={() => setActiveKnowledge(null)}>我明白了，返回本关</button>
+            <small>也可以点击弹窗外部或按 Esc 关闭</small>
+          </section>
+        </div>
+      )}
 
       <footer>
         <p>PYTHON FRAMEWORK QUEST</p>
