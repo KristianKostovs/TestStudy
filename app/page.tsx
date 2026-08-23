@@ -18,6 +18,20 @@ type Level = {
   reward: string;
 };
 
+type LearningSupport = {
+  beforeYouStart: string;
+  glossary: { term: string; meaning: string }[];
+  exampleTitle: string;
+  example: string;
+  walkthrough: string[];
+  starter: string;
+  verifyCommand: string;
+  expected: string;
+  hint: string;
+  referenceAnswer: string;
+  quiz: { question: string; options: string[]; correct: number; explanation: string };
+};
+
 const levels: Level[] = [
   {
     id: 1,
@@ -310,17 +324,343 @@ def resolve_after_sale_fixture(database, constraints):
   },
 ];
 
-const storageKey = "python-framework-quest-v1";
+const supportByLevel: Record<number, LearningSupport> = {
+  1: {
+    beforeYouStart: "这一关不默认你知道接口响应长什么样。先认识一份完整 response，再看函数。",
+    glossary: [
+      { term: "response", meaning: "接口返回的整个结果，这里是一个 Python dict。" },
+      { term: "data", meaning: "response 里名为 data 的字段，通常用来放业务结果；它不是 Python 保留字。" },
+      { term: "flowNo", meaning: "data 里的交易流水号字段，字段名由真实接口 DTO 决定。" },
+      { term: "data.flowNo", meaning: "一条字段路径：先进入 data，再取 flowNo。" },
+    ],
+    exampleTitle: "先看接口响应的真实结构",
+    example: `response = {
+    "success": True,
+    "code": "S0000",
+    "data": {
+        "success": True,
+        "flowNo": "FLOW-710",
+        "message": "售后库存调整成功"
+    }
+}`,
+    walkthrough: [
+      "response 是最外层 dict，有 success、code 和 data 三个字段。",
+      "response[\"data\"] 得到内层 dict。",
+      "response[\"data\"][\"flowNo\"] 得到字符串 FLOW-710。",
+      "get_by_path(response, \"data.flowNo\") 只是把上面两次取值变成通用循环。",
+    ],
+    starter: `def get_by_path(data: dict, path: str):
+    # 1. current 从整个 data 开始
+    # 2. 把 "data.flowNo" 拆成 ["data", "flowNo"]
+    # 3. 逐层取值，找不到就报错
+    pass`,
+    verifyCommand: "python level_01.py",
+    expected: `FLOW-710
+KeyError: '找不到字段: data.flowNo'
+原始 response 保持不变`,
+    hint: "先用 path.split(\".\") 看看能得到什么；每轮循环用 current = current[part] 向内走一层。",
+    referenceAnswer: `def get_by_path(data: dict, path: str):
+    current = data
+    for part in path.split("."):
+        if not isinstance(current, dict) or part not in current:
+            raise KeyError(f"找不到字段: {path}")
+        current = current[part]
+    return current`,
+    quiz: {
+      question: "在这份 response 中，data 是什么？",
+      options: ["Python 固定的特殊对象", "response 中一个名为 data 的 dict 字段", "数据库连接", "flowNo 的别名"],
+      correct: 1,
+      explanation: "data 只是接口响应中的一个字段名。在这份响应里，它的值是一个 dict。",
+    },
+  },
+  2: {
+    beforeYouStart: "你会先看到“同一份 fixture 为什么会被改掉”，再学 deepcopy，不需要先记住拷贝理论。",
+    glossary: [
+      { term: "fixture", meaning: "测试开始前准备的数据或资源。" },
+      { term: "可变对象", meaning: "创建后内容仍可被修改的对象，dict 和 list 都是。" },
+      { term: "deepcopy", meaning: "连同内层 dict/list 一起复制，得到彼此隔离的数据。" },
+      { term: "finally", meaning: "不论 try 成功还是失败都会执行的清理区块。" },
+    ],
+    exampleTitle: "两个变量可能指向同一个内层 dict",
+    example: `fixture = {"request": {"businessStatus": 710}}
+case_a = dict(fixture)
+case_b = dict(fixture)
+
+case_a["request"]["businessStatus"] = 720
+print(case_b["request"]["businessStatus"])  # 720！`,
+    walkthrough: ["dict(fixture) 只复制了外层。", "case_a 和 case_b 的 request 仍是同一个对象。", "deepcopy 会把内层 request 也复制。"],
+    starter: `from copy import deepcopy
+
+case_a = deepcopy(fixture)
+case_b = deepcopy(fixture)
+# 修改 case_a，然后断言 case_b 未变`,
+    verifyCommand: "pytest -q test_level_02.py",
+    expected: "2 passed",
+    hint: "先写一条故意失败的测试复现污染，再把 dict(fixture) 改为 deepcopy(fixture)。",
+    referenceAnswer: `case_a = deepcopy(fixture)
+case_b = deepcopy(fixture)
+case_a["request"]["businessStatus"] = 720
+assert case_b["request"]["businessStatus"] == 710`,
+    quiz: { question: "dict(fixture) 对嵌套 dict 做了什么？", options: ["全部深度复制", "只复制外层", "把 dict 变成 tuple", "锁定数据不可修改"], correct: 1, explanation: "dict(x) 是浅拷贝，嵌套的 dict/list 仍可能共享。" },
+  },
+  3: {
+    beforeYouStart: "先把目录想成一个地址，把函数想成地址里的具体房间。",
+    glossary: [
+      { term: "module", meaning: "一个可被 import 的 Python 文件。" },
+      { term: "package", meaning: "由多个模块组成的可导入目录。" },
+      { term: "callable", meaning: "可以用括号执行的对象，最常见是函数。" },
+      { term: "callable ref", meaning: "用 package.module:function 表示一个函数的字符串地址。" },
+    ],
+    exampleTitle: "字符串怎样定位到函数",
+    example: `ewms.stock.adapters:resolve_fixture
+
+ewms.stock.adapters  -> 模块地址
+resolve_fixture      -> 模块里的函数`,
+    walkthrough: ["冒号左边交给 import_module() 导入。", "冒号右边交给 getattr() 取属性。", "最后用 callable() 确认它真的能执行。"],
+    starter: `def resolve_callable(ref: str):
+    module_name, function_name = ref.split(":", 1)
+    # 导入 module，取出 function，检查 callable
+    pass`,
+    verifyCommand: "pytest -q test_level_03.py",
+    expected: "3 passed（成功导入、模块不存在、函数不存在）",
+    hint: "需要 import_module、getattr 和 callable 三步。",
+    referenceAnswer: `module = import_module(module_name)
+handler = getattr(module, function_name)
+if not callable(handler):
+    raise TypeError(f"{ref} 不可调用")
+return handler`,
+    quiz: { question: "package.module:function 中冒号右边是什么？", options: ["文件夹", "Python 版本", "模块中的函数名", "HTTP method"], correct: 2, explanation: "左边是模块路径，右边是要取出的函数名。" },
+  },
+  4: {
+    beforeYouStart: "类型不是考试语法，而是让你和 AI 都看得懂“输入和输出应该是什么”。",
+    glossary: [
+      { term: "type hint", meaning: "对参数和返回值的类型说明。" },
+      { term: "dataclass", meaning: "便捷定义结构化数据对象的工具。" },
+      { term: "Protocol", meaning: "规定对象需要提供哪些方法，不限制具体实现。" },
+      { term: "Any", meaning: "任意类型；使用过多会让错误推迟到运行时。" },
+    ],
+    exampleTitle: "Protocol 只约定能力，不关心连的是哪个数据库",
+    example: `class DatabaseProvider(Protocol):
+    def query(self, request: QueryRequest) -> list[dict]: ...`,
+    walkthrough: ["任何对象只要有符合签名的 query() 就能作为 Provider。", "真实 MySQL Provider 和 FakeDatabase 都可以满足它。", "这让 Mock 测试不需要真实数据库。"],
+    starter: `@dataclass
+class ActionResult:
+    # 定义 success、request、response、outputs、side_effects
+    pass`,
+    verifyCommand: "python -m mypy action_result.py && pytest -q test_action_result.py",
+    expected: "Success: no issues found\n2 passed",
+    hint: "request/response 可能为 None，outputs 和 side_effects 用 default_factory 避免共享默认值。",
+    referenceAnswer: `@dataclass
+class ActionResult:
+    success: bool
+    request: dict | None = None
+    response: dict | None = None
+    outputs: dict = field(default_factory=dict)
+    side_effects: list[str] = field(default_factory=list)`,
+    quiz: { question: "Protocol 在 Provider 里最主要的作用是什么？", options: ["保存密码", "规定可替换实现必须提供的方法", "自动连接 MySQL", "替代 pytest"], correct: 1, explanation: "Protocol 表达能力契约，让真实实现与 Fake 实现可替换。" },
+  },
+  5: {
+    beforeYouStart: "pytest 可以理解为“找用例 + 准备依赖 + 执行 + 清理”的管家。",
+    glossary: [
+      { term: "fixture", meaning: "pytest 在用例执行前后创建和清理的依赖。" },
+      { term: "yield", meaning: "把资源交给用例；yield 之后是清理逻辑。" },
+      { term: "parametrize", meaning: "用多组数据生成多条独立用例。" },
+      { term: "collect-only", meaning: "只收集用例，不执行测试体。" },
+    ],
+    exampleTitle: "yield 把 fixture 分成准备和清理两半",
+    example: `client = HttpClient(...)  # 准备
+yield client              # 交给用例
+client.close()            # 清理`,
+    walkthrough: ["用例看到的 api_client 就是 yield 后面的 client。", "用例断言失败后，pytest 仍会继续执行 close()。", "collect-only 不会进入用例中的 HTTP 调用。"],
+    starter: `@pytest.fixture
+def api_client():
+    # 创建 client
+    # yield client
+    # 关闭 client`,
+    verifyCommand: "pytest --collect-only -q && pytest -q test_level_05.py",
+    expected: "2 tests collected\n2 passed",
+    hint: "先不写参数化，确保 fixture 可用；再加 @pytest.mark.parametrize。",
+    referenceAnswer: `@pytest.fixture
+def api_client():
+    client = HttpClient(base_url="https://example.test")
+    yield client
+    client.close()`,
+    quiz: { question: "fixture 中 yield 之后的代码什么时候执行？", options: ["收集用例前", "用例结束后，包括用例失败时", "永远不执行", "只有 HTTP 200 时"], correct: 1, explanation: "yield 之后是 fixture teardown，pytest 会在用例结束后执行。" },
+  },
+  6: {
+    beforeYouStart: "YAML 只是文本。它被读成 dict 后，还需要校验才能放心交给 Runner。",
+    glossary: [
+      { term: "parse", meaning: "把 YAML 文本解析成 Python dict/list。" },
+      { term: "schema", meaning: "对字段、类型、必填性和组合规则的定义。" },
+      { term: "Pydantic Model", meaning: "用 Python 类声明 schema 并执行校验。" },
+      { term: "safe_load", meaning: "PyYAML 的安全解析方式，但它不校验业务结构。" },
+    ],
+    exampleTitle: "能解析的 YAML 不一定能执行",
+    example: `steps:
+  - name: 空步骤
+    save_as: result
+# 语法正确，但既没有 action 也没有 request`,
+    walkthrough: ["safe_load 会成功返回 dict。", "Runner 真正执行时才发现不知道要做什么。", "Pydantic 应在执行前拒绝这个步骤。"],
+    starter: `class FlowEntry(BaseModel):
+    action: str | None = None
+    request: dict | None = None
+    # 增加组合校验`,
+    verifyCommand: "pytest -q test_flow_entry_schema.py",
+    expected: "3 passed",
+    hint: "使用 model_validator(mode=\"after\")，在 action 和 request 都为空时 raise ValueError。",
+    referenceAnswer: `@model_validator(mode="after")
+def has_executor(self):
+    if not self.action and not self.request:
+        raise ValueError("必须声明 action 或 request")
+    return self`,
+    quiz: { question: "yaml.safe_load() 成功能证明什么？", options: ["用例一定可执行", "YAML 语法可被解析", "adapter 一定存在", "真实接口一定成功"], correct: 1, explanation: "safe_load 只证明文本可解析，不证明声明式用例结构或业务正确。" },
+  },
+  7: {
+    beforeYouStart: "Runner 就像调度员：读动作名、找函数、传参数、收集结果。",
+    glossary: [
+      { term: "reflection", meaning: "程序在运行时查看并操作模块、函数和签名。" },
+      { term: "signature", meaning: "函数的参数列表和调用形式。" },
+      { term: "dispatch", meaning: "根据 action name 选择并执行对应 handler。" },
+      { term: "context", meaning: "单条用例执行期间保存步骤输出的字典。" },
+    ],
+    exampleTitle: "save_as 把上一步结果放进 context",
+    example: `action: after_sale.notify
+save_as: processing_result
+
+context["processing_result"] = handler_result`,
+    walkthrough: ["Runner 先用 action name 找 handler。", "handler 返回的结果用 save_as 作为 key 存入 context。", "后续步骤可用 processing_result.response 访问它。"],
+    starter: `def run_entry(entry, adapters, context):
+    # 找 handler
+    # 执行 handler
+    # 根据 save_as 保存结果`,
+    verifyCommand: "pytest -q test_mini_runner.py",
+    expected: "4 passed",
+    hint: "先不做模板渲染，只实现 action 查找和 save_as；然后再增加第二步读取 context。",
+    referenceAnswer: `handler = adapters[entry["action"]]
+result = handler(entry, context)
+if entry.get("save_as"):
+    context[entry["save_as"]] = result`,
+    quiz: { question: "save_as 最主要的用途是什么？", options: ["修改 HTTP method", "给步骤输出命名并存入 context", "关闭数据库", "安装 adapter"], correct: 1, explanation: "save_as 是步骤输出在当前用例 context 中的名字。" },
+  },
+  8: {
+    beforeYouStart: "先分清“服务器收到请求”和“业务真的办成了”，再学 Mock。",
+    glossary: [
+      { term: "HTTP status", meaning: "HTTP 协议层状态，如 200、500。" },
+      { term: "business success", meaning: "响应 JSON 中表示业务是否成功的字段，如 success。" },
+      { term: "MockTransport", meaning: "拦截 HTTPX 请求并在本地返回预设响应。" },
+      { term: "timeout", meaning: "请求最多等待多久，避免无限卡住。" },
+    ],
+    exampleTitle: "HTTP 200 也可能是业务失败",
+    example: `HTTP 200
+{
+  "success": false,
+  "code": "A4500",
+  "msg": "库存不足"
+}`,
+    walkthrough: ["200 说明服务器正常返回了 HTTP 响应。", "success=false 说明库存调整没有办成。", "异常用例应保留这份响应用于断言，不能提前吞掉。"],
+    starter: `def handler(request: httpx.Request):
+    # 根据路径和请求体返回不同响应`,
+    verifyCommand: "pytest -q test_http_modes.py",
+    expected: "3 passed（成功、HTTP 500、HTTP 200 + success=false）",
+    hint: "在 handler 里用 json.loads(request.content) 读请求体，根据 adjustAmount 返回不同结果。",
+    referenceAnswer: `if payload["adjustAmount"] > available:
+    return httpx.Response(200, json={
+        "success": False, "code": "A4500", "msg": "库存不足"
+    })`,
+    quiz: { question: "HTTP 200 且 response.success=false 代表什么？", options: ["传输层和业务都成功", "传输层成功，业务失败", "网络超时", "Python 语法错误"], correct: 1, explanation: "HTTP status 和业务 success 是两层不同的判定。" },
+  },
+  9: {
+    beforeYouStart: "这一关不要先背设计模式，而是先问：这段代码知道的业务信息是不是太多了？",
+    glossary: [
+      { term: "Provider", meaning: "封装数据库、Redis、文件等基础访问方式。" },
+      { term: "Adapter", meaning: "把声明式 action 转成真实业务调用。" },
+      { term: "Registry", meaning: "保存名字到能力的映射，负责发现，不负责业务决策。" },
+      { term: "resolve", meaning: "根据当前需求的业务约束选择可执行数据。" },
+    ],
+    exampleTitle: "同一个“数据库查询”其实有两层问题",
+    example: `Provider: 我怎么安全执行参数化 SQL？
+resolve:  这个售后用例需要哪个仓库和 SKU？`,
+    walkthrough: ["Provider 可被不同页面复用。", "resolve 包含库存、占用、状态等售后规则，应留在场景层。", "如果把 resolve 放进 Provider，Provider 就被某个业务绑死。"],
+    starter: `# 从一个混合 adapter 中标注：
+# [Provider] 基础访问
+# [Shared Action] 页面稳定动作
+# [Requirement] 需求特有规则`,
+    verifyCommand: "pytest -q tests/provider tests/shared_actions tests/requirements",
+    expected: "三组测试独立通过",
+    hint: "先不移动代码，只给每个函数标注它应属于哪层以及理由。",
+    referenceAnswer: `Provider -> request/query 执行、连接和参数化
+Shared Action -> 库存快照、通知状态、统一结果
+Requirement -> 合法 SKU 选择、本用例差值和风险约束`,
+    quiz: { question: "“这个需求应该选哪个库存 SKU”应放在哪里？", options: ["DatabaseProvider", "HTTP Client", "需求/场景层 resolve", "Registry"], correct: 2, explanation: "选什么数据是业务求解，不是基础访问能力。" },
+  },
+  10: {
+    beforeYouStart: "Boss 战不要从空白文件开始。页面会给你目录清单、最小 YAML、Mock 检查点和完成定义。",
+    glossary: [
+      { term: "static gate", meaning: "不访问真实环境的结构、契约、导入和收集检查。" },
+      { term: "Mock full flow", meaning: "用本地假实现跑完 setup 到 teardown 的全链路。" },
+      { term: "evidence", meaning: "每步的请求、响应、业务标识和失败诊断。" },
+      { term: "teardown.always", meaning: "无论前面成功还是失败都要执行的恢复/清理步骤。" },
+    ],
+    exampleTitle: "Boss 战完成定义",
+    example: `1. requirement_cases.yaml 有完整生命周期
+2. 每个 action 可导入
+3. collect-only 通过
+4. Mock 全链路通过
+5. 成功和失败都生成 evidence`,
+    walkthrough: ["先选一条只有 2–3 个动作的短链路。", "先做静态门禁，再做 Mock，最后才讨论真实环境。", "任何一步失败都要保留主异常和已经产生的证据。"],
+    starter: `requirements/BOSS_01/
+├── constraint_spec.yaml
+├── requirement_cases.yaml
+├── adapters.py
+└── source_queries.py`,
+    verifyCommand: "python verify_declarative_delivery.py ... && pytest -q tests/test_boss_mock.py",
+    expected: "三级静态门禁通过\nMock 全链路通过\nevidence JSON 包含 request/response",
+    hint: "可以直接复用第 5、6、7、8 关产物，不要重写 Client、Provider 或 Runner。",
+    referenceAnswer: `建议链路：
+fixture.resolve -> inventory.snapshot -> after_sale.notify -> assertion
+teardown.always -> fixture.restore
+
+成功证据：HTTP 200 + response + flowNo
+失败证据：主异常 + 已完成步骤 + teardown 诊断`,
+    quiz: { question: "Boss 链路第一次运行应优先选什么？", options: ["直接扣减真实 SIT 库存", "先跑静态门禁和 Mock 全链路", "先写管理面", "删除 teardown 简化流程"], correct: 1, explanation: "静态门禁和 Mock 能先验证结构、导入、模板、断言和清理，不产生真实副作用。" },
+  },
+};
+
+const storageKey = "python-framework-quest-v2";
+const legacyStorageKey = "python-framework-quest-v1";
+
+type ProgressState = {
+  completed: number[];
+  quizPassed: number[];
+};
 
 export default function Home() {
   const [completed, setCompleted] = useState<number[]>([]);
+  const [quizPassed, setQuizPassed] = useState<number[]>([]);
+  const [quizSelections, setQuizSelections] = useState<Record<number, number>>({});
+  const [quizFeedback, setQuizFeedback] = useState<Record<number, string>>({});
   const [openId, setOpenId] = useState(1);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(storageKey);
-      if (stored) setCompleted(JSON.parse(stored));
+      if (stored) {
+        const progressState = JSON.parse(stored) as ProgressState;
+        setCompleted(progressState.completed ?? []);
+        setQuizPassed(progressState.quizPassed ?? []);
+      } else {
+        const legacy = window.localStorage.getItem(legacyStorageKey);
+        if (legacy) {
+          const previousCompleted = JSON.parse(legacy) as number[];
+          setCompleted(previousCompleted);
+          setQuizPassed(previousCompleted);
+          window.localStorage.setItem(storageKey, JSON.stringify({
+            completed: previousCompleted,
+            quizPassed: previousCompleted,
+          } satisfies ProgressState));
+        }
+      }
     } catch {
       setCompleted([]);
     } finally {
@@ -341,12 +681,39 @@ export default function Home() {
     return id === 1 || completed.includes(id - 1) || completed.includes(id);
   }
 
+  function saveProgress(nextCompleted: number[], nextQuizPassed: number[]) {
+    window.localStorage.setItem(storageKey, JSON.stringify({
+      completed: nextCompleted,
+      quizPassed: nextQuizPassed,
+    } satisfies ProgressState));
+  }
+
+  function checkQuiz(id: number) {
+    const selected = quizSelections[id];
+    const quiz = supportByLevel[id].quiz;
+    if (selected === undefined) {
+      setQuizFeedback((current) => ({ ...current, [id]: "请先选择一个答案，再点击检查。" }));
+      return;
+    }
+
+    if (selected === quiz.correct) {
+      const nextQuizPassed = quizPassed.includes(id) ? quizPassed : [...quizPassed, id].sort((a, b) => a - b);
+      setQuizPassed(nextQuizPassed);
+      setQuizFeedback((current) => ({ ...current, [id]: `答对了。${quiz.explanation}` }));
+      saveProgress(completed, nextQuizPassed);
+      return;
+    }
+
+    setQuizFeedback((current) => ({ ...current, [id]: `还没答对。${quiz.explanation}` }));
+  }
+
   function completeLevel(id: number) {
+    if (!completed.includes(id) && !quizPassed.includes(id)) return;
     const next = completed.includes(id)
       ? completed.filter((item) => item !== id)
       : [...completed, id].sort((a, b) => a - b);
     setCompleted(next);
-    window.localStorage.setItem(storageKey, JSON.stringify(next));
+    saveProgress(next, quizPassed);
     if (!completed.includes(id) && id < levels.length) {
       setOpenId(id + 1);
       window.setTimeout(() => document.getElementById(`level-${id + 1}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 120);
@@ -356,8 +723,12 @@ export default function Home() {
   function resetProgress() {
     if (!window.confirm("确定清空所有通关进度吗？")) return;
     setCompleted([]);
+    setQuizPassed([]);
+    setQuizSelections({});
+    setQuizFeedback({});
     setOpenId(1);
     window.localStorage.removeItem(storageKey);
+    window.localStorage.removeItem(legacyStorageKey);
   }
 
   return (
@@ -402,6 +773,8 @@ export default function Home() {
         <div className="quest-map">
           {levels.map((level, index) => {
             const done = completed.includes(level.id);
+            const support = supportByLevel[level.id];
+            const passedQuiz = quizPassed.includes(level.id);
             const unlocked = isUnlocked(level.id);
             const open = openId === level.id;
             const chapterBreak = index === 0 || levels[index - 1].chapter !== level.chapter;
@@ -421,22 +794,80 @@ export default function Home() {
                     </button>
                     {open && unlocked && (
                       <div className="level-body">
+                        <ol className="learning-steps" aria-label="本关学习步骤">
+                          <li><b>1</b> 先认词</li>
+                          <li><b>2</b> 看数据</li>
+                          <li><b>3</b> 逐行理解</li>
+                          <li><b>4</b> 动手练</li>
+                          <li><b>5</b> 自动小测</li>
+                        </ol>
+                        <div className="beginner-note"><b>小白先看这里</b><p>{support.beforeYouStart}</p></div>
+                        <section className="glossary-section">
+                          <div className="subheading"><span>不懂就查</span><h4>本关术语表</h4></div>
+                          <div className="glossary-grid">
+                            {support.glossary.map((item) => (
+                              <article className="glossary-card" key={item.term}><b>{item.term}</b><p>{item.meaning}</p></article>
+                            ))}
+                          </div>
+                        </section>
+                        <section className="example-panel">
+                          <div className="subheading"><span>先看它长什么样</span><h4>{support.exampleTitle}</h4></div>
+                          <pre><code>{support.example}</code></pre>
+                          <ol className="walkthrough">{support.walkthrough.map((step) => <li key={step}>{step}</li>)}</ol>
+                        </section>
                         <div className="chips">{level.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
                         <div className="objective"><b>本关目标</b><p>{level.objective}</p></div>
                         <div className="lesson-grid">
                           <section>
-                            <h4>你要掌握</h4>
+                            <h4>理解例子以后，再掌握这些</h4>
                             <ul>{level.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)}</ul>
                           </section>
                           <aside className="ai-lens"><span>AI 审查镜</span><p>{level.aiLens}</p></aside>
                         </div>
-                        <div className="code-wrap"><div><span>PYTHON / YAML</span><i>参考片段</i></div><pre><code>{level.code}</code></pre></div>
+                        <div className="code-wrap"><div><span>PYTHON / YAML</span><i>完整示范</i></div><pre><code>{level.code}</code></pre></div>
                         <div className="task">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
+                          <div className="starter-wrap">
+                            <h4>从这里开始写</h4>
+                            <pre><code>{support.starter}</code></pre>
+                          </div>
+                          <div className="verification-grid">
+                            <article className="verify-card"><span>怎么验证</span><code>{support.verifyCommand}</code></article>
+                            <article className="verify-card"><span>你应该看到</span><pre><code>{support.expected}</code></pre></article>
+                          </div>
                           <h4>验收标准</h4>
                           <ul>{level.acceptance.map((item) => <li key={item}>{item}</li>)}</ul>
-                          <button className="complete-button" onClick={() => completeLevel(level.id)}>{done ? "✓ 已通关，点击撤销" : level.id === 10 ? "完成 Boss 战，正式出师" : "我已完成并按标准自检"}</button>
+                          <details className="help-panel">
+                            <summary>卡住了？先看提示，再看参考答案</summary>
+                            <div><b>提示</b><p>{support.hint}</p></div>
+                            <div><b>参考答案</b><pre><code>{support.referenceAnswer}</code></pre></div>
+                          </details>
+                          <section className={`quiz ${passedQuiz ? "passed" : ""}`}>
+                            <span className="quiz-kicker">本关小测 · 自动判定</span>
+                            <h4>{support.quiz.question}</h4>
+                            <div className="quiz-options">
+                              {support.quiz.options.map((option, optionIndex) => (
+                                <label className={quizSelections[level.id] === optionIndex ? "selected" : ""} key={option}>
+                                  <input
+                                    type="radio"
+                                    name={`quiz-${level.id}`}
+                                    checked={quizSelections[level.id] === optionIndex}
+                                    onChange={() => {
+                                      setQuizSelections((current) => ({ ...current, [level.id]: optionIndex }));
+                                      setQuizFeedback((current) => ({ ...current, [level.id]: "" }));
+                                    }}
+                                  />
+                                  <span>{option}</span>
+                                </label>
+                              ))}
+                            </div>
+                            <button className="check-button" type="button" onClick={() => checkQuiz(level.id)}>{passedQuiz ? "✓ 已答对，可以继续通关" : "检查答案"}</button>
+                            {quizFeedback[level.id] && <p className={`quiz-feedback ${passedQuiz ? "correct" : "incorrect"}`} role="status">{quizFeedback[level.id]}</p>}
+                          </section>
+                          <button className="complete-button" disabled={!done && !passedQuiz} onClick={() => completeLevel(level.id)}>
+                            {done ? "✓ 已通关，点击撤销" : passedQuiz ? (level.id === 10 ? "记录 Boss 战通关，正式出师" : "小测已通过，记录本关通关") : "先通过本关小测"}
+                          </button>
                         </div>
                       </div>
                     )}
