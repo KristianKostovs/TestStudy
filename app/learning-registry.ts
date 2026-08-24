@@ -211,17 +211,17 @@ export const learningModules: LearningModule[] = [
   },
 ];
 
-export function sourcesForModule(module: LearningModule): SourceAdapter[] {
-  return module.sourceIds.map((sourceId) => {
+export function sourcesForModule(learningModule: LearningModule): SourceAdapter[] {
+  return learningModule.sourceIds.map((sourceId) => {
     const source = sourceAdapters.find((candidate) => candidate.id === sourceId);
-    if (!source) throw new Error(`模块 ${module.id} 引用了不存在的知识源 ${sourceId}`);
+    if (!source) throw new Error(`模块 ${learningModule.id} 引用了不存在的知识源 ${sourceId}`);
     return source;
   });
 }
 
 const moduleIds = new Set<string>();
-for (const module of learningModules) {
-  if (moduleIds.has(module.id)) throw new Error(`重复的学习模块 ID: ${module.id}`);
-  moduleIds.add(module.id);
-  sourcesForModule(module);
+for (const learningModule of learningModules) {
+  if (moduleIds.has(learningModule.id)) throw new Error(`重复的学习模块 ID: ${learningModule.id}`);
+  moduleIds.add(learningModule.id);
+  sourcesForModule(learningModule);
 }

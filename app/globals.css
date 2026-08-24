@@ -258,6 +258,51 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .knowledge-return:hover { background: #922e21; }
 .knowledge-modal small { display: block; margin-top: 10px; color: #81796b; text-align: center; }
 
+.platform-summary { padding: 28px; border: 1px solid rgba(255,255,255,.17); background: rgba(255,255,255,.08); backdrop-filter: blur(10px); }
+.platform-summary > span, .course-status-card > span { color: #f4c752; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
+.platform-summary > strong { display: block; margin-top: 12px; color: #ffd15b; font: 900 82px/.9 Georgia, serif; }
+.platform-summary > p { margin: 8px 0 24px; color: #d9e3dc; font-size: 14px; }
+.platform-summary ul { display: grid; gap: 10px; margin: 0; padding: 18px 0 0; border-top: 1px solid rgba(255,255,255,.15); list-style: none; }
+.platform-summary li { color: #c9d6ce; font-size: 12px; }
+.platform-summary li b { display: inline-grid; place-items: center; width: 22px; height: 22px; margin-right: 8px; color: #17372b; background: #e5b74f; font: 800 11px Georgia; }
+.home-module-section { padding-bottom: 88px; }
+.route-card { display: block; }
+.route-card:focus-visible { outline: 3px solid var(--gold); outline-offset: 3px; }
+.module-enter { position: relative; z-index: 1; display: flex; justify-content: space-between; align-items: center; margin-top: 18px; padding-top: 13px; color: #8f3023; border-top: 1px solid #ded3bb; font-size: 11px; font-weight: 900; }
+.module-enter b { font-size: 16px; }
+.home-source-summary { padding: 82px max(6vw, 28px) 105px; background: #e7deca; }
+.source-principle-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; max-width: 1120px; margin: auto; }
+.source-principle-grid article { min-height: 205px; padding: 27px; border-top: 5px solid var(--green); background: #fffaf0; }
+.source-principle-grid article.technology_radar { border-top-color: var(--gold); }
+.source-principle-grid article.local_project { border-top-color: var(--red); }
+.source-principle-grid article > span { display: inline-grid; place-items: center; width: 42px; height: 42px; color: white; background: var(--green); border-radius: 50%; font-size: 11px; font-weight: 900; }
+.source-principle-grid article.technology_radar > span { color: #3b2d15; background: var(--gold); }
+.source-principle-grid article.local_project > span { background: var(--red); }
+.source-principle-grid h3 { margin: 20px 0 9px; font: 800 20px Georgia, "Songti SC", serif; }
+.source-principle-grid p { margin: 0; color: #637067; font-size: 13px; line-height: 1.8; }
+
+.course-hero { min-height: 560px; padding: 24px max(6vw, 28px) 92px; color: #f8f2df; background: radial-gradient(circle at 82% 34%, rgba(93,145,113,.67), transparent 27%), linear-gradient(135deg, #10271f, #1e4637 60%, #142e25); }
+.course-hero-grid { display: grid; grid-template-columns: 1.4fr .7fr; gap: 65px; align-items: end; max-width: 1180px; margin: 90px auto 0; }
+.course-status-card { padding: 27px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); }
+.course-status-card strong { display: block; margin: 14px 0; color: #ffd15b; font: 800 30px Georgia, "Songti SC", serif; }
+.course-status-card p { margin: 0; color: #cfdbd2; font-size: 13px; line-height: 1.8; }
+.blueprint-intro { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 1120px; margin: -42px auto 0; padding: 0 28px; position: relative; z-index: 2; }
+.blueprint-intro article { min-height: 160px; padding: 27px; border-right: 1px solid var(--line); background: #fffdf7; box-shadow: 0 20px 50px rgba(35,49,40,.09); }
+.blueprint-intro article:last-child { border-right: 0; }
+.blueprint-intro b { color: var(--red); font-size: 12px; letter-spacing: .12em; }
+.blueprint-intro p { margin: 13px 0 0; color: #5d6b62; font-size: 13px; line-height: 1.75; }
+.blueprint-roadmap { max-width: 1060px; margin: auto; padding: 100px 28px 55px; }
+.standalone-roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin: 0; padding: 0; list-style: none; }
+.standalone-roadmap > li { display: grid; grid-template-columns: 64px 1fr; min-height: 145px; border: 1px solid #d9ceb9; background: #fffdf7; box-shadow: 4px 4px 0 #e1d7c2; }
+.standalone-roadmap > li > b { display: grid; place-items: center; color: #f5e7c1; background: var(--green); font: 800 19px Georgia; }
+.standalone-roadmap div { padding: 20px; }
+.standalone-roadmap div > span { color: var(--red); font-size: 9px; font-weight: 900; letter-spacing: .14em; }
+.standalone-roadmap h3 { margin: 8px 0 7px; font: 800 19px Georgia, "Songti SC", serif; }
+.standalone-roadmap p { margin: 0; color: #6c776f; font-size: 11px; line-height: 1.65; }
+.course-source-section { padding-top: 55px; padding-bottom: 100px; }
+.footer-link { display: inline-block; margin-top: 12px; padding-bottom: 5px; color: #f0c459; border-bottom: 1px solid #657e72; font-size: 12px; font-weight: 800; }
+.course-back { display: inline-block; }
+
 footer { padding: 90px 28px; text-align: center; color: #f4eedc; background: var(--dark-green); }
 footer p { color: #dcb14b; font: 800 12px Georgia; letter-spacing: .22em; }
 footer h2 { max-width: 760px; margin: 18px auto; font: 800 28px/1.5 Georgia, "Songti SC", serif; }
@@ -267,11 +312,17 @@ footer span { color: #9aafa3; font-size: 12px; }
   .hero { min-height: auto; padding-bottom: 95px; }
   .hero-grid { grid-template-columns: 1fr; margin-top: 75px; gap: 35px; }
   .progress-card { max-width: 500px; }
+  .platform-summary { max-width: 500px; }
+  .course-hero-grid { grid-template-columns: 1fr; margin-top: 70px; }
   .principles { grid-template-columns: 1fr; margin-top: -35px; }
   .principles article { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
   .module-grid { grid-template-columns: repeat(2, 1fr); }
   .module-detail { grid-template-columns: 1fr; }
   .source-columns { grid-template-columns: 1fr; }
+  .source-principle-grid { grid-template-columns: 1fr; }
+  .blueprint-intro { grid-template-columns: 1fr; }
+  .blueprint-intro article { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
+  .standalone-roadmap { grid-template-columns: 1fr; }
   .lesson-grid { grid-template-columns: 1fr; }
   .learning-steps { grid-template-columns: repeat(3, 1fr); }
   .learning-steps li:nth-child(3) { border-right: 0; }
@@ -280,15 +331,22 @@ footer span { color: #9aafa3; font-size: 12px; }
 
 @media (max-width: 600px) {
   .hero { padding-left: 20px; padding-right: 20px; }
+  .course-hero { padding-left: 20px; padding-right: 20px; }
+  nav { align-items: flex-start; gap: 18px; }
+  .brand { font-size: 12px; }
+  .brand i { width: 36px; height: 36px; }
   .nav-actions .rank { display: none; }
   .text-button { font-size: 11px; }
   h1 { font-size: 47px; }
   .lead { font-size: 15px; }
   .principles { padding: 0 14px; }
   .module-section, .source-section { padding-left: 14px; padding-right: 14px; }
+  .home-source-summary { padding-left: 14px; padding-right: 14px; }
   .module-grid { grid-template-columns: 1fr; }
   .module-card { min-height: 0; }
   .module-card p { min-height: 0; }
+  .blueprint-intro, .blueprint-roadmap { padding-left: 14px; padding-right: 14px; }
+  .standalone-roadmap > li { grid-template-columns: 52px 1fr; }
   .module-detail { padding: 24px 18px; }
   .module-roadmap { grid-template-columns: 1fr; }
   .map-section { padding-left: 14px; padding-right: 14px; }
