@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import test from "node:test";
 
 async function render(pathname = "/") {
@@ -59,4 +60,17 @@ test("详情页不会错误继承首页分享图", async () => {
 
   const uiHtml = await (await render("/courses/ui-automation")).text();
   assert.doesNotMatch(uiHtml, /og-platform\.png|og\.png/);
+});
+
+test("跨页面入口使用原生导航，避免生产环境预取崩溃", async () => {
+  const files = await Promise.all([
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/[moduleId]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+  ]);
+
+  for (const source of files) {
+    assert.doesNotMatch(source, /from ["']next\/link["']/);
+  }
+  assert.match(files[0], /<a[\s\S]*href=\{`\/courses\/\$\{module\.id\}`\}/);
 });

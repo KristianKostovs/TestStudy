@@ -1,4 +1,3 @@
-import Link from "next/link";
 import {
   learningModules,
   sourceKindMeta,
@@ -48,14 +47,13 @@ export default function Home() {
           <h2>你想先修炼哪一种能力？</h2>
           <span>点击方向会进入新的课程页面；浏览器返回即可重新选择。</span>
         </div>
-        <div className="module-grid" role="list">
+        <div className="module-grid">
           {learningModules.map((module) => {
             const sourceKindsInModule = new Set(sourcesForModule(module).map((source) => source.kind));
             return (
-              <Link
+              <a
                 className="module-card route-card"
                 href={`/courses/${module.id}`}
-                role="listitem"
                 key={module.id}
               >
                 <span className="module-sigil">{module.sigil}</span>
@@ -66,7 +64,7 @@ export default function Home() {
                   {sourceKinds.map((kind) => sourceKindsInModule.has(kind) && <i key={kind}>{sourceKindMeta[kind].short}</i>)}
                 </span>
                 <span className="module-enter">进入这条路线 <b>→</b></span>
-              </Link>
+              </a>
             );
           })}
         </div>

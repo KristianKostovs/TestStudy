@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
+/* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
 
 type Level = {
   id: number;
@@ -825,9 +825,9 @@ export default function Home() {
     <main className={ready ? "ready" : ""}>
       <header className="hero">
         <nav>
-          <Link className="brand" href="/"><i>PY</i> Python 框架修炼</Link>
+          <a className="brand" href="/"><i>PY</i> Python 框架修炼</a>
           <div className="nav-actions">
-            <Link className="text-button course-back" href="/">← 选择其他方向</Link>
+            <a className="text-button course-back" href="/">← 选择其他方向</a>
             <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={resetProgress}>重置进度</button>
           </div>

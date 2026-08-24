@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
+/* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
 import {
   learningModules,
   sourceKindMeta,
@@ -44,8 +44,8 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
     <main className="ready blueprint-course">
       <header className="course-hero">
         <nav>
-          <Link className="brand" href="/"><i>{course.sigil}</i> {course.title}</Link>
-          <Link className="text-button course-back" href="/">← 返回选择方向</Link>
+          <a className="brand" href="/"><i>{course.sigil}</i> {course.title}</a>
+          <a className="text-button course-back" href="/">← 返回选择方向</a>
         </nav>
         <div className="course-hero-grid">
           <section>
@@ -113,7 +113,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
       <footer>
         <p>{course.title.toUpperCase()} QUEST</p>
         <h2>路线已经独立，下一步是把每一关做成真正可学、可练、可验证。</h2>
-        <Link className="footer-link" href="/">← 返回全部学习方向</Link>
+        <a className="footer-link" href="/">← 返回全部学习方向</a>
       </footer>
     </main>
   );
