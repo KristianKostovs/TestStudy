@@ -109,6 +109,18 @@ test("面试系统以数据驱动能力地图为首屏", async () => {
   assert.match(api, /openai\/openai-agents-python/);
 });
 
+test("面试能力分只由真实回答证据生成", async () => {
+  const [client, api] = await Promise.all([
+    readFile(new URL("../app/interview/InterviewCoachClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/interview/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.doesNotMatch(api, /INSERT OR IGNORE INTO interview_competency_scores/);
+  assert.match(api, /DELETE FROM interview_competency_scores WHERE evidence_count = 0/);
+  assert.match(api, /evidenceScore !== null && evidenceScore < 60/);
+  assert.match(client, /未评估/);
+  assert.match(client, /item\.evidence_count/);
+});
+
 test("跨页面入口使用原生导航，避免生产环境预取崩溃", async () => {
   const files = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

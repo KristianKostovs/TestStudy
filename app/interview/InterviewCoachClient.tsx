@@ -6,13 +6,13 @@ type Profile = { current_role: string; target_role: string; horizon: string; foc
 type Question = { id: number; prompt: string; competency: string; tags: string[]; source_ref: string };
 type Diagnosis = { summary: string; strengths: string[]; improvements: string[]; followUp: string };
 type Attempt = { id: number; prompt: string; competency: string; answer_text: string; score: number; diagnosis: Diagnosis; weakTags: string[]; created_at: string };
-type Score = { competency: string; score: number; evidence_count: number };
+type Score = { competency: string; score: number | null; evidence_count: number };
 type Signal = { id: string; title: string; summary: string; competency: string; source_url: string; source_type: string; observed_at: string };
 type PlanItem = { id: number; title: string; competency: string; reason: string; duration_minutes: number; status: "open" | "done" };
 type CapabilityModule = {
   id: string; code: string; title: string; description: string; tone: string;
   kind: "core" | "adaptive" | "practice"; competency: string; priority: number;
-  signalCount: number; questionCount: number; evidenceScore: number;
+  signalCount: number; questionCount: number; evidenceScore: number | null; evidenceCount: number;
   source_strategy: string; updated_at: string; content: { topics: string[] }; signals: Signal[];
 };
 type InterviewState = { profile: Profile; questions: Question[]; attempts: Attempt[]; scores: Score[]; signals: Signal[]; plan: PlanItem[]; modules: CapabilityModule[]; lastRefreshedAt: string | null };
@@ -60,8 +60,9 @@ export default function InterviewCoachClient() {
   }, []);
 
   const wrongAnswers = useMemo(() => data?.attempts.filter((attempt) => attempt.score < 75 || attempt.weakTags.length) ?? [], [data]);
-  const readiness = useMemo(() => data?.scores.length ? Math.round(data.scores.reduce((sum, item) => sum + Number(item.score), 0) / data.scores.length) : 0, [data]);
-  const weakest = data?.scores[0];
+  const assessedScores = useMemo(() => data?.scores.filter((item): item is Score & { score: number } => item.score !== null && item.evidence_count > 0) ?? [], [data]);
+  const readiness = useMemo(() => assessedScores.length ? Math.round(assessedScores.reduce((sum, item) => sum + item.score, 0) / assessedScores.length) : null, [assessedScores]);
+  const weakest = assessedScores.length ? assessedScores.reduce((lowest, item) => item.score < lowest.score ? item : lowest) : undefined;
   const selectedModule = data?.modules.find((module) => module.id === selectedModuleId);
   const practiceQuestions = useMemo(() => {
     if (!data) return [];
@@ -147,7 +148,7 @@ export default function InterviewCoachClient() {
           <button className={activeView === "wrongbook" ? "active" : ""} type="button" onClick={() => setActiveView("wrongbook")}><span>◎</span><b>错题本</b><small>{wrongAnswers.length} 题</small></button>
           <button className={activeView === "plan" ? "active" : ""} type="button" onClick={() => setActiveView("plan")}><span>◇</span><b>成长计划</b><small>{openPlanCount} 项</small></button>
           <p>能力专项</p>
-          {data.scores.map((item) => <button key={item.competency} type="button" onClick={() => setActiveView("practice")}><span>⌁</span><b>{item.competency}</b><small>{item.score}%</small></button>)}
+          {data.scores.map((item) => <button key={item.competency} type="button" onClick={() => setActiveView("practice")}><span>⌁</span><b>{item.competency}</b><small>{item.score === null ? "未评估" : `${item.score}%`}</small></button>)}
         </nav>
         <button className="profile-chip" type="button" onClick={() => setActiveView("profile")}><span>白</span><div><strong>个人岗位画像</strong><small>{data.profile.current_role} → {data.profile.target_role}</small></div></button>
       </aside>
@@ -189,7 +190,7 @@ export default function InterviewCoachClient() {
             <section className="module-detail-hero">
               <span className={`module-glyph ${selectedModule.tone}`}>{selectedModule.code}</span>
               <div><p>{selectedModule.kind === "adaptive" ? "ADAPTIVE MODULE · 技术信号驱动" : "CORE INTERVIEW MODULE"}</p><h1>{selectedModule.title}</h1><strong>{selectedModule.description}</strong></div>
-              <aside><span>当前优先级</span><b>{selectedModule.priority}</b><small>个人证据 {selectedModule.evidenceScore}%</small></aside>
+              <aside><span>当前优先级</span><b>{selectedModule.priority}</b><small>{selectedModule.evidenceScore === null ? "个人证据 · 未评估" : `个人证据 ${selectedModule.evidenceScore}% · ${selectedModule.evidenceCount} 次回答`}</small></aside>
             </section>
             <div className="module-detail-grid">
               <section className="module-topic-panel">
@@ -290,9 +291,9 @@ export default function InterviewCoachClient() {
 
       <aside className="insight-panel">
         <header><strong>岗位能力雷达</strong><button type="button" onClick={() => setActiveView("profile")}>···</button></header>
-        <div className="readiness-score"><span><b>{readiness}</b><small>/ 100</small></span><div><strong>岗位准备度</strong><small>{data.attempts.length} 条回答证据</small></div></div>
-        <section className="ability-list">{data.scores.map((item) => <div key={item.competency}><p><span>{item.competency}</span><b>{item.score}%</b></p><i><em className={item === weakest ? "weak" : ""} style={{ width: `${item.score}%` }} /></i></div>)}</section>
-        <section className="weakness-card"><span>当前最弱项</span><strong>{weakest?.competency}</strong><p>该分数由你的实际回答持续校准，而不是一次性自评。</p><button type="button" onClick={() => setActiveView("plan")}>打开针对性计划</button></section>
+        <div className={`readiness-score${readiness === null ? " unassessed" : ""}`}><span><b>{readiness ?? "—"}</b><small>{readiness === null ? "待评估" : "/ 100"}</small></span><div><strong>岗位准备度</strong><small>{data.attempts.length} 条回答证据</small></div></div>
+        <section className="ability-list">{data.scores.map((item) => <div className={item.score === null ? "unassessed" : ""} key={item.competency}><p><span>{item.competency}</span><b>{item.score === null ? "未评估" : `${item.score}% · ${item.evidence_count}次`}</b></p><i><em className={weakest?.competency === item.competency ? "weak" : ""} style={{ width: `${item.score ?? 0}%` }} /></i></div>)}</section>
+        <section className="weakness-card"><span>{weakest ? "当前最弱项" : "尚未形成能力结论"}</span><strong>{weakest?.competency ?? "先完成一道面试题"}</strong><p>{weakest ? "该分数由你的实际回答持续校准，并显示证据次数。" : "市场与技术数据只调整内容优先级，不会生成你的个人能力分。"}</p><button type="button" onClick={() => setActiveView(weakest ? "plan" : "practice")}>{weakest ? "打开针对性计划" : "开始第一次评估"}</button></section>
         <section className="source-snapshot"><div><span>动态数据源</span><b>{data.signals.length} 条有效</b></div><p><i />目标岗位与个人发展画像</p><p><i />实时招聘能力信号</p><p><i />官方技术发布雷达</p><p><i />个人回答与错题记录</p></section>
       </aside>
     </main>

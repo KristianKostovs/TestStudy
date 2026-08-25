@@ -86,9 +86,8 @@ async function ensureSchema() {
     await db.prepare("INSERT INTO interview_capability_modules (id, code, title, description, tone, kind, competency, base_priority, content_json, source_strategy) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET code = excluded.code, title = excluded.title, description = excluded.description, tone = excluded.tone, kind = excluded.kind, competency = excluded.competency, base_priority = excluded.base_priority, content_json = excluded.content_json, source_strategy = excluded.source_strategy")
       .bind(module.id, module.code, module.title, module.description, module.tone, module.kind, module.competency, module.priority, JSON.stringify({ topics: module.topics }), module.sourceStrategy).run();
   }
-  for (const [competency, score] of [["项目表达", 62], ["技术深度", 58], ["架构判断", 52], ["AI 质量方法", 38], ["测试基础", 60], ["接口测试", 64], ["Web 自动化", 56], ["CI/CD", 48], ["Agent 系统测试", 35], ["性能与可靠性", 42], ["安全测试", 40]] as const) {
-    await db.prepare("INSERT OR IGNORE INTO interview_competency_scores (competency, score, evidence_count) VALUES (?, ?, 0)").bind(competency, score).run();
-  }
+  // 旧版曾写入 evidence_count = 0 的演示分。它们不是用户证据，初始化时清理，且不再预置任何能力分。
+  await db.prepare("DELETE FROM interview_competency_scores WHERE evidence_count = 0").run();
 }
 
 function rows(result: D1Result): Row[] {
@@ -105,7 +104,7 @@ async function buildState() {
     db.prepare("SELECT * FROM interview_profiles WHERE id = 'default' LIMIT 1"),
     db.prepare("SELECT * FROM interview_questions WHERE active = 1 ORDER BY id"),
     db.prepare("SELECT a.*, q.prompt, q.competency FROM interview_attempts a JOIN interview_questions q ON q.id = a.question_id ORDER BY a.id DESC LIMIT 40"),
-    db.prepare("SELECT * FROM interview_competency_scores ORDER BY score ASC"),
+    db.prepare("SELECT * FROM interview_competency_scores WHERE evidence_count > 0 ORDER BY score ASC"),
     db.prepare("SELECT * FROM interview_market_signals WHERE expires_at >= date('now') ORDER BY observed_at DESC"),
     db.prepare("SELECT * FROM interview_plan_items ORDER BY CASE status WHEN 'open' THEN 0 ELSE 1 END, id DESC LIMIT 30"),
     db.prepare("SELECT * FROM interview_capability_modules WHERE status = 'active' ORDER BY base_priority DESC"),
@@ -113,20 +112,29 @@ async function buildState() {
 
   const parsedQuestions = rows(questionRows).map((row) => ({ ...row, tags: parseJson(row.tags_json, []) }));
   const parsedSignals = rows(signalRows);
-  const parsedScores = rows(scoreRows);
+  const parsedScoreRows = rows(scoreRows);
+  const competencies = Array.from(new Set(moduleSeeds.filter((module) => module.kind !== "practice").map((module) => module.competency)));
+  const parsedScores = competencies.map((competency) => {
+    const evidence = parsedScoreRows.find((item) => item.competency === competency);
+    return evidence
+      ? { ...evidence, score: Number(evidence.score), evidence_count: Number(evidence.evidence_count) }
+      : { competency, score: null, evidence_count: 0, updated_at: null };
+  });
   const modules = rows(moduleRows).map((module) => {
     const competency = String(module.competency);
     const matchedSignals = parsedSignals.filter((signal) => signal.competency === competency);
     const score = parsedScores.find((item) => item.competency === competency);
-    const evidenceScore = score ? Number(score.score) : 50;
+    const evidenceScore = score?.score == null ? null : Number(score.score);
+    const evidenceCount = Number(score?.evidence_count ?? 0);
     const signalBoost = Math.min(15, matchedSignals.length * 4);
-    const weaknessBoost = evidenceScore < 60 ? 10 : 0;
+    const weaknessBoost = evidenceScore !== null && evidenceScore < 60 ? 10 : 0;
     return {
       ...module,
       content: parseJson(module.content_json, { topics: [] }),
       signalCount: matchedSignals.length,
       questionCount: parsedQuestions.filter((question) => question.competency === competency).length,
       evidenceScore,
+      evidenceCount,
       priority: Math.min(100, Number(module.base_priority) + signalBoost + weaknessBoost),
       signals: matchedSignals,
     };

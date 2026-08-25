@@ -551,6 +551,7 @@ footer span { color: #9aafa3; font-size: 12px; }
 .insight-panel > header button { border: 0; background: transparent; color: #888; }
 .readiness-score { margin: 26px 0 22px; padding-bottom: 21px; border-bottom: 1px solid #e6e7e4; }
 .readiness-score > span { width: 76px; height: 76px; display: grid; place-items: center; align-content: center; border: 5px solid #d8ede6; border-top-color: var(--interview-accent); border-radius: 50%; }
+.readiness-score.unassessed > span { border-color: #e3e5e2; }
 .readiness-score b { font-size: 23px; }
 .readiness-score small { color: #949693; font-size: 9px; }
 .readiness-score div { display: grid; gap: 5px; }
@@ -559,6 +560,7 @@ footer span { color: #9aafa3; font-size: 12px; }
 .ability-list { padding-bottom: 22px; border-bottom: 1px solid #e6e7e4; }
 .ability-list p { display: flex; justify-content: space-between; margin: 14px 0 7px; color: #5b5d5a; font-size: 10px; }
 .ability-list p b { color: #30322f; }
+.ability-list > div.unassessed p b { color: #9a9c99; font-weight: 500; }
 .ability-list > i { display: block; height: 5px; background: #e8e9e6; border-radius: 999px; overflow: hidden; }
 .ability-list > i em { display: block; height: 100%; border-radius: inherit; background: #6f9589; }
 .ability-list > i em.weak { background: #c68a59; }
