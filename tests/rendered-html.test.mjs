@@ -62,6 +62,17 @@ test("详情页不会错误继承首页分享图", async () => {
   assert.doesNotMatch(uiHtml, /og-platform\.png|og\.png/);
 });
 
+test("面试陪练是独立入口并且不使用课程分享图", async () => {
+  const homeHtml = await (await render("/")).text();
+  assert.match(homeHtml, /href=["']\/interview["']/);
+
+  const response = await render("/interview");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /<title>岗位面试陪练 \| 测试能力修炼场<\/title>/);
+  assert.doesNotMatch(html, /og-platform\.png|og\.png/);
+});
+
 test("跨页面入口使用原生导航，避免生产环境预取崩溃", async () => {
   const files = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

@@ -1,0 +1,2 @@
+CREATE INDEX `idx_interview_attempts_question_created` ON `interview_attempts` (`question_id`,`created_at`);--> statement-breakpoint
+CREATE INDEX `idx_interview_plan_status_created` ON `interview_plan_items` (`status`,`created_at`);

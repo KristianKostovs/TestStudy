@@ -385,3 +385,200 @@ footer span { color: #9aafa3; font-size: 12px; }
   .knowledge-modal { max-height: 90vh; padding: 27px 20px 22px; }
   .knowledge-modal h2 { font-size: 25px; }
 }
+/* Interview coach: a calm, conversation-first workspace inspired by modern AI chat products. */
+.interview-shell {
+  --interview-border: #e7e7e4;
+  --interview-muted: #6f716f;
+  --interview-ink: #202123;
+  --interview-accent: #0f8a6a;
+  min-height: 100vh;
+  display: grid;
+  grid-template-columns: 250px minmax(520px, 1fr) 330px;
+  background: #fff;
+  color: var(--interview-ink);
+  font-family: var(--font-geist-sans), "PingFang SC", sans-serif;
+}
+
+.interview-sidebar {
+  min-height: 100vh;
+  padding: 18px 14px;
+  display: flex;
+  flex-direction: column;
+  background: #f7f7f5;
+  border-right: 1px solid var(--interview-border);
+}
+
+.interview-brand, .profile-chip, .readiness-score, .source-snapshot div { display: flex; align-items: center; gap: 11px; }
+.interview-brand > span, .coach-avatar, .profile-chip > span {
+  display: grid; place-items: center; flex: 0 0 auto;
+  width: 34px; height: 34px; border-radius: 10px;
+  background: #202123; color: white; font-size: 12px; font-weight: 750;
+}
+.interview-brand div, .profile-chip div { display: grid; gap: 2px; }
+.interview-brand strong, .profile-chip strong { font-size: 13px; }
+.interview-brand small, .profile-chip small { color: #898b88; font-size: 10px; }
+
+.new-session {
+  margin: 24px 0 16px; padding: 11px 12px; border: 1px solid #d9dad7; border-radius: 10px;
+  background: white; text-align: left; font-weight: 620; color: #343634; cursor: pointer;
+}
+.interview-nav { display: grid; gap: 4px; }
+.interview-nav > p { margin: 15px 10px 5px; color: #999b98; font-size: 10px; font-weight: 700; letter-spacing: .08em; }
+.interview-nav button {
+  border: 0; border-radius: 9px; padding: 10px; display: grid; grid-template-columns: 20px 1fr auto; gap: 5px;
+  align-items: center; background: transparent; color: #585a58; text-align: left; cursor: pointer;
+}
+.interview-nav button:hover, .interview-nav button.active { background: #ebebe8; color: #222421; }
+.interview-nav button span { color: #7a7c79; font-size: 13px; }
+.interview-nav button b { font-size: 12px; font-weight: 580; }
+.interview-nav button small { font-size: 10px; color: #929491; }
+.profile-chip { margin-top: auto; padding: 12px 8px 2px; border-top: 1px solid #e1e2df; }
+.profile-chip > span { border-radius: 50%; background: #dfe8e4; color: #285b4e; }
+
+.interview-main { min-width: 0; min-height: 100vh; display: flex; flex-direction: column; }
+.interview-topbar {
+  min-height: 68px; padding: 0 26px; display: flex; align-items: center; justify-content: space-between;
+  border-bottom: 1px solid var(--interview-border); background: rgba(255,255,255,.92);
+}
+.interview-topbar > div:first-child { display: grid; gap: 3px; }
+.interview-topbar strong { font-size: 14px; }
+.interview-topbar span { color: var(--interview-muted); font-size: 10px; }
+.live-source { color: #656764; font-size: 10px; padding: 7px 10px; border: 1px solid #e2e3e0; border-radius: 999px; }
+.live-source i, .source-snapshot p i { display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%; background: #28a77d; }
+
+.interview-conversation { width: min(760px, calc(100% - 44px)); margin: 0 auto; padding: 64px 0 190px; }
+.coach-message, .coach-feedback { display: grid; grid-template-columns: 38px 1fr; gap: 18px; }
+.coach-avatar { width: 36px; height: 36px; border-radius: 50%; background: var(--interview-accent); }
+.message-label { margin: 0 0 11px; color: #777976; font-size: 11px; font-weight: 650; letter-spacing: .04em; }
+.coach-message h1 { margin: 0 0 14px; color: #202221; font-size: clamp(23px, 2.4vw, 34px); line-height: 1.32; letter-spacing: -.025em; }
+.coach-message h1 + p, .coach-feedback div > p:last-of-type { margin: 0; color: #606360; font-size: 14px; line-height: 1.8; }
+.question-tags { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 18px; }
+.question-tags span { padding: 6px 9px; background: #f4f5f2; border-radius: 6px; color: #717370; font-size: 10px; }
+.answer-message { margin-top: 44px; }
+.user-answer { width: fit-content; max-width: 78%; margin-left: auto; padding: 12px 16px; background: #f2f2ef; border-radius: 17px 17px 4px 17px; color: #363836; font-size: 13px; line-height: 1.65; }
+.user-answer p { margin: 0; white-space: pre-wrap; }
+.coach-feedback { margin-top: 30px; }
+.feedback-actions { display: flex; gap: 8px; margin-top: 18px; }
+.feedback-actions button, .weakness-card button { padding: 8px 11px; border: 1px solid #dadbd8; border-radius: 8px; background: white; color: #4d504d; font-size: 11px; cursor: pointer; }
+.feedback-actions button.primary { background: #202321; border-color: #202321; color: white; }
+
+.answer-composer {
+  position: fixed; z-index: 5; left: max(272px, calc(250px + ((100vw - 580px) * .0))); right: 352px; bottom: 25px;
+  max-width: 760px; margin: auto; padding: 13px 14px 10px; border: 1px solid #d8d9d6; border-radius: 18px;
+  background: white; box-shadow: 0 12px 36px rgba(32,33,35,.10);
+}
+.answer-composer textarea { width: 100%; min-height: 70px; resize: none; border: 0; outline: 0; background: transparent; color: #272927; font: inherit; font-size: 14px; line-height: 1.55; }
+.answer-composer textarea::placeholder { color: #a0a19f; }
+.answer-composer > div { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.answer-composer span { color: #979996; font-size: 9px; }
+.answer-composer button { width: 31px; height: 31px; border: 0; border-radius: 50%; background: #202321; color: white; font-size: 18px; cursor: pointer; }
+.answer-composer button:disabled { background: #d8d9d6; cursor: default; }
+
+.insight-panel { min-height: 100vh; padding: 23px 20px; background: #fbfbfa; border-left: 1px solid var(--interview-border); }
+.insight-panel > header { display: flex; align-items: center; justify-content: space-between; }
+.insight-panel > header strong { font-size: 13px; }
+.insight-panel > header button { border: 0; background: transparent; color: #888; }
+.readiness-score { margin: 26px 0 22px; padding-bottom: 21px; border-bottom: 1px solid #e6e7e4; }
+.readiness-score > span { width: 76px; height: 76px; display: grid; place-items: center; align-content: center; border: 5px solid #d8ede6; border-top-color: var(--interview-accent); border-radius: 50%; }
+.readiness-score b { font-size: 23px; }
+.readiness-score small { color: #949693; font-size: 9px; }
+.readiness-score div { display: grid; gap: 5px; }
+.readiness-score div strong { font-size: 12px; }
+.readiness-score div small { color: #218d6f; }
+.ability-list { padding-bottom: 22px; border-bottom: 1px solid #e6e7e4; }
+.ability-list p { display: flex; justify-content: space-between; margin: 14px 0 7px; color: #5b5d5a; font-size: 10px; }
+.ability-list p b { color: #30322f; }
+.ability-list > i { display: block; height: 5px; background: #e8e9e6; border-radius: 999px; overflow: hidden; }
+.ability-list > i em { display: block; height: 100%; border-radius: inherit; background: #6f9589; }
+.ability-list > i em.weak { background: #c68a59; }
+.weakness-card { margin-top: 20px; padding: 16px; border: 1px solid #e4e1dc; border-radius: 12px; background: #fffdfa; }
+.weakness-card > span { color: #ad7547; font-size: 9px; font-weight: 700; letter-spacing: .08em; }
+.weakness-card strong { display: block; margin-top: 8px; font-size: 13px; }
+.weakness-card p { color: #737571; font-size: 10px; line-height: 1.65; }
+.weakness-card button { width: 100%; margin-top: 4px; background: #2a2d2a; color: white; border-color: #2a2d2a; }
+.source-snapshot { margin-top: 22px; }
+.source-snapshot div { justify-content: space-between; }
+.source-snapshot div span { font-size: 11px; font-weight: 650; }
+.source-snapshot div b { color: #26876b; font-size: 9px; }
+.source-snapshot p { margin: 11px 0; color: #777976; font-size: 9px; }
+.source-snapshot p i { width: 5px; height: 5px; background: #9ca49f; }
+
+.profile-chip { width: 100%; border: 0; background: transparent; text-align: left; cursor: pointer; }
+.interview-loading { min-height: 100vh; display: flex; align-items: center; justify-content: center; gap: 14px; background: #fafaf8; color: #50524f; font: 13px var(--font-geist-sans), sans-serif; }
+.interview-error { margin: 24px 0 0 56px; color: #a64f3b; font-size: 12px; }
+.diagnosis-points { margin-top: 14px; padding: 12px 14px; border-left: 2px solid #d8e9e3; background: #f8faf8; }
+.diagnosis-points p { margin: 5px 0; color: #6a6d69; font-size: 11px; line-height: 1.6; }
+.diagnosis-points b { color: #3e413e; }
+
+.interview-workspace { width: min(900px, calc(100% - 56px)); margin: 0 auto; padding: 48px 0 90px; }
+.workspace-heading { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+.workspace-heading p { margin: 0 0 7px; color: #0f8a6a; font-size: 9px; font-weight: 760; letter-spacing: .14em; }
+.workspace-heading h1 { max-width: 650px; margin: 0; font-size: clamp(24px, 3vw, 38px); line-height: 1.25; letter-spacing: -.035em; }
+.workspace-heading > span { padding: 7px 10px; border: 1px solid #e0e1de; border-radius: 999px; color: #7a7c79; font-size: 10px; white-space: nowrap; }
+.empty-state { padding: 50px 24px; border: 1px dashed #d9dad7; border-radius: 13px; color: #8a8c89; text-align: center; font-size: 12px; }
+
+.wrongbook-list { display: grid; gap: 12px; }
+.wrongbook-list article { display: grid; grid-template-columns: 58px 1fr; gap: 16px; padding: 20px; border: 1px solid #e4e5e2; border-radius: 14px; background: #fff; }
+.attempt-score { width: 50px; height: 50px; display: grid; align-content: center; justify-items: center; border-radius: 50%; background: #fff2e7; color: #a96531; }
+.attempt-score b { font-size: 17px; line-height: 1; }
+.attempt-score small { margin-top: 2px; font-size: 8px; }
+.wrongbook-list article > div > span { color: #898b88; font-size: 9px; }
+.wrongbook-list h2 { margin: 6px 0 9px; font-size: 15px; }
+.wrongbook-list article p { display: -webkit-box; overflow: hidden; margin: 0; color: #737572; font-size: 11px; line-height: 1.7; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+.wrongbook-list footer { margin-top: 13px; padding-top: 12px; display: flex; justify-content: space-between; gap: 15px; border-top: 1px solid #eeefec; }
+.wrongbook-list footer em { color: #b07345; font-size: 9px; font-style: normal; }
+.wrongbook-list footer button { border: 0; background: transparent; color: #25765f; font-size: 10px; cursor: pointer; }
+
+.market-radar { margin-bottom: 26px; padding: 18px; border: 1px solid #dfe7e3; border-radius: 14px; background: #f7faf8; }
+.market-radar > header { display: flex; justify-content: space-between; margin-bottom: 14px; }
+.market-radar > header strong { font-size: 12px; }
+.market-radar > header small { color: #858885; font-size: 9px; }
+.market-radar > div { display: grid; grid-template-columns: repeat(2, 1fr); gap: 9px; }
+.market-radar a { padding: 13px; border: 1px solid #e3e8e5; border-radius: 10px; background: white; color: inherit; text-decoration: none; }
+.market-radar a:hover { border-color: #a9c9bf; }
+.market-radar a > span { color: #218267; font-size: 8px; font-weight: 760; }
+.market-radar a strong { display: block; margin: 6px 0; font-size: 11px; }
+.market-radar a p { margin: 0 0 8px; color: #7a7c79; font-size: 9px; line-height: 1.55; }
+.market-radar a small { color: #9a9c99; font-size: 8px; }
+.plan-list { display: grid; gap: 9px; }
+.plan-list article { display: grid; grid-template-columns: 35px 1fr auto; gap: 14px; align-items: center; padding: 17px 18px; border: 1px solid #e3e4e1; border-radius: 12px; }
+.plan-list article > span { color: #aaa; font: 11px var(--font-geist-mono), monospace; }
+.plan-list small { color: #278169; font-size: 8px; }
+.plan-list h2 { margin: 5px 0; font-size: 13px; }
+.plan-list p { margin: 0; color: #858784; font-size: 9px; }
+.plan-list button, .profile-form button { padding: 8px 10px; border: 1px solid #d5d7d4; border-radius: 8px; background: #fff; color: #555855; font-size: 9px; cursor: pointer; }
+.plan-list article.done { opacity: .5; background: #f7f7f5; }
+
+.profile-workspace { max-width: 760px; }
+.profile-form { display: grid; gap: 16px; padding: 24px; border: 1px solid #e2e3e0; border-radius: 16px; background: #fafaf8; }
+.profile-form > div { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.profile-form label { display: grid; gap: 7px; }
+.profile-form label span { color: #656764; font-size: 10px; font-weight: 650; }
+.profile-form textarea, .profile-form input { width: 100%; border: 1px solid #dcddda; border-radius: 9px; outline: 0; background: white; color: #303330; font: 12px var(--font-geist-sans), sans-serif; }
+.profile-form textarea:focus, .profile-form input:focus { border-color: #7eaa9d; box-shadow: 0 0 0 3px rgba(15,138,106,.08); }
+.profile-form textarea { min-height: 82px; padding: 11px; resize: vertical; }
+.profile-form input { height: 40px; padding: 0 11px; }
+.profile-form > p { margin: 0; color: #898b88; font-size: 9px; }
+.profile-form > button { justify-self: start; padding: 10px 16px; border-color: #202321; background: #202321; color: white; font-size: 10px; }
+.platform-hero .rank a { color: inherit; text-decoration: none; border-bottom: 1px solid currentColor; }
+
+@media (max-width: 1100px) {
+  .interview-shell { grid-template-columns: 224px 1fr; }
+  .insight-panel { display: none; }
+  .answer-composer { left: 246px; right: 22px; }
+}
+@media (max-width: 720px) {
+  .interview-shell { display: block; }
+  .interview-sidebar { display: none; }
+  .interview-topbar { padding: 0 16px; }
+  .live-source { display: none; }
+  .interview-conversation { width: calc(100% - 30px); padding-top: 38px; }
+  .coach-message, .coach-feedback { grid-template-columns: 32px 1fr; gap: 12px; }
+  .coach-avatar { width: 32px; height: 32px; }
+  .answer-composer { left: 14px; right: 14px; bottom: 12px; }
+  .interview-workspace { width: calc(100% - 28px); padding-top: 32px; }
+  .workspace-heading { align-items: flex-start; flex-direction: column; }
+  .market-radar > div, .profile-form > div { grid-template-columns: 1fr; }
+  .plan-list article { grid-template-columns: 28px 1fr; }
+  .plan-list article button { grid-column: 2; justify-self: start; }
+}

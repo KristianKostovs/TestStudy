@@ -13,7 +13,7 @@ export default function Home() {
       <header className="hero platform-hero">
         <nav>
           <a className="brand" href="#modules"><i>AT</i> 测试能力修炼场</a>
-          <span className="rank">五条成长路线 · 持续增加关卡</span>
+          <span className="rank">五条学习路线 · <a href="/interview">进入岗位面试陪练 →</a></span>
         </nav>
         <div className="hero-grid">
           <section>
