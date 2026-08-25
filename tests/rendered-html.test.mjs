@@ -96,6 +96,19 @@ test("面试陪练是独立入口并且不使用课程分享图", async () => {
   assert.doesNotMatch(html, /og-platform\.png|og\.png/);
 });
 
+test("面试系统以数据驱动能力地图为首屏", async () => {
+  const [client, api] = await Promise.all([
+    readFile(new URL("../app/interview/InterviewCoachClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/interview/route.ts", import.meta.url), "utf8"),
+  ]);
+  assert.match(client, /useState<View>\("overview"\)/);
+  assert.match(client, /data\.modules\.map/);
+  assert.match(client, /refresh_sources/);
+  assert.match(api, /interview_capability_modules/);
+  assert.match(api, /kind !== "adaptive" \|\| Number\(module\.signalCount\) > 0/);
+  assert.match(api, /openai\/openai-agents-python/);
+});
+
 test("跨页面入口使用原生导航，避免生产环境预取崩溃", async () => {
   const files = await Promise.all([
     readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),

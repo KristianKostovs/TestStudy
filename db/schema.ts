@@ -58,3 +58,18 @@ export const interviewPlanItems = sqliteTable("interview_plan_items", {
   sourceAttemptId: integer("source_attempt_id"),
   createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("idx_interview_plan_status_created").on(table.status, table.createdAt)]);
+
+export const interviewCapabilityModules = sqliteTable("interview_capability_modules", {
+  id: text("id").primaryKey(),
+  code: text("code").notNull(),
+  title: text("title").notNull(),
+  description: text("description").notNull(),
+  tone: text("tone").notNull(),
+  kind: text("kind").notNull(),
+  competency: text("competency").notNull(),
+  basePriority: integer("base_priority").notNull(),
+  status: text("status").notNull().default("active"),
+  contentJson: text("content_json").notNull(),
+  sourceStrategy: text("source_strategy").notNull(),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [index("idx_interview_modules_status_priority").on(table.status, table.basePriority)]);
