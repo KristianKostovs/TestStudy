@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import "./course-flow.css";
+import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
 /* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
 
 type Level = {
@@ -804,18 +806,41 @@ const legacyStorageKey = "python-framework-quest-v1";
 type ProgressState = {
   completed: number[];
   quizPassed: number[];
+  stageUnlocked?: Record<number, number>;
+  taskDrafts?: Record<number, string>;
+  taskGrades?: Record<number, TaskGrade>;
 };
 
-export default function Home() {
+type TaskGrade = {
+  passed: boolean;
+  score: number;
+  summary: string;
+  strengths: string[];
+  improvements: string[];
+  criteria: Array<{ criterion: string; met: boolean; evidence: string }>;
+};
+
+const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "自动小测"];
+
+export default function Home({ chapterId }: { chapterId?: number }) {
+  const currentChapter = chapterId ? getPythonCourseChapter(chapterId) : undefined;
+  const visibleLevels = currentChapter
+    ? levels.filter((level) => currentChapter.levelIds.includes(level.id))
+    : [];
   const [completed, setCompleted] = useState<number[]>([]);
   const [quizPassed, setQuizPassed] = useState<number[]>([]);
   const [quizSelections, setQuizSelections] = useState<Record<number, number>>({});
   const [quizFeedback, setQuizFeedback] = useState<Record<number, string>>({});
+  const [stageUnlocked, setStageUnlocked] = useState<Record<number, number>>({});
+  const [activeStages, setActiveStages] = useState<Record<number, number>>({});
+  const [taskDrafts, setTaskDrafts] = useState<Record<number, string>>({});
+  const [taskGrades, setTaskGrades] = useState<Record<number, TaskGrade>>({});
+  const [gradingLevel, setGradingLevel] = useState<number | null>(null);
+  const [gradingErrors, setGradingErrors] = useState<Record<number, string>>({});
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
-  const [openId, setOpenId] = useState(1);
+  const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
 
-  /* eslint-disable react-hooks/set-state-in-effect -- progress is hydrated from browser storage after mount */
   useEffect(() => {
     try {
       const stored = window.localStorage.getItem(storageKey);
@@ -823,6 +848,10 @@ export default function Home() {
         const progressState = JSON.parse(stored) as ProgressState;
         setCompleted(progressState.completed ?? []);
         setQuizPassed(progressState.quizPassed ?? []);
+        setStageUnlocked(progressState.stageUnlocked ?? {});
+        setTaskDrafts(progressState.taskDrafts ?? {});
+        setTaskGrades(progressState.taskGrades ?? {});
+        setActiveStages(progressState.stageUnlocked ?? {});
       } else {
         const legacy = window.localStorage.getItem(legacyStorageKey);
         if (legacy) {
@@ -841,8 +870,6 @@ export default function Home() {
       setReady(true);
     }
   }, []);
-  /* eslint-enable react-hooks/set-state-in-effect */
-
   useEffect(() => {
     if (!activeKnowledge) return;
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -869,11 +896,85 @@ export default function Home() {
     return id === 1 || completed.includes(id - 1) || completed.includes(id);
   }
 
-  function saveProgress(nextCompleted: number[], nextQuizPassed: number[]) {
+  function saveProgress(
+    nextCompleted = completed,
+    nextQuizPassed = quizPassed,
+    nextStageUnlocked = stageUnlocked,
+    nextTaskDrafts = taskDrafts,
+    nextTaskGrades = taskGrades,
+  ) {
     window.localStorage.setItem(storageKey, JSON.stringify({
       completed: nextCompleted,
       quizPassed: nextQuizPassed,
+      stageUnlocked: nextStageUnlocked,
+      taskDrafts: nextTaskDrafts,
+      taskGrades: nextTaskGrades,
     } satisfies ProgressState));
+  }
+
+  function unlockedStage(id: number) {
+    if (completed.includes(id) || quizPassed.includes(id)) return 5;
+    return Math.max(1, Math.min(5, stageUnlocked[id] ?? 1));
+  }
+
+  function activeStage(id: number) {
+    return Math.max(1, Math.min(unlockedStage(id), activeStages[id] ?? unlockedStage(id)));
+  }
+
+  function advanceStage(id: number, stage: number) {
+    const nextStage = Math.min(5, stage + 1);
+    const nextUnlocked = { ...stageUnlocked, [id]: Math.max(unlockedStage(id), nextStage) };
+    setStageUnlocked(nextUnlocked);
+    setActiveStages((current) => ({ ...current, [id]: nextStage }));
+    saveProgress(completed, quizPassed, nextUnlocked);
+  }
+
+  function selectStage(id: number, stage: number) {
+    if (stage > unlockedStage(id)) return;
+    setActiveStages((current) => ({ ...current, [id]: stage }));
+  }
+
+  async function submitTask(id: number) {
+    const answer = (taskDrafts[id] ?? "").trim();
+    if (answer.length < 30) {
+      setGradingErrors((current) => ({ ...current, [id]: "请至少写 30 个字符，包含你的代码或实现思路。" }));
+      return;
+    }
+
+    setGradingLevel(id);
+    setGradingErrors((current) => ({ ...current, [id]: "" }));
+    try {
+      const response = await fetch("/api/course-grade", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ levelId: id, answer }),
+      });
+      const result = await response.json() as TaskGrade & { error?: string; code?: string };
+      if (!response.ok) {
+        const message = result.code === "MODEL_NOT_CONFIGURED"
+          ? "模型评判服务还没有配置密钥。你的答案已保存在浏览器，配置后可直接重新提交。"
+          : (result.error ?? "模型评判失败，请稍后重试。");
+        throw new Error(message);
+      }
+
+      const nextGrades = { ...taskGrades, [id]: result };
+      setTaskGrades(nextGrades);
+      if (result.passed) {
+        const nextUnlocked = { ...stageUnlocked, [id]: 5 };
+        setStageUnlocked(nextUnlocked);
+        setActiveStages((current) => ({ ...current, [id]: 5 }));
+        saveProgress(completed, quizPassed, nextUnlocked, taskDrafts, nextGrades);
+      } else {
+        saveProgress(completed, quizPassed, stageUnlocked, taskDrafts, nextGrades);
+      }
+    } catch (error) {
+      setGradingErrors((current) => ({
+        ...current,
+        [id]: error instanceof Error ? error.message : "模型评判失败，请稍后重试。",
+      }));
+    } finally {
+      setGradingLevel(null);
+    }
   }
 
   function checkQuiz(id: number) {
@@ -903,8 +1004,14 @@ export default function Home() {
     setCompleted(next);
     saveProgress(next, quizPassed);
     if (!completed.includes(id) && id < levels.length) {
-      setOpenId(id + 1);
-      window.setTimeout(() => document.getElementById(`level-${id + 1}`)?.scrollIntoView({ behavior: "smooth", block: "center" }), 120);
+      const nextLevel = levels.find((level) => level.id === id + 1);
+      const nextChapter = getChapterForLevel(id + 1);
+      if (nextLevel && nextChapter?.id === currentChapter?.id) {
+        setOpenId(id + 1);
+        window.setTimeout(() => document.getElementById(`level-${id + 1}`)?.scrollIntoView({ behavior: "smooth", block: "start" }), 120);
+      } else if (nextChapter) {
+        window.location.href = `/courses/python-framework/chapters/${nextChapter.id}#level-${id + 1}`;
+      }
     }
   }
 
@@ -914,10 +1021,19 @@ export default function Home() {
     setQuizPassed([]);
     setQuizSelections({});
     setQuizFeedback({});
-    setOpenId(1);
+    setStageUnlocked({});
+    setActiveStages({});
+    setTaskDrafts({});
+    setTaskGrades({});
+    setGradingErrors({});
+    setOpenId(currentChapter?.levelIds[0] ?? 1);
     window.localStorage.removeItem(storageKey);
     window.localStorage.removeItem(legacyStorageKey);
   }
+
+  const nextLevelHref = nextLevel
+    ? `/courses/python-framework/chapters/${getChapterForLevel(nextLevel.id)?.id}#level-${nextLevel.id}`
+    : "/courses/python-framework/chapters/1";
 
   return (
     <main className={ready ? "ready" : ""}>
@@ -925,17 +1041,17 @@ export default function Home() {
         <nav>
           <a className="brand" href="/"><i>PY</i> Python 框架修炼</a>
           <div className="nav-actions">
-            <a className="text-button course-back" href="/">← 选择其他方向</a>
+            <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/"}>{currentChapter ? "← 返回章节选择" : "← 选择其他方向"}</a>
             <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={resetProgress}>重置进度</button>
           </div>
         </nav>
         <div className="hero-grid">
           <section>
-            <p className="eyebrow">PYTHON FRAMEWORK QUEST</p>
-            <h1>过关斩将，<br /><em>练成框架判断力</em></h1>
-            <p className="lead">从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；每关都带小白解释、练习和自动小测。</p>
-            <a className="hero-cta" href={nextLevel ? `#level-${nextLevel.id}` : "#roadmap"}>{nextLevel ? `继续第 ${nextLevel.id} 关` : "回看十关"} <span>↓</span></a>
+            <p className="eyebrow">{currentChapter ? `PYTHON QUEST · CHAPTER ${currentChapter.id}` : "PYTHON FRAMEWORK QUEST"}</p>
+            <h1>{currentChapter ? currentChapter.title : <>过关斩将，<br /><em>练成框架判断力</em></>}</h1>
+            <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；每关依次学习、练习，再由模型评判。"}</p>
+            <a className="hero-cta" href={currentChapter ? `#level-${currentChapter.levelIds.find((id) => !completed.includes(id)) ?? currentChapter.levelIds[0]}` : nextLevelHref}>{currentChapter ? "进入本章关卡" : nextLevel ? `继续第 ${nextLevel.id} 关` : "回看四章"} <span>→</span></a>
           </section>
           <aside className="progress-card">
             <div className="progress-top"><span>Python 当前进度</span><strong>{progress}%</strong></div>
@@ -946,21 +1062,39 @@ export default function Home() {
         </div>
       </header>
 
-      <section className="principles" aria-label="学习方法">
+      {!currentChapter && <section className="principles" aria-label="学习方法">
         <article><b>01</b><div><h2>先认识概念</h2><p>每关先解释术语和数据长什么样，再进入代码。</p></div></article>
         <article><b>02</b><div><h2>再逐行理解</h2><p>用真实接口自动化片段说明每一行为什么存在。</p></div></article>
         <article><b>03</b><div><h2>最后完成任务</h2><p>小测自动判定，练习有验收标准、提示和参考答案。</p></div></article>
-      </section>
+      </section>}
 
       <section className="map-section" id="roadmap">
         <div className="section-heading">
-          <p>THE ROADMAP</p>
-          <h2>十关修炼地图</h2>
-          <span>建议每周 2 关，5 周完成一轮；任务优先改造你手头的真实框架。</span>
+          <p>{currentChapter ? "CHAPTER LEVELS" : "THE ROADMAP"}</p>
+          <h2>{currentChapter ? `${currentChapter.shortTitle} · 本章关卡` : "四章修炼地图"}</h2>
+          <span>{currentChapter ? "每关一次只展开一个学习步骤，完成后自动进入下一步。" : "章节各自拥有独立页面；学完一章再进入下一章，不再在一个长页面里下拉。"}</span>
         </div>
 
-        <div className="quest-map">
-          {levels.map((level, index) => {
+        {!currentChapter ? (
+          <div className="chapter-grid">
+            {pythonCourseChapters.map((chapter) => {
+              const chapterCompleted = chapter.levelIds.filter((id) => completed.includes(id)).length;
+              const chapterUnlocked = chapter.id === 1 || completed.includes(chapter.levelIds[0] - 1);
+              return (
+                <article className={`chapter-card ${chapterCompleted === chapter.levelIds.length ? "complete" : ""} ${!chapterUnlocked ? "locked" : ""}`} key={chapter.id}>
+                  <span>CHAPTER {String(chapter.id).padStart(2, "0")}</span>
+                  <h3>{chapter.title}</h3>
+                  <p>{chapter.subtitle}</p>
+                  <div><b>{chapterCompleted} / {chapter.levelIds.length} 关完成</b><i>{chapter.levelIds.map((id) => `L${id}`).join(" · ")}</i></div>
+                  {chapterUnlocked
+                    ? <a href={`/courses/python-framework/chapters/${chapter.id}`}>进入本章 <b>→</b></a>
+                    : <span className="chapter-locked-label">完成上一章后解锁</span>}
+                </article>
+              );
+            })}
+          </div>
+        ) : <div className="quest-map">
+          {visibleLevels.map((level) => {
             const done = completed.includes(level.id);
             const support = supportByLevel[level.id];
             const knowledge = knowledgeByLevel[level.id];
@@ -969,10 +1103,11 @@ export default function Home() {
             const passedQuiz = quizPassed.includes(level.id);
             const unlocked = isUnlocked(level.id);
             const open = openId === level.id;
-            const chapterBreak = index === 0 || levels[index - 1].chapter !== level.chapter;
+            const stage = activeStage(level.id);
+            const maxStage = unlockedStage(level.id);
+            const grade = taskGrades[level.id];
             return (
               <div key={level.id}>
-                {chapterBreak && <div className="chapter-divider"><span>{level.chapter}</span></div>}
                 <article id={`level-${level.id}`} className={`level ${done ? "done" : ""} ${!unlocked ? "locked" : ""} ${open ? "open" : ""}`}>
                   <div className="seal">{done ? "✓" : unlocked ? level.id : "×"}</div>
                   <div className="level-copy">
@@ -986,19 +1121,21 @@ export default function Home() {
                     </button>
                     {open && unlocked && (
                       <div className="level-body">
-                        <ol className="learning-steps" aria-label="本关学习步骤">
-                          <li><b>1</b> 先认词</li>
-                          <li><b>2</b> 看数据</li>
-                          <li><b>3</b> 逐行理解</li>
-                          <li><b>4</b> 动手练</li>
-                          <li><b>5</b> 自动小测</li>
+                        <ol className="stage-tabs" aria-label="本关学习步骤">
+                          {learningStages.map((label, index) => {
+                            const stageNumber = index + 1;
+                            return <li key={label}>
+                              <button
+                                type="button"
+                                disabled={stageNumber > maxStage}
+                                className={`${stage === stageNumber ? "active" : ""} ${stageNumber < maxStage ? "finished" : ""}`}
+                                onClick={() => selectStage(level.id, stageNumber)}
+                              ><b>{stageNumber}</b><span>{label}</span>{stageNumber > maxStage && <i>锁</i>}</button>
+                            </li>;
+                          })}
                         </ol>
-                        <div className="beginner-note"><b>小白先看这里</b><p>{support.beforeYouStart}</p></div>
-                        <details className="compact-disclosure concept-disclosure">
-                          <summary>
-                            <span><b>本关概念导览</b><small>{support.glossary.map((item) => item.term).join(" · ")}</small></span>
-                            <i>展开 {support.glossary.length} 项</i>
-                          </summary>
+                        {stage === 1 && <section className="stage-panel">
+                          <div className="beginner-note"><b>小白先看这里</b><p>{support.beforeYouStart}</p></div>
                           <div className="glossary-grid">
                             {support.glossary.map((item) => (
                               <button
@@ -1016,31 +1153,31 @@ export default function Home() {
                               </button>
                             ))}
                           </div>
-                        </details>
-                        <details className="compact-disclosure example-disclosure">
-                          <summary>
-                            <span><b>先看它长什么样</b><small>{support.exampleTitle}</small></span>
-                            <i>展开完整示例</i>
-                          </summary>
+                          <button className="stage-continue" type="button" onClick={() => advanceStage(level.id, 1)}>概念看懂了，进入“看数据” →</button>
+                        </section>}
+                        {stage === 2 && <section className="stage-panel">
                           <section className="example-panel">
+                            <div className="stage-intro"><span>先看它长什么样</span><h4>{support.exampleTitle}</h4></div>
                             <pre><code>{support.example}</code></pre>
                             <ol className="walkthrough">{support.walkthrough.map((step) => <li key={step}>{step}</li>)}</ol>
                           </section>
-                        </details>
-                        <div className="chips">{level.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
-                        <div className="objective"><b>本关目标</b><p>{level.objective}</p></div>
-                        <div className="lesson-grid">
+                          <button className="stage-continue" type="button" onClick={() => advanceStage(level.id, 2)}>数据结构看懂了，进入“逐行理解” →</button>
+                        </section>}
+                        {stage === 3 && <section className="stage-panel">
+                          <div className="chips">{level.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
+                          <div className="objective"><b>本关目标</b><p>{level.objective}</p></div>
+                          <div className="lesson-grid">
                           <section>
                             <h4>理解例子以后，再掌握这些</h4>
                             <ul>{level.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)}</ul>
                           </section>
                           <aside className="ai-lens"><span>AI 审查镜</span><p>{level.aiLens}</p></aside>
-                        </div>
-                        <div className="code-wrap interactive-code-wrap">
+                          </div>
+                          <div className="code-wrap interactive-code-wrap">
                           <div><span>PYTHON / YAML</span><i>带虚线的代码可以点击解释</i></div>
                           <pre><code><InteractiveCode code={level.code} knowledge={knowledge} onOpen={setActiveKnowledge} /></code></pre>
-                        </div>
-                        {supplementalKnowledge.length > 0 && (
+                          </div>
+                          {supplementalKnowledge.length > 0 && (
                           <details className="compact-disclosure supplement-disclosure">
                             <summary>
                               <span><b>补充基础知识</b><small>这些概念不对应某一个代码词，先收起避免打断主线</small></span>
@@ -1054,25 +1191,51 @@ export default function Home() {
                               ))}
                             </div>
                           </details>
-                        )}
-                        <div className="task">
+                          )}
+                          <button className="stage-continue" type="button" onClick={() => advanceStage(level.id, 3)}>代码理解完成，进入“动手练” →</button>
+                        </section>}
+                        {stage === 4 && <section className="stage-panel"><div className="task task-with-input">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
-                          <div className="starter-wrap">
-                            <h4>从这里开始写</h4>
-                            <pre><code>{support.starter}</code></pre>
-                          </div>
-                          <div className="verification-grid">
-                            <article className="verify-card"><span>怎么验证</span><code>{support.verifyCommand}</code></article>
-                            <article className="verify-card"><span>你应该看到</span><pre><code>{support.expected}</code></pre></article>
-                          </div>
-                          <h4>验收标准</h4>
-                          <ul>{level.acceptance.map((item) => <li key={item}>{item}</li>)}</ul>
+                          <details className="help-panel compact-task-help">
+                            <summary>查看起步代码、验证方法与验收标准</summary>
+                            <div className="starter-wrap"><h4>从这里开始写</h4><pre><code>{support.starter}</code></pre></div>
+                            <div className="verification-grid">
+                              <article className="verify-card"><span>怎么验证</span><code>{support.verifyCommand}</code></article>
+                              <article className="verify-card"><span>你应该看到</span><pre><code>{support.expected}</code></pre></article>
+                            </div>
+                            <div><b>验收标准</b><ul>{level.acceptance.map((item) => <li key={item}>{item}</li>)}</ul></div>
+                          </details>
+                          <label className="task-answer-editor">
+                            <span>在这里写你的答案 <i>可以粘贴 Python / YAML，也可以补充说明</i></span>
+                            <textarea
+                              value={taskDrafts[level.id] ?? ""}
+                              onChange={(event) => {
+                                const nextDrafts = { ...taskDrafts, [level.id]: event.target.value };
+                                setTaskDrafts(nextDrafts);
+                                saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades);
+                              }}
+                              placeholder={support.starter}
+                              spellCheck={false}
+                            />
+                          </label>
+                          <button className="model-grade-button" type="button" disabled={gradingLevel === level.id} onClick={() => submitTask(level.id)}>
+                            {gradingLevel === level.id ? "模型正在逐条检查…" : grade?.passed ? "重新交给模型评判" : "交给模型评判"}
+                          </button>
+                          {gradingErrors[level.id] && <p className="grading-error" role="alert">{gradingErrors[level.id]}</p>}
+                          {grade && <section className={`grade-card ${grade.passed ? "passed" : "needs-work"}`}>
+                            <div><strong>{grade.score}</strong><span>分<br />{grade.passed ? "通过" : "继续完善"}</span></div>
+                            <p>{grade.summary}</p>
+                            <ul>{grade.criteria.map((item) => <li key={item.criterion}><b>{item.met ? "✓" : "×"} {item.criterion}</b><span>{item.evidence}</span></li>)}</ul>
+                            {grade.improvements.length > 0 && <aside><b>下一步怎么改</b>{grade.improvements.map((item) => <p key={item}>{item}</p>)}</aside>}
+                          </section>}
                           <details className="help-panel">
-                            <summary>卡住了？先看提示，再看参考答案</summary>
+                            <summary>仍然卡住？查看提示和参考答案</summary>
                             <div><b>提示</b><p>{support.hint}</p></div>
                             <div><b>参考答案</b><pre><code>{support.referenceAnswer}</code></pre></div>
                           </details>
+                        </div></section>}
+                        {stage === 5 && <section className="stage-panel"><div className="task final-check">
                           <section className={`quiz ${passedQuiz ? "passed" : ""}`}>
                             <span className="quiz-kicker">本关小测 · 自动判定</span>
                             <h4>{support.quiz.question}</h4>
@@ -1098,7 +1261,7 @@ export default function Home() {
                           <button className="complete-button" disabled={!done && !passedQuiz} onClick={() => completeLevel(level.id)}>
                             {done ? "✓ 已通关，点击撤销" : passedQuiz ? (level.id === 10 ? "记录 Boss 战通关，正式出师" : "小测已通过，记录本关通关") : "先通过本关小测"}
                           </button>
-                        </div>
+                        </div></section>}
                       </div>
                     )}
                   </div>
@@ -1106,7 +1269,12 @@ export default function Home() {
               </div>
             );
           })}
-        </div>
+        </div>}
+        {currentChapter && <nav className="chapter-pager" aria-label="章节导航">
+          {currentChapter.id > 1 ? <a href={`/courses/python-framework/chapters/${currentChapter.id - 1}`}>← 上一章</a> : <span />}
+          <a href="/courses/python-framework">四章总览</a>
+          {currentChapter.id < pythonCourseChapters.length ? <a href={`/courses/python-framework/chapters/${currentChapter.id + 1}`}>下一章 →</a> : <span />}
+        </nav>}
       </section>
 
       {activeKnowledge && (

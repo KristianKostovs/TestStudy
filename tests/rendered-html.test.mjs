@@ -62,6 +62,29 @@ test("详情页不会错误继承首页分享图", async () => {
   assert.doesNotMatch(uiHtml, /og-platform\.png|og\.png/);
 });
 
+test("Python 课程拆成总览与四个独立章节页面", async () => {
+  const overview = await (await render("/courses/python-framework")).text();
+  assert.match(overview, /第一章 · 筑基/);
+  assert.match(overview, /第二章 · 入阵/);
+  assert.match(overview, /第三章 · 破阵/);
+  assert.match(overview, /终章 · 出师/);
+  for (const chapterId of [1, 2, 3, 4]) {
+    const response = await render(`/courses/python-framework/chapters/${chapterId}`);
+    assert.equal(response.status, 200, `chapter ${chapterId}`);
+  }
+});
+
+test("Python 关卡使用顺序学习、答案输入和服务端模型评判", async () => {
+  const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
+  const route = await readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8");
+
+  assert.match(source, /const learningStages = \["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
+  assert.match(source, /<textarea/);
+  assert.match(source, /fetch\("\/api\/course-grade"/);
+  assert.match(route, /https:\/\/api\.openai\.com\/v1\/responses/);
+  assert.match(route, /MODEL_NOT_CONFIGURED/);
+});
+
 test("面试陪练是独立入口并且不使用课程分享图", async () => {
   const homeHtml = await (await render("/")).text();
   assert.match(homeHtml, /href=["']\/interview["']/);
