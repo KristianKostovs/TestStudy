@@ -700,6 +700,104 @@ const knowledgeByLevel: Record<number, KnowledgePoint[]> = {
   ],
 };
 
+const inlineTokensByTerm: Record<string, string[]> = {
+  "path: str": ["path: str"],
+  "split(\".\")": ["split(\".\")"],
+  "for ... in ...": ["for"],
+  "isinstance()": ["isinstance"],
+  "not / or": ["not", "or"],
+  "raise KeyError": ["raise KeyError"],
+  "deepcopy()": ["deepcopy"],
+  "变量赋值 =": ["body ="],
+  "字典取值 []": ["[\"businessStatus\"]"],
+  "try / finally": ["try", "finally"],
+  "import_module()": ["import_module"],
+  "split(\":\", 1)": ["split(\":\", 1)"],
+  "getattr()": ["getattr"],
+  "callable()": ["callable"],
+  "类型标注 :": ["name: str"],
+  "@dataclass": ["@dataclass"],
+  Protocol: ["Protocol"],
+  "默认值 = ()": ["= ()"],
+  "@pytest.fixture": ["@pytest.fixture"],
+  yield: ["yield"],
+  parametrize: ["parametrize"],
+  assert: ["assert"],
+  class: ["class FlowEntry"],
+  "| None": ["| None"],
+  "装饰器 @": ["@model_validator"],
+  self: ["self"],
+  "signature()": ["signature"],
+  ".parameters": [".parameters"],
+  "kwargs 字典": ["kwargs"],
+  "**kwargs": ["**kwargs"],
+  "回调 handler": ["handler"],
+  "request.url.path": ["request.url.path"],
+  "json={...}": ["json="],
+  "Client / Transport": ["Client", "Transport"],
+  "类与实例": ["class DatabaseProvider"],
+  "方法参数 self": ["self"],
+  "函数参数": ["def resolve"],
+  return: ["return"],
+  "冒号 :": ["action:"],
+  "短横线 -": ["- action"],
+  true: ["true"],
+  "点路径": ["processing_result.response"],
+};
+
+function escapeRegExp(value: string) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function tokenPattern(value: string) {
+  const escaped = escapeRegExp(value);
+  const startsWithWord = /^[A-Za-z0-9_]/.test(value);
+  const endsWithWord = /[A-Za-z0-9_]$/.test(value);
+  return `${startsWithWord ? "\\b" : ""}${escaped}${endsWithWord ? "\\b" : ""}`;
+}
+
+function inlineTokensFor(code: string, knowledge: KnowledgePoint[]) {
+  return knowledge.flatMap((item) =>
+    (inlineTokensByTerm[item.term] ?? [])
+      .filter((token) => code.includes(token))
+      .map((token) => ({ token, item })),
+  );
+}
+
+function InteractiveCode({
+  code,
+  knowledge,
+  onOpen,
+}: {
+  code: string;
+  knowledge: KnowledgePoint[];
+  onOpen: (item: KnowledgePoint) => void;
+}) {
+  const tokenEntries = inlineTokensFor(code, knowledge)
+    .sort((left, right) => right.token.length - left.token.length);
+  if (!tokenEntries.length) return code;
+
+  const ownerByToken = new Map(tokenEntries.map((entry) => [entry.token, entry.item]));
+  const pattern = new RegExp(`(${tokenEntries.map((entry) => tokenPattern(entry.token)).join("|")})`, "g");
+
+  return code.split(pattern).map((part, index) => {
+    const item = ownerByToken.get(part);
+    if (!item) return part;
+    return (
+      <button
+        className="interactive-code-term"
+        type="button"
+        key={`${part}-${index}`}
+        title={`点击解释：${item.term}`}
+        aria-label={`解释代码中的 ${item.term}`}
+        onClick={() => onOpen(item)}
+      >
+        {part}
+      </button>
+    );
+  });
+}
+
 const storageKey = "python-framework-quest-v2";
 const legacyStorageKey = "python-framework-quest-v1";
 
@@ -866,6 +964,8 @@ export default function Home() {
             const done = completed.includes(level.id);
             const support = supportByLevel[level.id];
             const knowledge = knowledgeByLevel[level.id];
+            const inlineKnowledgeTerms = new Set(inlineTokensFor(level.code, knowledge).map((entry) => entry.item.term));
+            const supplementalKnowledge = knowledge.filter((item) => !inlineKnowledgeTerms.has(item.term));
             const passedQuiz = quizPassed.includes(level.id);
             const unlocked = isUnlocked(level.id);
             const open = openId === level.id;
@@ -894,8 +994,11 @@ export default function Home() {
                           <li><b>5</b> 自动小测</li>
                         </ol>
                         <div className="beginner-note"><b>小白先看这里</b><p>{support.beforeYouStart}</p></div>
-                        <section className="glossary-section">
-                          <div className="subheading"><span>不懂就查</span><h4>本关术语表</h4></div>
+                        <details className="compact-disclosure concept-disclosure">
+                          <summary>
+                            <span><b>本关概念导览</b><small>{support.glossary.map((item) => item.term).join(" · ")}</small></span>
+                            <i>展开 {support.glossary.length} 项</i>
+                          </summary>
                           <div className="glossary-grid">
                             {support.glossary.map((item) => (
                               <button
@@ -908,17 +1011,22 @@ export default function Home() {
                                   role: `这是第 ${level.id} 关会反复遇到的术语。先理解它的含义，再回到例子中找它出现的位置。`,
                                 })}
                               >
-                                <span><b>{item.term}</b><i>点击展开</i></span>
+                                <span><b>{item.term}</b><i>点开解释</i></span>
                                 <p>{item.meaning}</p>
                               </button>
                             ))}
                           </div>
-                        </section>
-                        <section className="example-panel">
-                          <div className="subheading"><span>先看它长什么样</span><h4>{support.exampleTitle}</h4></div>
-                          <pre><code>{support.example}</code></pre>
-                          <ol className="walkthrough">{support.walkthrough.map((step) => <li key={step}>{step}</li>)}</ol>
-                        </section>
+                        </details>
+                        <details className="compact-disclosure example-disclosure">
+                          <summary>
+                            <span><b>先看它长什么样</b><small>{support.exampleTitle}</small></span>
+                            <i>展开完整示例</i>
+                          </summary>
+                          <section className="example-panel">
+                            <pre><code>{support.example}</code></pre>
+                            <ol className="walkthrough">{support.walkthrough.map((step) => <li key={step}>{step}</li>)}</ol>
+                          </section>
+                        </details>
                         <div className="chips">{level.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
                         <div className="objective"><b>本关目标</b><p>{level.objective}</p></div>
                         <div className="lesson-grid">
@@ -928,18 +1036,25 @@ export default function Home() {
                           </section>
                           <aside className="ai-lens"><span>AI 审查镜</span><p>{level.aiLens}</p></aside>
                         </div>
-                        <section className="knowledge-shelf">
-                          <div className="subheading"><span>代码看不懂就点</span><h4>隐藏的基础知识</h4></div>
-                          <p>不用离开本关查资料。点击代码中的概念，弹窗会解释“它是什么、在这里做什么”。</p>
-                          <div className="knowledge-buttons">
-                            {knowledge.map((item) => (
-                              <button type="button" key={item.term} onClick={() => setActiveKnowledge(item)}>
-                                <code>{item.term}</code><span>?</span>
-                              </button>
-                            ))}
-                          </div>
-                        </section>
-                        <div className="code-wrap"><div><span>PYTHON / YAML</span><i>完整示范</i></div><pre><code>{level.code}</code></pre></div>
+                        <div className="code-wrap interactive-code-wrap">
+                          <div><span>PYTHON / YAML</span><i>带虚线的代码可以点击解释</i></div>
+                          <pre><code><InteractiveCode code={level.code} knowledge={knowledge} onOpen={setActiveKnowledge} /></code></pre>
+                        </div>
+                        {supplementalKnowledge.length > 0 && (
+                          <details className="compact-disclosure supplement-disclosure">
+                            <summary>
+                              <span><b>补充基础知识</b><small>这些概念不对应某一个代码词，先收起避免打断主线</small></span>
+                              <i>展开 {supplementalKnowledge.length} 项</i>
+                            </summary>
+                            <div className="knowledge-buttons">
+                              {supplementalKnowledge.map((item) => (
+                                <button type="button" key={item.term} onClick={() => setActiveKnowledge(item)}>
+                                  <code>{item.term}</code><span>?</span>
+                                </button>
+                              ))}
+                            </div>
+                          </details>
+                        )}
                         <div className="task">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
