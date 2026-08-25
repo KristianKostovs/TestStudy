@@ -821,7 +821,15 @@ type TaskGrade = {
   criteria: Array<{ criterion: string; met: boolean; evidence: string }>;
 };
 
-type ModelAvailability = "checking" | "ready" | "missing" | "unknown";
+type GradeSubmission = {
+  id: number;
+  levelId: number;
+  answer: string;
+  status: "pending" | "judging" | "completed";
+  grade: TaskGrade | null;
+  createdAt: string;
+  updatedAt: string;
+};
 
 const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "自动小测"];
 
@@ -838,9 +846,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [activeStages, setActiveStages] = useState<Record<number, number>>({});
   const [taskDrafts, setTaskDrafts] = useState<Record<number, string>>({});
   const [taskGrades, setTaskGrades] = useState<Record<number, TaskGrade>>({});
+  const [gradeSubmissions, setGradeSubmissions] = useState<Record<number, GradeSubmission>>({});
   const [gradingLevel, setGradingLevel] = useState<number | null>(null);
   const [gradingErrors, setGradingErrors] = useState<Record<number, string>>({});
-  const [modelAvailability, setModelAvailability] = useState<ModelAvailability>("checking");
+  const [queueLoading, setQueueLoading] = useState(Boolean(chapterId));
+  const [queueError, setQueueError] = useState("");
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
@@ -878,16 +888,27 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   useEffect(() => {
     if (!chapterId) return;
     let active = true;
-    fetch("/api/course-grade", { headers: { Accept: "application/json" } })
-      .then(async (response) => {
-        if (!response.ok) throw new Error("status unavailable");
-        const result = await response.json() as { configured?: boolean };
-        if (active) setModelAvailability(result.configured ? "ready" : "missing");
-      })
-      .catch(() => {
-        if (active) setModelAvailability("unknown");
-      });
-    return () => { active = false; };
+    const loadQueue = async () => {
+      try {
+        const response = await fetch("/api/course-grade", { headers: { Accept: "application/json" } });
+        const result = await response.json() as { submissions?: GradeSubmission[]; error?: string };
+        if (!response.ok) throw new Error(result.error ?? "批改队列暂时不可用");
+        if (!active) return;
+        const latest = (result.submissions ?? []).reduce<Record<number, GradeSubmission>>((current, item) => {
+          if (!current[item.levelId]) current[item.levelId] = item;
+          return current;
+        }, {});
+        setGradeSubmissions(latest);
+        setQueueError("");
+      } catch (error) {
+        if (active) setQueueError(error instanceof Error ? error.message : "批改队列暂时不可用");
+      } finally {
+        if (active) setQueueLoading(false);
+      }
+    };
+    void loadQueue();
+    const timer = window.setInterval(() => void loadQueue(), 30_000);
+    return () => { active = false; window.clearInterval(timer); };
   }, [chapterId]);
   useEffect(() => {
     if (!activeKnowledge) return;
@@ -1070,30 +1091,17 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       const response = await fetch("/api/course-grade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ levelId: id, answer }),
+        body: JSON.stringify({ action: "enqueue", levelId: id, answer }),
       });
-      const result = await response.json() as TaskGrade & { error?: string; code?: string };
+      const result = await response.json() as { submission?: GradeSubmission; error?: string };
       if (!response.ok) {
-        const message = result.code === "MODEL_NOT_CONFIGURED"
-          ? "模型评判服务还没有配置密钥。你的答案已保存在浏览器，配置后可直接重新提交。"
-          : (result.error ?? "模型评判失败，请稍后重试。");
-        throw new Error(message);
+        throw new Error(result.error ?? "加入批改队列失败，请稍后重试。");
       }
-
-      const nextGrades = { ...taskGrades, [id]: result };
-      setTaskGrades(nextGrades);
-      if (result.passed) {
-        const nextUnlocked = { ...stageUnlocked, [id]: 5 };
-        setStageUnlocked(nextUnlocked);
-        setActiveStages((current) => ({ ...current, [id]: 5 }));
-        saveProgress(completed, quizPassed, nextUnlocked, taskDrafts, nextGrades);
-      } else {
-        saveProgress(completed, quizPassed, stageUnlocked, taskDrafts, nextGrades);
-      }
+      if (result.submission) setGradeSubmissions((current) => ({ ...current, [id]: result.submission as GradeSubmission }));
     } catch (error) {
       setGradingErrors((current) => ({
         ...current,
-        [id]: error instanceof Error ? error.message : "模型评判失败，请稍后重试。",
+        [id]: error instanceof Error ? error.message : "加入批改队列失败，请稍后重试。",
       }));
     } finally {
       setGradingLevel(null);
@@ -1139,7 +1147,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   }
 
   function resetProgress() {
-    if (!window.confirm("确定清空所有通关进度吗？")) return;
+    if (!window.confirm("确定清空当前浏览器的学习进度和草稿吗？服务器里的批改记录不会删除。")) return;
     setCompleted([]);
     setQuizPassed([]);
     setQuizSelections({});
@@ -1165,6 +1173,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <a className="brand" href="/"><i>PY</i> Python 框架修炼</a>
           <div className="nav-actions">
             <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/"}>{currentChapter ? "← 返回章节选择" : "← 选择其他方向"}</a>
+            <a className="text-button" href="/grading-queue">批改队列</a>
             <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={resetProgress}>重置进度</button>
           </div>
@@ -1173,7 +1182,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <section>
             <p className="eyebrow">{currentChapter ? `PYTHON QUEST · CHAPTER ${currentChapter.id}` : "PYTHON FRAMEWORK QUEST"}</p>
             <h1>{currentChapter ? currentChapter.title : <>过关斩将，<br /><em>练成框架判断力</em></>}</h1>
-            <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；每关依次学习、练习，再由模型评判。"}</p>
+            <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；每关依次学习、练习，再由 Codex 异步批改。"}</p>
             <a className="hero-cta" href={currentChapter ? `#level-${currentChapter.levelIds.find((id) => !completed.includes(id)) ?? currentChapter.levelIds[0]}` : nextLevelHref}>{currentChapter ? "进入本章关卡" : nextLevel ? `继续第 ${nextLevel.id} 关` : "回看四章"} <span>→</span></a>
           </section>
           <aside className="progress-card">
@@ -1228,7 +1237,9 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             const open = openId === level.id;
             const stage = activeStage(level.id);
             const maxStage = unlockedStage(level.id);
-            const grade = taskGrades[level.id];
+            const gradeSubmission = gradeSubmissions[level.id];
+            const grade = gradeSubmission ? gradeSubmission.grade : taskGrades[level.id];
+            const gradeStatusIndex = gradeSubmission?.status === "completed" ? 3 : gradeSubmission?.status === "judging" ? 2 : gradeSubmission ? 1 : 0;
             return (
               <div key={level.id}>
                 <article id={`level-${level.id}`} className={`level ${done ? "done" : ""} ${!unlocked ? "locked" : ""} ${open ? "open" : ""}`}>
@@ -1320,10 +1331,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                         {stage === 4 && <section className="stage-panel"><div className="task task-with-input">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
-                          {modelAvailability === "missing" && <aside className="model-setup-notice" role="status">
-                            <b>模型评判待启用</b>
-                            <p>当前可以继续练习，答案会自动保存在浏览器；站点配置模型凭证后，刷新页面即可提交评分。</p>
-                          </aside>}
+                          <aside className="model-setup-notice queue-mode-notice" role="status">
+                            <b>Codex 异步批改模式</b>
+                            <p>答案会进入站内持久化队列，不调用外部模型 API。稍后让 Codex 处理“批改队列”，再回来查看结果即可。</p>
+                            <a href="/grading-queue">打开批改队列 →</a>
+                          </aside>
                           <details className="help-panel compact-task-help">
                             <summary>查看起步代码、验证方法与验收标准</summary>
                             <div className="starter-wrap"><h4>从这里开始写</h4><pre><code>{support.starter}</code></pre></div>
@@ -1346,9 +1358,19 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             />
                             <small id={`editor-help-${level.id}`}>长代码会自动换行；按 Esc 后再按 Tab，可以离开输入框。</small>
                           </label>
-                          <button className="model-grade-button" type="button" disabled={gradingLevel === level.id || modelAvailability === "checking" || modelAvailability === "missing"} onClick={() => submitTask(level.id)}>
-                            {modelAvailability === "checking" ? "正在检查模型服务…" : modelAvailability === "missing" ? "模型评判待启用" : gradingLevel === level.id ? "模型正在逐条检查…" : grade?.passed ? "重新交给模型评判" : "交给模型评判"}
+                          {gradeSubmission && <ol className="grading-steps" aria-label="异步批改状态">
+                            {[
+                              [1, "待评判", "答案已排队"],
+                              [2, "评判中", "Codex 已领取"],
+                              [3, "已完成", "结果已回填"],
+                            ].map(([index, label, hint]) => <li className={`${gradeStatusIndex === index ? "active" : ""} ${gradeStatusIndex > index ? "done" : ""}`} key={label}>
+                              <b>{gradeStatusIndex > index ? "✓" : index}</b><span><strong>{label}</strong><small>{hint}</small></span>
+                            </li>)}
+                          </ol>}
+                          <button className="model-grade-button" type="button" disabled={gradingLevel === level.id || queueLoading || gradeSubmission?.status === "judging"} onClick={() => submitTask(level.id)}>
+                            {queueLoading ? "正在连接批改队列…" : gradingLevel === level.id ? "正在加入队列…" : gradeSubmission?.status === "judging" ? "Codex 评判中，请稍后回来查看" : gradeSubmission?.status === "pending" ? "更新队列中的答案" : gradeSubmission?.status === "completed" ? "修改答案后再次排队" : "提交到 Codex 批改队列"}
                           </button>
+                          {queueError && <p className="grading-error" role="alert">{queueError}</p>}
                           {gradingErrors[level.id] && <p className="grading-error" role="alert">{gradingErrors[level.id]}</p>}
                           {grade && <section className={`grade-card ${grade.passed ? "passed" : "needs-work"}`}>
                             <div><strong>{grade.score}</strong><span>分<br />{grade.passed ? "通过" : "继续完善"}</span></div>
@@ -1356,6 +1378,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             <ul>{grade.criteria.map((item) => <li key={item.criterion}><b>{item.met ? "✓" : "×"} {item.criterion}</b><span>{item.evidence}</span></li>)}</ul>
                             {grade.improvements.length > 0 && <aside><b>下一步怎么改</b>{grade.improvements.map((item) => <p key={item}>{item}</p>)}</aside>}
                           </section>}
+                          {grade?.passed && <button className="stage-continue" type="button" onClick={() => advanceStage(level.id, 4)}>批改已通过，进入“自动小测” →</button>}
                           <details className="help-panel">
                             <summary>仍然卡住？查看提示和参考答案</summary>
                             <div><b>提示</b><p>{support.hint}</p></div>
@@ -1449,7 +1472,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       <footer>
         <p>PYTHON FRAMEWORK QUEST</p>
         <h2>{completed.length === levels.length ? "Python 已出师。回到首页，选择下一条修炼路线。" : "看懂只是第一步，能独立完成任务才算真正掌握。"}</h2>
-        <span>当前进度保存在本浏览器；课程换了地址，已有记录仍会继续沿用。</span>
+        <span>学习进度和草稿保存在本浏览器；异步批改任务与结果保存在站点数据库。</span>
       </footer>
     </main>
   );

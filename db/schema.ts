@@ -73,3 +73,19 @@ export const interviewCapabilityModules = sqliteTable("interview_capability_modu
   sourceStrategy: text("source_strategy").notNull(),
   updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
 }, (table) => [index("idx_interview_modules_status_priority").on(table.status, table.basePriority)]);
+
+export const courseGradingSubmissions = sqliteTable("course_grading_submissions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  ownerId: text("owner_id").notNull(),
+  levelId: integer("level_id").notNull(),
+  answerText: text("answer_text").notNull(),
+  status: text("status").notNull().default("pending"),
+  gradeJson: text("grade_json"),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  claimedAt: text("claimed_at"),
+  completedAt: text("completed_at"),
+}, (table) => [
+  index("idx_course_grading_owner_status_created").on(table.ownerId, table.status, table.createdAt),
+  index("idx_course_grading_owner_level_created").on(table.ownerId, table.levelId, table.createdAt),
+]);

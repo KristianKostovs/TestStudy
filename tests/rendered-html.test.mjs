@@ -74,9 +74,10 @@ test("Python 课程拆成总览与四个独立章节页面", async () => {
   }
 });
 
-test("Python 关卡使用顺序学习、答案输入和服务端模型评判", async () => {
+test("Python 关卡使用顺序学习、答案输入和 Codex 异步批改队列", async () => {
   const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
   const route = await readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8");
+  const queue = await readFile(new URL("../app/grading-queue/GradingQueueClient.tsx", import.meta.url), "utf8");
 
   assert.match(source, /const learningStages = \["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
   assert.match(source, /<textarea/);
@@ -84,9 +85,20 @@ test("Python 关卡使用顺序学习、答案输入和服务端模型评判", a
   assert.match(source, /event\.key === "Enter"/);
   assert.match(source, /wrap="soft"/);
   assert.match(source, /fetch\("\/api\/course-grade"/);
-  assert.match(route, /https:\/\/api\.openai\.com\/v1\/responses/);
-  assert.match(route, /configured: Boolean\(process\.env\.OPENAI_API_KEY\)/);
-  assert.match(route, /MODEL_NOT_CONFIGURED/);
+  assert.match(source, /action: "enqueue"/);
+  assert.match(source, /待评判/);
+  assert.match(source, /评判中/);
+  assert.match(source, /已完成/);
+  assert.match(route, /const gradingMode = "codex_queue"/);
+  assert.match(route, /course_grading_submissions/);
+  assert.match(route, /action === "claim"/);
+  assert.match(route, /action === "complete"/);
+  assert.doesNotMatch(route, /api\.openai\.com/);
+  assert.match(queue, /领取并复制 Codex 批改单/);
+  assert.match(queue, /保存批改结果并标记完成/);
+
+  const response = await render("/grading-queue");
+  assert.equal(response.status, 200);
 });
 
 test("面试陪练是独立入口并且不使用课程分享图", async () => {

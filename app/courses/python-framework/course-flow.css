@@ -108,6 +108,18 @@
 .model-setup-notice { margin: 18px 0 0; padding: 15px 17px; border-left: 4px solid var(--gold); color: #69532c; background: #fff6df; }
 .model-setup-notice b { color: #8a5e12; }
 .model-setup-notice p { margin: 6px 0 0; line-height: 1.65; }
+.queue-mode-notice a { display: inline-block; margin-top: 8px; color: var(--green); font-weight: 900; text-decoration: none; }
+.grading-steps { display: grid; grid-template-columns: repeat(3, 1fr); margin: 18px 0 0; padding: 0; border: 1px solid var(--line); list-style: none; }
+.grading-steps li { min-width: 0; display: flex; align-items: center; gap: 9px; padding: 12px; color: #888174; background: #f5efe3; border-right: 1px solid var(--line); }
+.grading-steps li:last-child { border-right: 0; }
+.grading-steps li > b { display: grid; place-items: center; width: 24px; height: 24px; flex: 0 0 24px; border-radius: 50%; color: white; background: #aaa28e; font-size: 11px; }
+.grading-steps li > span { display: grid; gap: 2px; }
+.grading-steps strong { font-size: 12px; }
+.grading-steps small { font-size: 9px; font-weight: 500; }
+.grading-steps li.active { color: white; background: var(--green); }
+.grading-steps li.active > b { color: var(--green); background: var(--gold); }
+.grading-steps li.done { color: var(--green); background: #edf4ef; }
+.grading-steps li.done > b { background: var(--green); }
 .grading-error { margin: 12px 0 0; padding: 13px 15px; border-left: 4px solid var(--red); color: #8c3025; background: #fff0e9; line-height: 1.65; }
 
 .grade-card { display: grid; grid-template-columns: 95px 1fr; gap: 18px; margin-top: 16px; padding: 19px; border: 1px solid #d7c7a4; background: #fffaf0; }
@@ -139,6 +151,9 @@
   .stage-tabs li:last-child button { border-bottom: 0; }
   .task-answer-editor > span { display: block; }
   .task-answer-editor > span i { display: block; margin-top: 5px; }
+  .grading-steps { grid-template-columns: 1fr; }
+  .grading-steps li { border-right: 0; border-bottom: 1px solid var(--line); }
+  .grading-steps li:last-child { border-bottom: 0; }
   .grade-card { grid-template-columns: 1fr; }
   .grade-card > ul li { grid-template-columns: 1fr; gap: 5px; }
 }
