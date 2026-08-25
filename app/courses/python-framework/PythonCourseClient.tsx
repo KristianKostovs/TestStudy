@@ -803,6 +803,8 @@ function InteractiveCode({
 
 const storageKey = "python-framework-quest-v2";
 const legacyStorageKey = "python-framework-quest-v1";
+const codexChatStorageKey = "python-framework-quest-codex-chats-v1";
+const localCodexBridge = "http://127.0.0.1:4317";
 
 type ProgressState = {
   completed: number[];
@@ -831,6 +833,14 @@ type GradeSubmission = {
   updatedAt: string;
 };
 
+type CodexChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+  createdAt: string;
+};
+
+type LocalCodexStatus = "checking" | "ready" | "offline";
+
 const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "自动小测"];
 
 export default function Home({ chapterId }: { chapterId?: number }) {
@@ -851,6 +861,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [gradingErrors, setGradingErrors] = useState<Record<number, string>>({});
   const [queueLoading, setQueueLoading] = useState(Boolean(chapterId));
   const [queueError, setQueueError] = useState("");
+  const [localCodexStatus, setLocalCodexStatus] = useState<LocalCodexStatus>(chapterId ? "checking" : "offline");
+  const [codexChats, setCodexChats] = useState<Record<number, CodexChatMessage[]>>({});
+  const [codexChatDrafts, setCodexChatDrafts] = useState<Record<number, string>>({});
+  const [codexBusyLevel, setCodexBusyLevel] = useState<number | null>(null);
+  const [codexErrors, setCodexErrors] = useState<Record<number, string>>({});
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
@@ -884,6 +899,36 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       setReady(true);
     }
   }, []);
+
+  useEffect(() => {
+    try {
+      const storedChats = window.localStorage.getItem(codexChatStorageKey);
+      if (storedChats) setCodexChats(JSON.parse(storedChats) as Record<number, CodexChatMessage[]>);
+    } catch {
+      setCodexChats({});
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!chapterId) return;
+    let active = true;
+    const checkLocalCodex = async () => {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 1500);
+      try {
+        const response = await fetch(`${localCodexBridge}/health`, { signal: controller.signal, cache: "no-store" });
+        const result = await response.json() as { ok?: boolean };
+        if (active) setLocalCodexStatus(response.ok && result.ok ? "ready" : "offline");
+      } catch {
+        if (active) setLocalCodexStatus("offline");
+      } finally {
+        window.clearTimeout(timeout);
+      }
+    };
+    void checkLocalCodex();
+    const timer = window.setInterval(() => void checkLocalCodex(), 10_000);
+    return () => { active = false; window.clearInterval(timer); };
+  }, [chapterId]);
 
   useEffect(() => {
     if (!chapterId) return;
@@ -1108,6 +1153,65 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     }
   }
 
+  function saveCodexChats(nextChats: Record<number, CodexChatMessage[]>) {
+    setCodexChats(nextChats);
+    window.localStorage.setItem(codexChatStorageKey, JSON.stringify(nextChats));
+  }
+
+  async function sendToLocalCodex(level: Level, suggestedMessage?: string) {
+    const answer = (taskDrafts[level.id] ?? "").trim();
+    const message = (suggestedMessage ?? codexChatDrafts[level.id] ?? "").trim();
+    if (answer.length < 30) {
+      setCodexErrors((current) => ({ ...current, [level.id]: "请先在上面的答案框中写至少 30 个字符。" }));
+      return;
+    }
+    if (!message) {
+      setCodexErrors((current) => ({ ...current, [level.id]: "请输入想对 Codex 说的话。" }));
+      return;
+    }
+
+    const previous = codexChats[level.id] ?? [];
+    const userMessage: CodexChatMessage = { role: "user", content: message, createdAt: new Date().toISOString() };
+    const withUser = { ...codexChats, [level.id]: [...previous, userMessage] };
+    saveCodexChats(withUser);
+    setCodexChatDrafts((current) => ({ ...current, [level.id]: "" }));
+    setCodexBusyLevel(level.id);
+    setCodexErrors((current) => ({ ...current, [level.id]: "" }));
+
+    try {
+      const response = await fetch(`${localCodexBridge}/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          level: { id: level.id, title: level.title, task: level.task, acceptance: level.acceptance },
+          answer,
+          message,
+          history: previous,
+        }),
+      });
+      const result = await response.json() as { reply?: string; grade?: TaskGrade | null; error?: string };
+      if (!response.ok || !result.reply) throw new Error(result.error ?? "本机 Codex 没有返回有效回复");
+
+      const assistantMessage: CodexChatMessage = { role: "assistant", content: result.reply, createdAt: new Date().toISOString() };
+      saveCodexChats({ ...withUser, [level.id]: [...withUser[level.id], assistantMessage] });
+      if (result.grade) {
+        const nextGrades = { ...taskGrades, [level.id]: result.grade };
+        setTaskGrades(nextGrades);
+        if (result.grade.passed) {
+          const nextUnlocked = { ...stageUnlocked, [level.id]: 5 };
+          setStageUnlocked(nextUnlocked);
+          saveProgress(completed, quizPassed, nextUnlocked, taskDrafts, nextGrades);
+        } else {
+          saveProgress(completed, quizPassed, stageUnlocked, taskDrafts, nextGrades);
+        }
+      }
+    } catch (error) {
+      setCodexErrors((current) => ({ ...current, [level.id]: error instanceof Error ? error.message : "本机 Codex 调用失败" }));
+    } finally {
+      setCodexBusyLevel(null);
+    }
+  }
+
   function checkQuiz(id: number) {
     const selected = quizSelections[id];
     const quiz = supportByLevel[id].quiz;
@@ -1157,9 +1261,13 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     setTaskDrafts({});
     setTaskGrades({});
     setGradingErrors({});
+    setCodexChats({});
+    setCodexChatDrafts({});
+    setCodexErrors({});
     setOpenId(currentChapter?.levelIds[0] ?? 1);
     window.localStorage.removeItem(storageKey);
     window.localStorage.removeItem(legacyStorageKey);
+    window.localStorage.removeItem(codexChatStorageKey);
   }
 
   const nextLevelHref = nextLevel
@@ -1173,7 +1281,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <a className="brand" href="/"><i>PY</i> Python 框架修炼</a>
           <div className="nav-actions">
             <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/"}>{currentChapter ? "← 返回章节选择" : "← 选择其他方向"}</a>
-            <a className="text-button" href="/grading-queue">批改队列</a>
+            <a className="text-button" href="/grading-queue">备用批改队列</a>
             <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={resetProgress}>重置进度</button>
           </div>
@@ -1182,7 +1290,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <section>
             <p className="eyebrow">{currentChapter ? `PYTHON QUEST · CHAPTER ${currentChapter.id}` : "PYTHON FRAMEWORK QUEST"}</p>
             <h1>{currentChapter ? currentChapter.title : <>过关斩将，<br /><em>练成框架判断力</em></>}</h1>
-            <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；每关依次学习、练习，再由 Codex 异步批改。"}</p>
+            <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；本地模式可直接与 Codex 对话、即时批改。"}</p>
             <a className="hero-cta" href={currentChapter ? `#level-${currentChapter.levelIds.find((id) => !completed.includes(id)) ?? currentChapter.levelIds[0]}` : nextLevelHref}>{currentChapter ? "进入本章关卡" : nextLevel ? `继续第 ${nextLevel.id} 关` : "回看四章"} <span>→</span></a>
           </section>
           <aside className="progress-card">
@@ -1238,7 +1346,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             const stage = activeStage(level.id);
             const maxStage = unlockedStage(level.id);
             const gradeSubmission = gradeSubmissions[level.id];
-            const grade = gradeSubmission ? gradeSubmission.grade : taskGrades[level.id];
+            const grade = taskGrades[level.id] ?? gradeSubmission?.grade ?? null;
             const gradeStatusIndex = gradeSubmission?.status === "completed" ? 3 : gradeSubmission?.status === "judging" ? 2 : gradeSubmission ? 1 : 0;
             return (
               <div key={level.id}>
@@ -1331,11 +1439,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                         {stage === 4 && <section className="stage-panel"><div className="task task-with-input">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
-                          <aside className="model-setup-notice queue-mode-notice" role="status">
-                            <b>Codex 异步批改模式</b>
-                            <p>答案会进入站内持久化队列，不调用外部模型 API。稍后让 Codex 处理“批改队列”，再回来查看结果即可。</p>
-                            <a href="/grading-queue">打开批改队列 →</a>
-                          </aside>
+                          {localCodexStatus === "ready" ? <aside className="model-setup-notice local-codex-notice" role="status">
+                            <b><i /> 本机 Codex 已连接</b>
+                            <p>下面的聊天框会使用当前已登录的 Codex。可以即时批改，也可以继续追问“为什么错”或“给我一点提示”。</p>
+                          </aside> : <aside className="model-setup-notice queue-mode-notice" role="status">
+                            <b>{localCodexStatus === "checking" ? "正在寻找本机 Codex…" : "当前是线上备用模式"}</b>
+                            <p>{localCodexStatus === "checking" ? "如果你是通过一键启动器打开，本机对话框会很快出现。" : "双击本地启动器可使用即时对话；当前仍可把答案放入异步批改队列。"}</p>
+                            <a href="/grading-queue">打开备用批改队列 →</a>
+                          </aside>}
                           <details className="help-panel compact-task-help">
                             <summary>查看起步代码、验证方法与验收标准</summary>
                             <div className="starter-wrap"><h4>从这里开始写</h4><pre><code>{support.starter}</code></pre></div>
@@ -1358,20 +1469,55 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             />
                             <small id={`editor-help-${level.id}`}>长代码会自动换行；按 Esc 后再按 Tab，可以离开输入框。</small>
                           </label>
-                          {gradeSubmission && <ol className="grading-steps" aria-label="异步批改状态">
-                            {[
-                              [1, "待评判", "答案已排队"],
-                              [2, "评判中", "Codex 已领取"],
-                              [3, "已完成", "结果已回填"],
-                            ].map(([index, label, hint]) => <li className={`${gradeStatusIndex === index ? "active" : ""} ${gradeStatusIndex > index ? "done" : ""}`} key={label}>
-                              <b>{gradeStatusIndex > index ? "✓" : index}</b><span><strong>{label}</strong><small>{hint}</small></span>
-                            </li>)}
-                          </ol>}
-                          <button className="model-grade-button" type="button" disabled={gradingLevel === level.id || queueLoading || gradeSubmission?.status === "judging"} onClick={() => submitTask(level.id)}>
-                            {queueLoading ? "正在连接批改队列…" : gradingLevel === level.id ? "正在加入队列…" : gradeSubmission?.status === "judging" ? "Codex 评判中，请稍后回来查看" : gradeSubmission?.status === "pending" ? "更新队列中的答案" : gradeSubmission?.status === "completed" ? "修改答案后再次排队" : "提交到 Codex 批改队列"}
-                          </button>
-                          {queueError && <p className="grading-error" role="alert">{queueError}</p>}
-                          {gradingErrors[level.id] && <p className="grading-error" role="alert">{gradingErrors[level.id]}</p>}
+                          {localCodexStatus === "ready" ? <section className="local-codex-chat" aria-label="与本机 Codex 对话">
+                            <header><div><i>CODEX</i><span><b>即时学习助教</b><small>使用当前 Codex 登录额度</small></span></div><em>本机在线</em></header>
+                            <div className="codex-chat-messages" aria-live="polite">
+                              {(codexChats[level.id] ?? []).length === 0 && <div className="codex-chat-empty">
+                                <b>答案写好以后，可以直接这样问我：</b>
+                                <p>“请逐条检查验收标准，并告诉我第一处需要修改的地方。”</p>
+                              </div>}
+                              {(codexChats[level.id] ?? []).map((message, messageIndex) => <article className={message.role} key={`${message.createdAt}-${messageIndex}`}>
+                                <b>{message.role === "assistant" ? "Codex" : "你"}</b><p>{message.content}</p>
+                              </article>)}
+                              {codexBusyLevel === level.id && <article className="assistant thinking"><b>Codex</b><p>正在阅读你的答案并对照验收标准…</p></article>}
+                            </div>
+                            <div className="codex-quick-actions">
+                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToLocalCodex(level, "请批改我当前的答案，逐条检查验收标准，并先告诉我最需要修改的一处。")}>立即批改当前答案</button>
+                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToLocalCodex(level, "先不要给完整答案，请根据我当前的实现给一个下一步提示。")}>只给我一点提示</button>
+                            </div>
+                            <label className="codex-chat-composer">
+                              <span>继续和 Codex 对话</span>
+                              <textarea
+                                value={codexChatDrafts[level.id] ?? ""}
+                                onChange={(event) => setCodexChatDrafts((current) => ({ ...current, [level.id]: event.target.value }))}
+                                onKeyDown={(event) => {
+                                  if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
+                                    event.preventDefault();
+                                    void sendToLocalCodex(level);
+                                  }
+                                }}
+                                placeholder="例如：为什么缺少 data 时要抛出 KeyError？"
+                              />
+                              <small>Ctrl/⌘ + Enter 发送，也可以点击右侧按钮</small>
+                              <button type="button" disabled={codexBusyLevel === level.id || !(codexChatDrafts[level.id] ?? "").trim()} onClick={() => void sendToLocalCodex(level)}>{codexBusyLevel === level.id ? "思考中…" : "发送"}</button>
+                            </label>
+                            {codexErrors[level.id] && <p className="grading-error" role="alert">{codexErrors[level.id]}</p>}
+                          </section> : <>
+                            {gradeSubmission && <ol className="grading-steps" aria-label="异步批改状态">
+                              {[
+                                [1, "待评判", "答案已排队"],
+                                [2, "评判中", "Codex 已领取"],
+                                [3, "已完成", "结果已回填"],
+                              ].map(([index, label, hint]) => <li className={`${gradeStatusIndex === index ? "active" : ""} ${gradeStatusIndex > index ? "done" : ""}`} key={label}>
+                                <b>{gradeStatusIndex > index ? "✓" : index}</b><span><strong>{label}</strong><small>{hint}</small></span>
+                              </li>)}
+                            </ol>}
+                            <button className="model-grade-button" type="button" disabled={gradingLevel === level.id || queueLoading || gradeSubmission?.status === "judging"} onClick={() => submitTask(level.id)}>
+                              {queueLoading ? "正在连接批改队列…" : gradingLevel === level.id ? "正在加入队列…" : gradeSubmission?.status === "judging" ? "Codex 评判中，请稍后回来查看" : gradeSubmission?.status === "pending" ? "更新队列中的答案" : gradeSubmission?.status === "completed" ? "修改答案后再次排队" : "提交到备用批改队列"}
+                            </button>
+                            {queueError && <p className="grading-error" role="alert">{queueError}</p>}
+                            {gradingErrors[level.id] && <p className="grading-error" role="alert">{gradingErrors[level.id]}</p>}
+                          </>}
                           {grade && <section className={`grade-card ${grade.passed ? "passed" : "needs-work"}`}>
                             <div><strong>{grade.score}</strong><span>分<br />{grade.passed ? "通过" : "继续完善"}</span></div>
                             <p>{grade.summary}</p>

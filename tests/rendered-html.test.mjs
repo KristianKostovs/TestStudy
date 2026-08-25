@@ -74,10 +74,12 @@ test("Python 课程拆成总览与四个独立章节页面", async () => {
   }
 });
 
-test("Python 关卡使用顺序学习、答案输入和 Codex 异步批改队列", async () => {
+test("Python 关卡同时支持本机 Codex 对话与异步备用队列", async () => {
   const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
   const route = await readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8");
   const queue = await readFile(new URL("../app/grading-queue/GradingQueueClient.tsx", import.meta.url), "utf8");
+  const bridge = await readFile(new URL("../local-companion/server.mjs", import.meta.url), "utf8");
+  const launcher = await readFile(new URL("../启动本地Codex学习站.command", import.meta.url), "utf8");
 
   assert.match(source, /const learningStages = \["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
   assert.match(source, /<textarea/);
@@ -96,6 +98,16 @@ test("Python 关卡使用顺序学习、答案输入和 Codex 异步批改队列
   assert.doesNotMatch(route, /api\.openai\.com/);
   assert.match(queue, /领取并复制 Codex 批改单/);
   assert.match(queue, /保存批改结果并标记完成/);
+  assert.match(source, /localCodexBridge/);
+  assert.match(source, /本机 Codex 已连接/);
+  assert.match(source, /立即批改当前答案/);
+  assert.match(source, /继续和 Codex 对话/);
+  assert.match(bridge, /"exec"/);
+  assert.match(bridge, /"--ephemeral"/);
+  assert.match(bridge, /model_reasoning_effort/);
+  assert.match(bridge, /"--sandbox", "read-only"/);
+  assert.match(bridge, /Logged in/);
+  assert.match(launcher, /node local-companion\/server\.mjs/);
 
   const response = await render("/grading-queue");
   assert.equal(response.status, 200);
