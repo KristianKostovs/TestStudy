@@ -40,6 +40,10 @@ function outputText(response: OpenAIResponse) {
     .join("");
 }
 
+export async function GET() {
+  return Response.json({ configured: Boolean(process.env.OPENAI_API_KEY) });
+}
+
 export async function POST(request: Request) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {

@@ -80,8 +80,12 @@ test("Python 关卡使用顺序学习、答案输入和服务端模型评判", a
 
   assert.match(source, /const learningStages = \["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
   assert.match(source, /<textarea/);
+  assert.match(source, /event\.key === "Tab"/);
+  assert.match(source, /event\.key === "Enter"/);
+  assert.match(source, /wrap="soft"/);
   assert.match(source, /fetch\("\/api\/course-grade"/);
   assert.match(route, /https:\/\/api\.openai\.com\/v1\/responses/);
+  assert.match(route, /configured: Boolean\(process\.env\.OPENAI_API_KEY\)/);
   assert.match(route, /MODEL_NOT_CONFIGURED/);
 });
 

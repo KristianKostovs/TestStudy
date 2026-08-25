@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import "./course-flow.css";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
 /* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
@@ -820,6 +821,8 @@ type TaskGrade = {
   criteria: Array<{ criterion: string; met: boolean; evidence: string }>;
 };
 
+type ModelAvailability = "checking" | "ready" | "missing" | "unknown";
+
 const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "自动小测"];
 
 export default function Home({ chapterId }: { chapterId?: number }) {
@@ -837,6 +840,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [taskGrades, setTaskGrades] = useState<Record<number, TaskGrade>>({});
   const [gradingLevel, setGradingLevel] = useState<number | null>(null);
   const [gradingErrors, setGradingErrors] = useState<Record<number, string>>({});
+  const [modelAvailability, setModelAvailability] = useState<ModelAvailability>("checking");
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
@@ -870,6 +874,21 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       setReady(true);
     }
   }, []);
+
+  useEffect(() => {
+    if (!chapterId) return;
+    let active = true;
+    fetch("/api/course-grade", { headers: { Accept: "application/json" } })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("status unavailable");
+        const result = await response.json() as { configured?: boolean };
+        if (active) setModelAvailability(result.configured ? "ready" : "missing");
+      })
+      .catch(() => {
+        if (active) setModelAvailability("unknown");
+      });
+    return () => { active = false; };
+  }, [chapterId]);
   useEffect(() => {
     if (!activeKnowledge) return;
     const closeOnEscape = (event: KeyboardEvent) => {
@@ -910,6 +929,110 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       taskDrafts: nextTaskDrafts,
       taskGrades: nextTaskGrades,
     } satisfies ProgressState));
+  }
+
+  function updateTaskDraft(
+    id: number,
+    value: string,
+    textarea?: HTMLTextAreaElement,
+    selectionStart?: number,
+    selectionEnd?: number,
+  ) {
+    const nextDrafts = { ...taskDrafts, [id]: value };
+    setTaskDrafts(nextDrafts);
+    saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades);
+    if (textarea && selectionStart !== undefined && selectionEnd !== undefined) {
+      window.requestAnimationFrame(() => {
+        textarea.focus();
+        textarea.setSelectionRange(selectionStart, selectionEnd);
+      });
+    }
+  }
+
+  function handleTaskEditorKeyDown(id: number, event: ReactKeyboardEvent<HTMLTextAreaElement>) {
+    if (event.nativeEvent.isComposing) return;
+    const textarea = event.currentTarget;
+    const value = textarea.value;
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const indent = "    ";
+
+    if (event.key === "Escape") {
+      textarea.dataset.allowNextTab = "true";
+      return;
+    }
+
+    if (event.key === "Tab") {
+      if (textarea.dataset.allowNextTab === "true") {
+        delete textarea.dataset.allowNextTab;
+        return;
+      }
+      event.preventDefault();
+      const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+
+      if (event.shiftKey) {
+        const effectiveEnd = end > start && value[end - 1] === "\n" ? end - 1 : end;
+        const nextLineBreak = value.indexOf("\n", effectiveEnd);
+        const blockEnd = nextLineBreak === -1 ? value.length : nextLineBreak;
+        const block = value.slice(lineStart, blockEnd);
+        let removedTotal = 0;
+        let removedFirst = 0;
+        const unindented = block.split("\n").map((line, index) => {
+          const removable = line.startsWith("\t") ? 1 : Math.min(indent.length, line.match(/^ */)?.[0].length ?? 0);
+          removedTotal += removable;
+          if (index === 0) removedFirst = removable;
+          return line.slice(removable);
+        }).join("\n");
+        const nextValue = value.slice(0, lineStart) + unindented + value.slice(blockEnd);
+        const nextSelectionStart = Math.max(lineStart, start - removedFirst);
+        const nextSelectionEnd = Math.max(nextSelectionStart, end - removedTotal);
+        updateTaskDraft(id, nextValue, textarea, nextSelectionStart, nextSelectionEnd);
+        return;
+      }
+
+      if (start === end) {
+        const nextValue = value.slice(0, start) + indent + value.slice(end);
+        updateTaskDraft(id, nextValue, textarea, start + indent.length, start + indent.length);
+        return;
+      }
+
+      const effectiveEnd = value[end - 1] === "\n" ? end - 1 : end;
+      const nextLineBreak = value.indexOf("\n", effectiveEnd);
+      const blockEnd = nextLineBreak === -1 ? value.length : nextLineBreak;
+      const block = value.slice(lineStart, blockEnd);
+      const indented = block.split("\n").map((line) => indent + line).join("\n");
+      const lineCount = block.split("\n").length;
+      const nextValue = value.slice(0, lineStart) + indented + value.slice(blockEnd);
+      updateTaskDraft(id, nextValue, textarea, start + indent.length, end + indent.length * lineCount);
+      return;
+    }
+
+    delete textarea.dataset.allowNextTab;
+
+    if (event.key === "Enter") {
+      event.preventDefault();
+      const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+      const lineBeforeCursor = value.slice(lineStart, start);
+      const leadingWhitespace = lineBeforeCursor.match(/^[\t ]*/)?.[0] ?? "";
+      const shouldIndent = lineBeforeCursor.trimEnd().endsWith(":");
+      const nextIndent = leadingWhitespace + (shouldIndent ? indent : "");
+      const insertion = `\n${nextIndent}`;
+      const nextValue = value.slice(0, start) + insertion + value.slice(end);
+      const nextCursor = start + insertion.length;
+      updateTaskDraft(id, nextValue, textarea, nextCursor, nextCursor);
+      return;
+    }
+
+    if (event.key === "Backspace" && start === end) {
+      const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
+      const beforeCursor = value.slice(lineStart, start);
+      if (beforeCursor.length > 0 && /^ +$/.test(beforeCursor)) {
+        event.preventDefault();
+        const removeCount = beforeCursor.length % indent.length || indent.length;
+        const nextStart = Math.max(lineStart, start - removeCount);
+        updateTaskDraft(id, value.slice(0, nextStart) + value.slice(start), textarea, nextStart, nextStart);
+      }
+    }
   }
 
   function unlockedStage(id: number) {
@@ -1197,6 +1320,10 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                         {stage === 4 && <section className="stage-panel"><div className="task task-with-input">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
+                          {modelAvailability === "missing" && <aside className="model-setup-notice" role="status">
+                            <b>模型评判待启用</b>
+                            <p>当前可以继续练习，答案会自动保存在浏览器；站点配置模型凭证后，刷新页面即可提交评分。</p>
+                          </aside>}
                           <details className="help-panel compact-task-help">
                             <summary>查看起步代码、验证方法与验收标准</summary>
                             <div className="starter-wrap"><h4>从这里开始写</h4><pre><code>{support.starter}</code></pre></div>
@@ -1207,20 +1334,20 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             <div><b>验收标准</b><ul>{level.acceptance.map((item) => <li key={item}>{item}</li>)}</ul></div>
                           </details>
                           <label className="task-answer-editor">
-                            <span>在这里写你的答案 <i>可以粘贴 Python / YAML，也可以补充说明</i></span>
+                            <span>在这里写你的答案 <i>Tab 缩进 · Shift+Tab 反缩进 · Enter 自动缩进</i></span>
                             <textarea
                               value={taskDrafts[level.id] ?? ""}
-                              onChange={(event) => {
-                                const nextDrafts = { ...taskDrafts, [level.id]: event.target.value };
-                                setTaskDrafts(nextDrafts);
-                                saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades);
-                              }}
+                              onChange={(event) => updateTaskDraft(level.id, event.target.value)}
+                              onKeyDown={(event) => handleTaskEditorKeyDown(level.id, event)}
                               placeholder={support.starter}
                               spellCheck={false}
+                              wrap="soft"
+                              aria-describedby={`editor-help-${level.id}`}
                             />
+                            <small id={`editor-help-${level.id}`}>长代码会自动换行；按 Esc 后再按 Tab，可以离开输入框。</small>
                           </label>
-                          <button className="model-grade-button" type="button" disabled={gradingLevel === level.id} onClick={() => submitTask(level.id)}>
-                            {gradingLevel === level.id ? "模型正在逐条检查…" : grade?.passed ? "重新交给模型评判" : "交给模型评判"}
+                          <button className="model-grade-button" type="button" disabled={gradingLevel === level.id || modelAvailability === "checking" || modelAvailability === "missing"} onClick={() => submitTask(level.id)}>
+                            {modelAvailability === "checking" ? "正在检查模型服务…" : modelAvailability === "missing" ? "模型评判待启用" : gradingLevel === level.id ? "模型正在逐条检查…" : grade?.passed ? "重新交给模型评判" : "交给模型评判"}
                           </button>
                           {gradingErrors[level.id] && <p className="grading-error" role="alert">{gradingErrors[level.id]}</p>}
                           {grade && <section className={`grade-card ${grade.passed ? "passed" : "needs-work"}`}>

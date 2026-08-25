@@ -94,11 +94,20 @@
   background: var(--dark-green);
   font: 14px/1.75 ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   tab-size: 4;
+  white-space: pre-wrap;
+  overflow-x: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  caret-color: var(--gold);
 }
 .task-answer-editor textarea:focus { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(216, 164, 58, .18); }
+.task-answer-editor > small { display: block; margin-top: 7px; color: #817763; font-size: 11px; line-height: 1.55; }
 .model-grade-button { width: 100%; margin-top: 12px; padding: 15px 18px; border: 0; color: #2c2417; background: var(--gold); font-weight: 900; cursor: pointer; }
 .model-grade-button:hover { filter: brightness(.95); }
-.model-grade-button:disabled { opacity: .65; cursor: wait; }
+.model-grade-button:disabled { opacity: .65; cursor: not-allowed; }
+.model-setup-notice { margin: 18px 0 0; padding: 15px 17px; border-left: 4px solid var(--gold); color: #69532c; background: #fff6df; }
+.model-setup-notice b { color: #8a5e12; }
+.model-setup-notice p { margin: 6px 0 0; line-height: 1.65; }
 .grading-error { margin: 12px 0 0; padding: 13px 15px; border-left: 4px solid var(--red); color: #8c3025; background: #fff0e9; line-height: 1.65; }
 
 .grade-card { display: grid; grid-template-columns: 95px 1fr; gap: 18px; margin-top: 16px; padding: 19px; border: 1px solid #d7c7a4; background: #fffaf0; }
