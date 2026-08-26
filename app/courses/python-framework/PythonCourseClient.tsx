@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { KeyboardEvent as ReactKeyboardEvent } from "react";
 import "./course-flow.css";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
@@ -805,6 +805,7 @@ const storageKey = "python-framework-quest-v2";
 const legacyStorageKey = "python-framework-quest-v1";
 const codexChatStorageKey = "python-framework-quest-codex-chats-v1";
 const localCodexBridge = "http://127.0.0.1:4317";
+const localCodexHealthUrl = `${localCodexBridge}/health`;
 
 type ProgressState = {
   completed: number[];
@@ -839,7 +840,7 @@ type CodexChatMessage = {
   createdAt: string;
 };
 
-type LocalCodexStatus = "checking" | "ready" | "offline";
+type LocalCodexStatus = "checking" | "ready" | "blocked" | "not_ready";
 
 const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "自动小测"];
 
@@ -861,12 +862,12 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [gradingErrors, setGradingErrors] = useState<Record<number, string>>({});
   const [queueLoading, setQueueLoading] = useState(Boolean(chapterId));
   const [queueError, setQueueError] = useState("");
-  const [localCodexStatus, setLocalCodexStatus] = useState<LocalCodexStatus>(chapterId ? "checking" : "offline");
+  const [localCodexStatus, setLocalCodexStatus] = useState<LocalCodexStatus>(chapterId ? "checking" : "blocked");
+  const [localCodexMessage, setLocalCodexMessage] = useState("");
   const [codexChats, setCodexChats] = useState<Record<number, CodexChatMessage[]>>({});
   const [codexChatDrafts, setCodexChatDrafts] = useState<Record<number, string>>({});
   const [codexBusyLevel, setCodexBusyLevel] = useState<number | null>(null);
   const [codexErrors, setCodexErrors] = useState<Record<number, string>>({});
-  const [localCodexRetry, setLocalCodexRetry] = useState(0);
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
@@ -910,30 +911,43 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     }
   }, []);
 
+  const checkLocalCodex = useCallback(async (timeoutMs = 10_000, showChecking = false) => {
+    if (showChecking) {
+      setLocalCodexStatus("checking");
+      setLocalCodexMessage("正在等待浏览器完成本地网络授权…");
+    }
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    try {
+      const response = await fetch(localCodexHealthUrl, {
+        signal: controller.signal,
+        cache: "no-store",
+        targetAddressSpace: "local",
+      } as RequestInit & { targetAddressSpace: "local" });
+      const result = await response.json() as { ok?: boolean; message?: string };
+      if (response.ok && result.ok) {
+        setLocalCodexStatus("ready");
+        setLocalCodexMessage(result.message ?? "本机 Codex 已连接");
+      } else {
+        setLocalCodexStatus("not_ready");
+        setLocalCodexMessage(result.message ?? "本机服务已启动，但 Codex 尚未登录");
+      }
+    } catch (error) {
+      setLocalCodexStatus("blocked");
+      setLocalCodexMessage(error instanceof DOMException && error.name === "AbortError"
+        ? "连接等待超时。请检查浏览器是否正在等待本地网络授权。"
+        : "网页无法访问本机服务。服务可能未启动，或浏览器尚未允许本地网络访问。");
+    } finally {
+      window.clearTimeout(timeout);
+    }
+  }, []);
+
   useEffect(() => {
     if (!chapterId) return;
-    let active = true;
-    const checkLocalCodex = async () => {
-      const controller = new AbortController();
-      const timeout = window.setTimeout(() => controller.abort(), 1500);
-      try {
-        const response = await fetch(`${localCodexBridge}/health`, {
-          signal: controller.signal,
-          cache: "no-store",
-          targetAddressSpace: "local",
-        } as RequestInit & { targetAddressSpace: "local" });
-        const result = await response.json() as { ok?: boolean };
-        if (active) setLocalCodexStatus(response.ok && result.ok ? "ready" : "offline");
-      } catch {
-        if (active) setLocalCodexStatus("offline");
-      } finally {
-        window.clearTimeout(timeout);
-      }
-    };
-    void checkLocalCodex();
-    const timer = window.setInterval(() => void checkLocalCodex(), 10_000);
-    return () => { active = false; window.clearInterval(timer); };
-  }, [chapterId, localCodexRetry]);
+    void checkLocalCodex(10_000);
+    const timer = window.setInterval(() => void checkLocalCodex(4_000), 30_000);
+    return () => window.clearInterval(timer);
+  }, [chapterId, checkLocalCodex]);
 
   useEffect(() => {
     if (!chapterId) return;
@@ -1212,6 +1226,10 @@ export default function Home({ chapterId }: { chapterId?: number }) {
         }
       }
     } catch (error) {
+      if (error instanceof TypeError) {
+        setLocalCodexStatus("blocked");
+        setLocalCodexMessage("对话请求被浏览器拦截。请重新允许本站访问本地网络后再试。");
+      }
       setCodexErrors((current) => ({ ...current, [level.id]: error instanceof Error ? error.message : "本机 Codex 调用失败" }));
     } finally {
       setCodexBusyLevel(null);
@@ -1449,13 +1467,25 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             <b><i /> 本机 Codex 已连接</b>
                             <p>下面的聊天框会使用当前已登录的 Codex。可以即时批改，也可以继续追问“为什么错”或“给我一点提示”。</p>
                           </aside> : <aside className="model-setup-notice queue-mode-notice" role="status">
-                            <b>{localCodexStatus === "checking" ? "正在连接本机 Codex…" : "本机 Codex 后台服务暂未连接"}</b>
-                            <p>{localCodexStatus === "checking" ? "首次使用时，浏览器可能询问是否允许访问本地网络；请选择允许。连接成功后，批改和连续追问都会直接出现在本页。" : "请确认 Codex 桌面端已登录，并允许本站访问本机网络。授权只用于连接 127.0.0.1，不会访问局域网其他设备。"}</p>
-                            {localCodexStatus === "offline" && <button type="button" className="retry-local-codex" onClick={() => {
-                              setLocalCodexStatus("checking");
-                              setLocalCodexRetry((current) => current + 1);
-                            }}>重新连接本机 Codex</button>}
+                            <b>{localCodexStatus === "checking"
+                              ? "正在请求连接本机 Codex…"
+                              : localCodexStatus === "not_ready"
+                                ? "本机服务已启动，Codex 还未就绪"
+                                : "网页尚未连上本机 Codex"}</b>
+                            <p>{localCodexMessage || "首次使用时，浏览器会询问是否允许访问本地网络；请选择允许。授权只用于连接本机 127.0.0.1。"}</p>
+                            {localCodexStatus !== "checking" && <button type="button" className="retry-local-codex" onClick={() => {
+                              void checkLocalCodex(20_000, true);
+                            }}>允许并重新连接</button>}
+                            <a className="check-local-codex" href={localCodexHealthUrl} target="_blank" rel="noreferrer">检查本机服务</a>
                             <a href="/grading-queue">暂时使用网页备用批改队列</a>
+                            <details className="local-codex-help">
+                              <summary>没有出现授权窗口？</summary>
+                              <ol>
+                                <li>打开地址栏左侧的“网站设置”。</li>
+                                <li>把“本地网络访问”改为“允许”，再刷新当前页。</li>
+                                <li>若“检查本机服务”也打不开，说明本机后台服务没有运行。</li>
+                              </ol>
+                            </details>
                           </aside>}
                           <details className="help-panel compact-task-help">
                             <summary>查看起步代码、验证方法与验收标准</summary>

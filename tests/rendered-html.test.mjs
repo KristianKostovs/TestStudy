@@ -116,9 +116,12 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
   assert.match(queue, /保存批改结果并标记完成/);
   assert.match(source, /localCodexBridge/);
   assert.doesNotMatch(source, /codexPluginUrl/);
-  assert.match(source, /本机 Codex 后台服务暂未连接/);
+  assert.match(source, /网页尚未连上本机 Codex/);
   assert.match(source, /targetAddressSpace: "local"/);
-  assert.match(source, /重新连接本机 Codex/);
+  assert.match(source, /允许并重新连接/);
+  assert.match(source, /检查本机服务/);
+  assert.match(source, /本地网络访问/);
+  assert.match(source, /checkLocalCodex\(20_000, true\)/);
   assert.match(source, /本机 Codex 已连接/);
   assert.match(source, /立即批改当前答案/);
   assert.match(source, /继续和 Codex 对话/);
