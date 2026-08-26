@@ -11,8 +11,7 @@
     "start": "WRANGLER_LOG_PATH=.wrangler/wrangler.log vinext start",
     "test": "npm run build && node --test tests/rendered-html.test.mjs",
     "lint": "eslint . --ignore-pattern dist --ignore-pattern .next",
-    "db:generate": "drizzle-kit generate",
-    "plugin:export": "node scripts/export-codex-learning-data.mjs /Users/baiyi/plugins/python-learning-quest/assets/course-data.json"
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "drizzle-orm": "0.45.2",

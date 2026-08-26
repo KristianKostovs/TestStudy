@@ -14,6 +14,7 @@ const codexBin = existsSync(preferredCodex) ? preferredCodex : "codex";
 const allowedOrigins = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
+  "https://python-framework-quest.leafy-slug-3142.chatgpt.site",
 ]);
 
 const login = spawnSync(codexBin, ["login", "status"], { encoding: "utf8", timeout: 10_000 });

@@ -109,7 +109,6 @@
 .model-setup-notice b { color: #8a5e12; }
 .model-setup-notice p { margin: 6px 0 0; line-height: 1.65; }
 .queue-mode-notice a { display: inline-block; margin-top: 8px; color: var(--green); font-weight: 900; text-decoration: none; }
-.queue-mode-notice a.queue-link { margin-left: 16px; color: #7d725f; font-size: 11px; font-weight: 600; }
 .local-codex-notice { color: #dcebe1; border-left-color: var(--gold); background: var(--dark-green); }
 .local-codex-notice b { color: #f2c75b; }
 .local-codex-notice b i { display: inline-block; width: 8px; height: 8px; margin-right: 7px; border-radius: 50%; background: #71d49a; box-shadow: 0 0 0 4px rgba(113, 212, 154, .13); }

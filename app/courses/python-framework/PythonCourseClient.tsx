@@ -805,7 +805,6 @@ const storageKey = "python-framework-quest-v2";
 const legacyStorageKey = "python-framework-quest-v1";
 const codexChatStorageKey = "python-framework-quest-codex-chats-v1";
 const localCodexBridge = "http://127.0.0.1:4317";
-const codexPluginUrl = "codex://plugins/python-learning-quest?marketplacePath=%2FUsers%2Fbaiyi%2F.agents%2Fplugins%2Fmarketplace.json";
 
 type ProgressState = {
   completed: number[];
@@ -1444,10 +1443,9 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             <b><i /> 本机 Codex 已连接</b>
                             <p>下面的聊天框会使用当前已登录的 Codex。可以即时批改，也可以继续追问“为什么错”或“给我一点提示”。</p>
                           </aside> : <aside className="model-setup-notice queue-mode-notice" role="status">
-                            <b>{localCodexStatus === "checking" ? "正在检查可用的学习对话方式…" : "浏览器版用于阅读，Codex 内嵌版用于即时对话"}</b>
-                            <p>{localCodexStatus === "checking" ? "检测完成后会显示可用入口。" : "推荐从 Codex 打开“测试能力修炼场”：课程网页、答案编辑器和学习导师会在同一个界面，不需要本地启动器或 API Key。"}</p>
-                            <a href={codexPluginUrl}>在 Codex 中打开内嵌学习版 →</a>
-                            <a className="queue-link" href="/grading-queue">仍然使用备用批改队列</a>
+                            <b>{localCodexStatus === "checking" ? "正在连接本机 Codex…" : "本机 Codex 后台服务暂未连接"}</b>
+                            <p>{localCodexStatus === "checking" ? "连接成功后，批改和连续追问都会直接出现在本页。" : "请确认 Codex 桌面端已登录。后台服务会自动重连；连接后不需要离开网页，也不需要 API Key。"}</p>
+                            <a href="/grading-queue">暂时使用网页备用批改队列</a>
                           </aside>}
                           <details className="help-panel compact-task-help">
                             <summary>查看起步代码、验证方法与验收标准</summary>
