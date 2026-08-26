@@ -866,6 +866,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [codexChatDrafts, setCodexChatDrafts] = useState<Record<number, string>>({});
   const [codexBusyLevel, setCodexBusyLevel] = useState<number | null>(null);
   const [codexErrors, setCodexErrors] = useState<Record<number, string>>({});
+  const [localCodexRetry, setLocalCodexRetry] = useState(0);
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
@@ -916,7 +917,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       const controller = new AbortController();
       const timeout = window.setTimeout(() => controller.abort(), 1500);
       try {
-        const response = await fetch(`${localCodexBridge}/health`, { signal: controller.signal, cache: "no-store" });
+        const response = await fetch(`${localCodexBridge}/health`, {
+          signal: controller.signal,
+          cache: "no-store",
+          targetAddressSpace: "local",
+        } as RequestInit & { targetAddressSpace: "local" });
         const result = await response.json() as { ok?: boolean };
         if (active) setLocalCodexStatus(response.ok && result.ok ? "ready" : "offline");
       } catch {
@@ -928,7 +933,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     void checkLocalCodex();
     const timer = window.setInterval(() => void checkLocalCodex(), 10_000);
     return () => { active = false; window.clearInterval(timer); };
-  }, [chapterId]);
+  }, [chapterId, localCodexRetry]);
 
   useEffect(() => {
     if (!chapterId) return;
@@ -1182,13 +1187,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       const response = await fetch(`${localCodexBridge}/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        targetAddressSpace: "local",
         body: JSON.stringify({
           level: { id: level.id, title: level.title, task: level.task, acceptance: level.acceptance },
           answer,
           message,
           history: previous,
         }),
-      });
+      } as RequestInit & { targetAddressSpace: "local" });
       const result = await response.json() as { reply?: string; grade?: TaskGrade | null; error?: string };
       if (!response.ok || !result.reply) throw new Error(result.error ?? "本机 Codex 没有返回有效回复");
 
@@ -1444,7 +1450,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             <p>下面的聊天框会使用当前已登录的 Codex。可以即时批改，也可以继续追问“为什么错”或“给我一点提示”。</p>
                           </aside> : <aside className="model-setup-notice queue-mode-notice" role="status">
                             <b>{localCodexStatus === "checking" ? "正在连接本机 Codex…" : "本机 Codex 后台服务暂未连接"}</b>
-                            <p>{localCodexStatus === "checking" ? "连接成功后，批改和连续追问都会直接出现在本页。" : "请确认 Codex 桌面端已登录。后台服务会自动重连；连接后不需要离开网页，也不需要 API Key。"}</p>
+                            <p>{localCodexStatus === "checking" ? "首次使用时，浏览器可能询问是否允许访问本地网络；请选择允许。连接成功后，批改和连续追问都会直接出现在本页。" : "请确认 Codex 桌面端已登录，并允许本站访问本机网络。授权只用于连接 127.0.0.1，不会访问局域网其他设备。"}</p>
+                            {localCodexStatus === "offline" && <button type="button" className="retry-local-codex" onClick={() => {
+                              setLocalCodexStatus("checking");
+                              setLocalCodexRetry((current) => current + 1);
+                            }}>重新连接本机 Codex</button>}
                             <a href="/grading-queue">暂时使用网页备用批改队列</a>
                           </aside>}
                           <details className="help-panel compact-task-help">
