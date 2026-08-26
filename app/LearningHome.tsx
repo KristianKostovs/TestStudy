@@ -28,7 +28,7 @@ export default function LearningHome() {
             <p>个独立学习方向</p>
             <ul>
               <li><b>1</b> 条路线已有完整十关</li>
-              <li><b>4</b> 条路线已有可扩展蓝图</li>
+              <li><b>5</b> 条路线已有可扩展蓝图</li>
               <li><b>3</b> 类知识来源持续供给内容</li>
             </ul>
           </aside>

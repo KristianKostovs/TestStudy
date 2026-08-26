@@ -43,6 +43,7 @@ test("学习中心只负责选择独立课程方向", async () => {
     "api-automation",
     "ai-testing",
     "performance-testing",
+    "quality-engineering",
   ]) {
     assert.match(html, new RegExp(`href=["']/courses/${moduleId}["']`));
   }
@@ -56,6 +57,7 @@ test("各方向拥有可独立访问的课程页面", async () => {
     ["/courses/api-automation", "API 自动化十关路线"],
     ["/courses/ai-testing", "AI 测试十关路线"],
     ["/courses/performance-testing", "性能测试十关路线"],
+    ["/courses/quality-engineering", "质量工程与保障十关路线"],
   ];
 
   for (const [pathname, expectedTitle] of cases) {
@@ -183,6 +185,23 @@ test("成长平台入口统一沿用面试系统视觉语言", async () => {
   assert.match(styles, /\.growth-dashboard[\s\S]*font-family: var\(--font-geist-sans\)/);
   assert.match(styles, /\.platform-home \.module-card[\s\S]*border-radius: 15px/);
   assert.match(styles, /\.workspace-page-hero[\s\S]*background: #fff/);
+});
+
+test("质量工程与保障补齐白盒测试和质量门禁路线", async () => {
+  const [registry, capabilityMap] = await Promise.all([
+    readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/capability-registry.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(registry, /id: "quality-engineering"/);
+  for (const topic of ["黑盒、白盒与灰盒测试", "代码分支与白盒用例", "覆盖率与覆盖率误区", "CI\/CD 质量门禁"]) {
+    assert.match(registry, new RegExp(topic));
+  }
+  assert.match(registry, /foundation\.quality_engineering/);
+  assert.match(registry, /radar\.quality_devops/);
+  assert.match(registry, /radar\.coverage_py/);
+  assert.match(capabilityMap, /competency: "测试基础"[\s\S]*href: "\/courses\/quality-engineering"/);
+  assert.match(capabilityMap, /competency: "CI\/CD"[\s\S]*href: "\/courses\/quality-engineering"/);
 });
 
 test("面试能力分只由真实回答证据生成", async () => {

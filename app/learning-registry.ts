@@ -85,6 +85,15 @@ export const sourceAdapters: SourceAdapter[] = [
     checkedAt: "2026-08-23",
   },
   {
+    id: "foundation.quality_engineering",
+    kind: "foundation",
+    title: "测试与质量工程基础",
+    provider: "ISTQB CTFL 4.0",
+    description: "测试基本原则、生命周期、静态测试、白盒技术、风险驱动测试和测试管理。",
+    href: "https://istqb.org/help/ctfl-v40/",
+    checkedAt: "2026-08-26",
+  },
+  {
     id: "radar.python_peps",
     kind: "technology_radar",
     title: "Python 版本与 PEP 雷达",
@@ -128,6 +137,24 @@ export const sourceAdapters: SourceAdapter[] = [
     description: "跟踪负载生成、协议用户、分布式执行和性能诊断能力。",
     href: "https://docs.locust.io/",
     checkedAt: "2026-08-23",
+  },
+  {
+    id: "radar.quality_devops",
+    kind: "technology_radar",
+    title: "Quality in DevOps 雷达",
+    provider: "ISTQB CT-QDO",
+    description: "跟踪质量工程如何进入价值流、DevOps 循环、自动化门禁、度量与持续改进。",
+    href: "https://istqb.org/certifications/certified-tester-quality-in-devops-ct-qdo/",
+    checkedAt: "2026-08-26",
+  },
+  {
+    id: "radar.coverage_py",
+    kind: "technology_radar",
+    title: "Python 覆盖率工具雷达",
+    provider: "coverage.py",
+    description: "跟踪语句与分支覆盖、上下文、并行数据合并、报告格式和兼容性变化。",
+    href: "https://coverage.readthedocs.io/en/latest/changes.html",
+    checkedAt: "2026-08-26",
   },
   {
     id: "project.python_framework",
@@ -208,6 +235,16 @@ export const learningModules: LearningModule[] = [
     sourceIds: ["foundation.python", "foundation.performance", "radar.locust_releases"],
     roadmap: ["响应时间、并发与吞吐", "P50/P95/P99", "负载模型", "Locust 用户与任务", "参数化和数据隔离", "阶梯加压与稳定性", "分布式负载", "监控与链路关联", "瓶颈与容量", "完整性能报告"],
     updateRule: "以性能工程基础和官方工具变化建立课程，未来再接入真实系统案例。",
+  },
+  {
+    id: "quality-engineering",
+    sigil: "QE",
+    title: "质量工程与保障",
+    subtitle: "从测试策略与白盒测试，走到代码质量、CI/CD 门禁、发布准入与线上质量闭环。",
+    status: "blueprint",
+    sourceIds: ["foundation.python", "foundation.pytest", "foundation.quality_engineering", "radar.quality_devops", "radar.coverage_py", "project.python_framework", "project.api_automation"],
+    roadmap: ["质量、测试与质量保障", "测试策略与风险分析", "黑盒、白盒与灰盒测试", "代码分支与白盒用例", "单元测试与依赖隔离", "覆盖率与覆盖率误区", "变异测试", "静态分析与代码评审", "CI/CD 质量门禁", "完整质量保障方案"],
+    updateRule: "ISTQB 基础与 Quality in DevOps 提供通用体系，coverage.py 和本地质量门禁资产提供工程实践。",
   },
 ];
 

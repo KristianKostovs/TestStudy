@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 const origin = "https://python-framework-quest.leafy-slug-3142.chatgpt.site";
 const title = "测试能力修炼场";
-const description = "选择 Python 框架、UI 自动化、API 自动化、AI 测试或性能测试，进入各自独立的学习路线。";
+const description = "选择 Python 框架、UI 自动化、API 自动化、AI 测试、性能测试或质量工程与保障，进入各自独立的学习路线。";
 
 export const metadata: Metadata = {
   metadataBase: new URL(origin),
