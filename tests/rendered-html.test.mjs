@@ -169,6 +169,22 @@ test("技术雷达与成长档案是独立页面", async () => {
   assert.match(growth, /课程进度来自本机学习记录/);
 });
 
+test("成长平台入口统一沿用面试系统视觉语言", async () => {
+  const [styles, home, learning, radar, growth] = await Promise.all([
+    readFile(new URL("../app/globals.css", import.meta.url), "utf8"),
+    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/LearningHome.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/radar/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/growth/GrowthArchiveClient.tsx", import.meta.url), "utf8"),
+  ]);
+
+  for (const source of [home, learning, radar, growth]) assert.match(source, /suite-topbar/);
+  assert.match(styles, /\.platform-rail[\s\S]*background: #f7f7f5/);
+  assert.match(styles, /\.growth-dashboard[\s\S]*font-family: var\(--font-geist-sans\)/);
+  assert.match(styles, /\.platform-home \.module-card[\s\S]*border-radius: 15px/);
+  assert.match(styles, /\.workspace-page-hero[\s\S]*background: #fff/);
+});
+
 test("面试能力分只由真实回答证据生成", async () => {
   const [client, api] = await Promise.all([
     readFile(new URL("../app/interview/InterviewCoachClient.tsx", import.meta.url), "utf8"),

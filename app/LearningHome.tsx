@@ -10,14 +10,14 @@ const sourceKinds: SourceKind[] = ["foundation", "technology_radar", "local_proj
 export default function LearningHome() {
   return (
     <main className="ready platform-home">
+      <header className="suite-topbar">
+        <div><strong>学习中心</strong><span>选择能力方向，进入各自独立的课程与关卡</span></div>
+        <div className="suite-live"><i />{learningModules.length} 条学习路线</div>
+      </header>
       <header className="hero platform-hero">
-        <nav>
-          <a className="brand" href="/learn"><i>AT</i> 学习中心</a>
-          <span className="rank">五条学习路线 · <a href="/interview">进入岗位面试陪练 →</a></span>
-        </nav>
         <div className="hero-grid">
           <section>
-            <p className="eyebrow">AI TESTING LEARNING CENTER</p>
+            <p className="eyebrow">YOUR LEARNING MAP</p>
             <h1>先选方向，<br /><em>再进入专属修炼场</em></h1>
             <p className="lead">每个方向都是独立课程。你可以随时回到学习中心切换路线，每条路线单独生长自己的关卡、知识来源与学习进度。</p>
             <a className="hero-cta" href="#modules">选择修炼方向 <span>↓</span></a>

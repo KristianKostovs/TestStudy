@@ -43,8 +43,12 @@ export default function GrowthArchiveClient() {
 
   return (
     <main className="ready growth-archive-page">
+      <header className="suite-topbar">
+        <div><strong>成长档案</strong><span>课程进度与真实回答证据分别记录、统一查看</span></div>
+        <div className="suite-live"><i />档案来自真实学习行为</div>
+      </header>
       <header className="workspace-page-hero archive-hero">
-        <p>GROWTH ARCHIVE</p>
+        <p>YOUR GROWTH ARCHIVE</p>
         <h1>把学过的、练过的、<br /><em>暴露出的薄弱项放在一起看</em></h1>
         <span>这里不创造第二套分数。课程进度来自本机学习记录，面试能力来自你的真实回答证据。</span>
       </header>

@@ -11,8 +11,12 @@ const radarSources = sourceAdapters.filter((source) => source.kind === "technolo
 export default function RadarPage() {
   return (
     <main className="ready radar-page">
+      <header className="suite-topbar">
+        <div><strong>技术雷达</strong><span>持续发现变化，经过判断后再更新课程</span></div>
+        <div className="suite-live"><i />{radarSources.length} 个官方来源</div>
+      </header>
       <header className="workspace-page-hero radar-hero">
-        <p>TECHNOLOGY RADAR</p>
+        <p>YOUR TECHNOLOGY RADAR</p>
         <h1>新技术先进入雷达，<br /><em>经过判断再进入课程</em></h1>
         <span>每周发现官方变化，每月做一次课程影响评审。更新不是机械加关，而是判断它带来了新能力、必要前置知识，还是只需补充案例。</span>
       </header>

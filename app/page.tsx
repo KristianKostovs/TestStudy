@@ -6,9 +6,13 @@ const radarCount = sourceAdapters.filter((source) => source.kind === "technology
 export default function Home() {
   return (
     <main className="ready growth-dashboard">
+      <header className="suite-topbar">
+        <div><strong>测试成长总览</strong><span>学习、面试与技术更新共用一张能力地图</span></div>
+        <div className="suite-live"><i />成长系统已连接</div>
+      </header>
       <section className="dashboard-hero">
         <div>
-          <p>AI TESTING GROWTH OS</p>
+          <p>YOUR TESTING GROWTH MAP</p>
           <h1>学习、实战与面试，<br /><em>都回到同一张成长地图</em></h1>
           <span>不用切换浏览器窗口。课程负责建立能力，面试负责暴露薄弱项，技术雷达负责持续发现新知识。</span>
           <div className="dashboard-actions">
