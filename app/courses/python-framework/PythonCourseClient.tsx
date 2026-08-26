@@ -1284,9 +1284,9 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     <main className={ready ? "ready" : ""}>
       <header className="hero">
         <nav>
-          <a className="brand" href="/"><i>PY</i> Python 框架修炼</a>
+          <a className="brand" href="/learn"><i>PY</i> Python 框架修炼</a>
           <div className="nav-actions">
-            <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/"}>{currentChapter ? "← 返回章节选择" : "← 选择其他方向"}</a>
+            <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/learn"}>{currentChapter ? "← 返回章节选择" : "← 返回学习中心"}</a>
             <a className="text-button" href="/grading-queue">备用批改队列</a>
             <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={resetProgress}>重置进度</button>

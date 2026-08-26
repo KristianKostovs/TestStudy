@@ -16,12 +16,26 @@ async function render(pathname = "/") {
   );
 }
 
-test("首页只负责选择学习方向", async () => {
+test("首页是学习、面试和技术雷达的统一成长总览", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   const html = await response.text();
 
   assert.match(html, /<title>测试能力修炼场<\/title>/);
+  assert.match(html, /都回到同一张成长地图/);
+  assert.match(html, /href=["']\/learn["']/);
+  assert.match(html, /href=["']\/interview["']/);
+  assert.match(html, /href=["']\/radar["']/);
+  assert.match(html, /成长档案/);
+  assert.doesNotMatch(html, /id=["']level-1["']/);
+});
+
+test("学习中心只负责选择独立课程方向", async () => {
+  const response = await render("/learn");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+
+  assert.match(html, /<title>学习中心 \| 测试能力修炼场<\/title>/);
   assert.match(html, /先选方向/);
   for (const moduleId of [
     "python-framework",
@@ -49,7 +63,7 @@ test("各方向拥有可独立访问的课程页面", async () => {
     assert.equal(response.status, 200, pathname);
     const html = await response.text();
     assert.match(html, new RegExp(`<title>${expectedTitle} \\| 测试能力修炼场<\\/title>`), pathname);
-    assert.match(html, /href=["']\/["']/, pathname);
+    assert.match(html, /href=["']\/learn["']/, pathname);
   }
 });
 
@@ -140,6 +154,19 @@ test("面试系统以数据驱动能力地图为首屏", async () => {
   assert.match(api, /interview_capability_modules/);
   assert.match(api, /kind !== "adaptive" \|\| Number\(module\.signalCount\) > 0/);
   assert.match(api, /openai\/openai-agents-python/);
+  assert.match(client, /courseForCompetency/);
+  assert.match(client, /去学「\{course\.courseTitle\}」/);
+});
+
+test("技术雷达与成长档案是独立页面", async () => {
+  const radar = await (await render("/radar")).text();
+  assert.match(radar, /每周新增/);
+  assert.match(radar, /每月更新/);
+  assert.match(radar, /新技术先进入雷达/);
+
+  const growth = await (await render("/growth")).text();
+  assert.match(growth, /GROWTH ARCHIVE/);
+  assert.match(growth, /课程进度来自本机学习记录/);
 });
 
 test("面试能力分只由真实回答证据生成", async () => {
@@ -156,7 +183,8 @@ test("面试能力分只由真实回答证据生成", async () => {
 
 test("跨页面入口使用原生导航，避免生产环境预取崩溃", async () => {
   const files = await Promise.all([
-    readFile(new URL("../app/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/LearningHome.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/PlatformShell.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/[moduleId]/page.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
   ]);
@@ -165,4 +193,5 @@ test("跨页面入口使用原生导航，避免生产环境预取崩溃", async
     assert.doesNotMatch(source, /from ["']next\/link["']/);
   }
   assert.match(files[0], /<a[\s\S]*href=\{`\/courses\/\$\{module\.id\}`\}/);
+  assert.match(files[1], /href=\{item\.href\}/);
 });

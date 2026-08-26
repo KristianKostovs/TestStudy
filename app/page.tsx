@@ -1,97 +1,52 @@
-import {
-  learningModules,
-  sourceKindMeta,
-  sourcesForModule,
-  type SourceKind,
-} from "./learning-registry";
+import { learningModules, sourceAdapters } from "./learning-registry";
+/* eslint-disable @next/next/no-html-link-for-pages -- native navigation avoids vinext RSC prefetch failures in production */
 
-const sourceKinds: SourceKind[] = ["foundation", "technology_radar", "local_project"];
+const radarCount = sourceAdapters.filter((source) => source.kind === "technology_radar").length;
 
 export default function Home() {
   return (
-    <main className="ready platform-home">
-      <header className="hero platform-hero">
-        <nav>
-          <a className="brand" href="#modules"><i>AT</i> 测试能力修炼场</a>
-          <span className="rank">五条学习路线 · <a href="/interview">进入岗位面试陪练 →</a></span>
-        </nav>
-        <div className="hero-grid">
-          <section>
-            <p className="eyebrow">AI TESTING LEARNING PLATFORM</p>
-            <h1>先选方向，<br /><em>再进入专属修炼场</em></h1>
-            <p className="lead">每个方向都是独立课程，不再把所有内容堆在同一个页面。你可以随时返回这里切换路线，每条路线单独生长自己的关卡、知识来源与学习进度。</p>
-            <a className="hero-cta" href="#modules">选择修炼方向 <span>↓</span></a>
-          </section>
-          <aside className="platform-summary">
-            <span>当前课程地图</span>
-            <strong>{learningModules.length}</strong>
-            <p>个独立学习方向</p>
-            <ul>
-              <li><b>1</b> 条路线已有完整十关</li>
-              <li><b>4</b> 条路线已有可扩展蓝图</li>
-              <li><b>3</b> 类知识来源持续供给内容</li>
-            </ul>
-          </aside>
+    <main className="ready growth-dashboard">
+      <section className="dashboard-hero">
+        <div>
+          <p>AI TESTING GROWTH OS</p>
+          <h1>学习、实战与面试，<br /><em>都回到同一张成长地图</em></h1>
+          <span>不用切换浏览器窗口。课程负责建立能力，面试负责暴露薄弱项，技术雷达负责持续发现新知识。</span>
+          <div className="dashboard-actions">
+            <a className="primary" href="/learn">继续学习 →</a>
+            <a href="/interview">开始面试陪练</a>
+          </div>
         </div>
-      </header>
-
-      <section className="principles" aria-label="学习平台原则">
-        <article><b>01</b><div><h2>课程各自独立</h2><p>每个方向有专属地址、关卡路线和内容空间。</p></div></article>
-        <article><b>02</b><div><h2>知识持续更新</h2><p>基础、官方新技术与项目实战共同驱动课程成长。</p></div></article>
-        <article><b>03</b><div><h2>进步可以验证</h2><p>主关卡必须包含解释、任务和客观验收方式。</p></div></article>
+        <aside>
+          <small>本周建议</small>
+          <strong>先完成一个可验证任务，再用面试题检验是否真正理解。</strong>
+          <a href="/courses/python-framework">进入 Python 当前路线 →</a>
+        </aside>
       </section>
 
-      <section className="module-section home-module-section" id="modules">
-        <div className="section-heading">
-          <p>LEARNING DIRECTIONS</p>
-          <h2>你想先修炼哪一种能力？</h2>
-          <span>点击方向会进入新的课程页面；浏览器返回即可重新选择。</span>
-        </div>
-        <div className="module-grid">
-          {learningModules.map((module) => {
-            const sourceKindsInModule = new Set(sourcesForModule(module).map((source) => source.kind));
-            return (
-              <a
-                className="module-card route-card"
-                href={`/courses/${module.id}`}
-                key={module.id}
-              >
-                <span className="module-sigil">{module.sigil}</span>
-                <span className="module-state">{module.status === "active" ? "十关已开放" : "路线已建立"}</span>
-                <h3>{module.title}</h3>
-                <p>{module.subtitle}</p>
-                <span className="module-source-badges">
-                  {sourceKinds.map((kind) => sourceKindsInModule.has(kind) && <i key={kind}>{sourceKindMeta[kind].short}</i>)}
-                </span>
-                <span className="module-enter">进入这条路线 <b>→</b></span>
-              </a>
-            );
-          })}
+      <section className="dashboard-metrics" aria-label="平台资产概览">
+        <article><span>学习路线</span><strong>{learningModules.length}</strong><p>独立课程，进度互不干扰</p></article>
+        <article><span>技术雷达源</span><strong>{radarCount}</strong><p>官方更新先观察再入课</p></article>
+        <article><span>成长闭环</span><strong>3</strong><p>学习 → 练习 → 复盘</p></article>
+      </section>
+
+      <section className="dashboard-workspaces">
+        <header><p>ONE PLATFORM · THREE WORKSPACES</p><h2>每个空间解决一个明确问题</h2></header>
+        <div>
+          <a href="/learn"><i>LEARN</i><h3>学习中心</h3><p>按能力方向学习基础、框架与项目实践，逐关完成任务。</p><b>选择课程 →</b></a>
+          <a href="/interview"><i>INTERVIEW</i><h3>面试成长</h3><p>用真实回答形成能力证据，并把薄弱项转回学习路线。</p><b>打开能力地图 →</b></a>
+          <a href="/radar"><i>RADAR</i><h3>技术雷达</h3><p>每周发现官方变化，每月判断应更新课程、练习还是仅观察。</p><b>查看新技术 →</b></a>
         </div>
       </section>
 
-      <section className="home-source-summary">
-        <div className="section-heading">
-          <p>PLUGIN-STYLE GROWTH</p>
-          <h2>模块可以增加，关卡也可以增加</h2>
-          <span>统一课程注册表只负责发现方向；真正的学习内容留在各自页面独立演进。</span>
-        </div>
-        <div className="source-principle-grid">
-          {sourceKinds.map((kind) => (
-            <article key={kind} className={kind}>
-              <span>{sourceKindMeta[kind].short}</span>
-              <h3>{sourceKindMeta[kind].label}</h3>
-              <p>{kind === "foundation" ? "构成长期不变的课程骨架。" : kind === "technology_radar" ? "稳定的新能力进入进阶关，实验性内容先观察。" : "真实项目变化用于更新案例、任务和能力差异。"}</p>
-            </article>
-          ))}
-        </div>
+      <section className="dashboard-loop">
+        <div><p>THE GROWTH LOOP</p><h2>两个系统不会重复，它们共享能力，但保留不同职责。</h2></div>
+        <ol>
+          <li><b>01</b><span><strong>学会</strong>课程讲清概念并安排任务</span></li>
+          <li><b>02</b><span><strong>说清</strong>面试回答沉淀能力证据</span></li>
+          <li><b>03</b><span><strong>补弱</strong>成长计划跳回对应课程</span></li>
+          <li><b>04</b><span><strong>更新</strong>技术雷达持续补充新内容</span></li>
+        </ol>
       </section>
-
-      <footer>
-        <p>AI TESTING LEARNING PLATFORM</p>
-        <h2>方向分开，成长相连。</h2>
-        <span>先从最需要的一条路线开始，完成任务后再扩展你的测试能力图谱。</span>
-      </footer>
     </main>
   );
 }

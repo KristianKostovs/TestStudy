@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { courseForCompetency } from "../capability-registry";
 
 type Profile = { current_role: string; target_role: string; horizon: string; focus: string };
 type Question = { id: number; prompt: string; competency: string; tags: string[]; source_ref: string };
@@ -268,9 +269,19 @@ export default function InterviewCoachClient() {
               <div>{data.signals.map((signal) => <a href={signal.source_url} target="_blank" rel="noreferrer" key={signal.id}><span>{signal.source_type === "job" ? "岗位" : signal.source_type === "market" ? "市场" : "技术"}</span><strong>{signal.title}</strong><p>{signal.summary}</p><small>{signal.observed_at} · {signal.competency}</small></a>)}</div>
             </section>
             <div className="plan-list">
-              {data.plan.length === 0 ? <div className="empty-state">回答面试题后，系统会根据最弱证据生成训练任务。</div> : data.plan.map((item, index) => (
-                <article className={item.status === "done" ? "done" : ""} key={item.id}><span>{String(index + 1).padStart(2, "0")}</span><div><small>{item.competency} · {item.duration_minutes} 分钟</small><h2>{item.title}</h2><p>{item.reason}</p></div><button type="button" disabled={item.status === "done" || saving} onClick={() => void completePlan(item.id)}>{item.status === "done" ? "已完成" : "标记完成"}</button></article>
-              ))}
+              {data.plan.length === 0 ? <div className="empty-state">回答面试题后，系统会根据最弱证据生成训练任务。</div> : data.plan.map((item, index) => {
+                const course = courseForCompetency(item.competency);
+                return (
+                  <article className={item.status === "done" ? "done" : ""} key={item.id}>
+                    <span>{String(index + 1).padStart(2, "0")}</span>
+                    <div><small>{item.competency} · {item.duration_minutes} 分钟</small><h2>{item.title}</h2><p>{item.reason}</p></div>
+                    <div className="plan-actions">
+                      {course && <a href={course.href}>去学「{course.courseTitle}」</a>}
+                      <button type="button" disabled={item.status === "done" || saving} onClick={() => void completePlan(item.id)}>{item.status === "done" ? "已完成" : "标记完成"}</button>
+                    </div>
+                  </article>
+                );
+              })}
             </div>
           </div>
         )}

@@ -668,3 +668,141 @@ footer span { color: #9aafa3; font-size: 12px; }
   .module-topic-list article { grid-template-columns: 26px 1fr; }
   .module-topic-list article > small { grid-column: 2; }
 }
+
+/* Unified growth platform shell. The inner learning and interview workspaces keep their own UI. */
+.unified-platform-shell { min-height: 100vh; display: grid; grid-template-columns: 84px minmax(0, 1fr); }
+.platform-stage { min-width: 0; }
+.platform-rail {
+  position: sticky; top: 0; z-index: 50; height: 100vh; min-height: 620px; padding: 17px 10px 15px;
+  display: flex; flex-direction: column; align-items: stretch; color: #e9efe9; background: #10271f;
+  border-right: 1px solid rgba(255,255,255,.1); box-shadow: 8px 0 30px rgba(12,30,23,.08);
+}
+.platform-rail-brand { display: grid; place-items: center; gap: 7px; padding: 3px 0 20px; color: white; }
+.platform-rail-brand strong { display: grid; place-items: center; width: 42px; height: 42px; color: #17352a; background: #e5b64e; border-radius: 14px; font: 900 13px Georgia, serif; }
+.platform-rail-brand span { font-size: 9px; font-weight: 750; letter-spacing: .12em; }
+.platform-rail nav { width: auto; max-width: none; margin: 12px 0 0; display: grid; gap: 7px; }
+.platform-rail nav a { position: relative; display: grid; place-items: center; gap: 5px; min-height: 61px; padding: 8px 3px; border-radius: 12px; color: #9eb1a8; }
+.platform-rail nav a:hover { color: #fff5d3; background: rgba(255,255,255,.07); }
+.platform-rail nav a.active { color: #fff5d3; background: #214b3d; box-shadow: inset 0 0 0 1px rgba(242,197,88,.18); }
+.platform-rail nav a.active::before { content: ""; position: absolute; left: -10px; width: 3px; height: 28px; background: #e6b64b; }
+.platform-rail nav i { display: grid; place-items: center; width: 27px; height: 27px; border: 1px solid currentColor; border-radius: 9px; font-size: 11px; font-style: normal; font-weight: 850; }
+.platform-rail nav span { font-size: 9px; font-weight: 700; white-space: nowrap; }
+.platform-rail > p { margin: auto 0 0; color: #7f988c; text-align: center; font-size: 8px; line-height: 1.7; }
+.platform-stage .answer-composer { left: 354px; }
+
+/* Shared dashboard language */
+.growth-dashboard { min-height: 100vh; padding: 0 0 90px; background: #f2ecdd; }
+.dashboard-hero { min-height: 520px; padding: 92px clamp(28px, 7vw, 108px) 80px; display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(250px, .55fr); gap: 64px; align-items: end; color: #f7f2e2; background: radial-gradient(circle at 85% 25%, rgba(79,137,106,.62), transparent 27%), linear-gradient(135deg, #10271f, #1f4939 65%, #142f25); }
+.dashboard-hero > div > p, .workspace-page-hero > p, .workspace-section-heading > p, .dashboard-workspaces > header p, .dashboard-loop > div p, .radar-decision-rule > div p, .archive-next-step p { margin: 0; color: #e7b84c; font-size: 10px; font-weight: 900; letter-spacing: .2em; }
+.dashboard-hero h1 { margin: 13px 0 25px; font: 900 clamp(43px, 6vw, 78px)/1.02 Georgia, "Songti SC", serif; letter-spacing: -.05em; }
+.dashboard-hero h1 em, .workspace-page-hero h1 em { color: #f1c34f; font-style: normal; }
+.dashboard-hero > div > span { display: block; max-width: 700px; color: #d8e2da; font-size: 15px; line-height: 1.9; }
+.dashboard-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 28px; }
+.dashboard-actions a { padding: 13px 18px; border: 1px solid rgba(255,255,255,.3); color: #fff3c8; font-size: 12px; font-weight: 800; }
+.dashboard-actions a.primary { color: #17352a; border-color: #e5b64e; background: #e5b64e; }
+.dashboard-hero aside { padding: 27px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); }
+.dashboard-hero aside small { color: #e5b64e; font-size: 10px; font-weight: 850; letter-spacing: .12em; }
+.dashboard-hero aside strong { display: block; margin: 14px 0 22px; font: 750 20px/1.65 Georgia, "Songti SC", serif; }
+.dashboard-hero aside a { color: #f7d77f; border-bottom: 1px solid rgba(247,215,127,.45); font-size: 11px; font-weight: 800; }
+.dashboard-metrics { max-width: 1080px; margin: -42px auto 0; padding: 0 28px; display: grid; grid-template-columns: repeat(3, 1fr); position: relative; z-index: 2; }
+.dashboard-metrics article { min-height: 150px; padding: 25px; border-right: 1px solid #ded4c0; background: #fffdf7; box-shadow: 0 18px 42px rgba(35,49,40,.09); }
+.dashboard-metrics article:last-child { border-right: 0; }
+.dashboard-metrics span { color: #8a3427; font-size: 10px; font-weight: 800; letter-spacing: .1em; }
+.dashboard-metrics strong { display: block; margin-top: 10px; color: #214b3d; font: 850 36px Georgia, serif; }
+.dashboard-metrics p { margin: 7px 0 0; color: #747d76; font-size: 11px; }
+.dashboard-workspaces, .dashboard-loop { max-width: 1120px; margin: 0 auto; padding: 92px 28px 0; }
+.dashboard-workspaces > header h2, .dashboard-loop h2, .workspace-section-heading h2, .radar-decision-rule h2, .archive-next-step h2 { margin: 9px 0 0; font: 850 30px/1.35 Georgia, "Songti SC", serif; }
+.dashboard-workspaces > div { margin-top: 32px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; }
+.dashboard-workspaces > div > a { min-height: 250px; padding: 25px; display: flex; flex-direction: column; border: 1px solid #d9cfb9; background: #fffdf7; transition: .2s; }
+.dashboard-workspaces > div > a:hover { transform: translateY(-3px); border-color: #a88a52; box-shadow: 0 14px 35px rgba(30,47,38,.09); }
+.dashboard-workspaces i { color: #b13b2a; font-size: 9px; font-style: normal; font-weight: 900; letter-spacing: .15em; }
+.dashboard-workspaces h3 { margin: 28px 0 10px; font: 800 23px Georgia, "Songti SC", serif; }
+.dashboard-workspaces a p { margin: 0; color: #69736c; font-size: 12px; line-height: 1.8; }
+.dashboard-workspaces a b { margin-top: auto; padding-top: 18px; color: #265847; border-top: 1px solid #e1d8c5; font-size: 11px; }
+.dashboard-loop { display: grid; grid-template-columns: .75fr 1.25fr; gap: 52px; align-items: start; }
+.dashboard-loop ol { margin: 0; padding: 0; display: grid; grid-template-columns: 1fr 1fr; list-style: none; border: 1px solid #d9cfb9; }
+.dashboard-loop li { min-height: 112px; padding: 18px; display: flex; gap: 13px; border-right: 1px solid #d9cfb9; border-bottom: 1px solid #d9cfb9; background: #e7deca; }
+.dashboard-loop li:nth-child(2n) { border-right: 0; }
+.dashboard-loop li:nth-last-child(-n+2) { border-bottom: 0; }
+.dashboard-loop li > b { color: #b23b2a; font: 800 14px Georgia, serif; }
+.dashboard-loop li span { color: #697269; font-size: 11px; line-height: 1.65; }
+.dashboard-loop li strong { display: block; margin-bottom: 4px; color: #203c30; font-size: 13px; }
+
+/* Technology radar and growth archive */
+.radar-page, .growth-archive-page { min-height: 100vh; padding-bottom: 95px; background: #f5efe2; }
+.workspace-page-hero { padding: 85px clamp(28px, 7vw, 105px) 75px; color: #f7f2e2; background: linear-gradient(135deg, #10271f, #1e4938); }
+.workspace-page-hero h1 { margin: 14px 0 23px; font: 900 clamp(40px, 5.5vw, 70px)/1.04 Georgia, "Songti SC", serif; letter-spacing: -.045em; }
+.workspace-page-hero > span { display: block; max-width: 790px; color: #d6e0d8; font-size: 14px; line-height: 1.9; }
+.radar-cadence { max-width: 1100px; margin: -36px auto 0; padding: 0 28px; display: grid; grid-template-columns: repeat(3, 1fr); position: relative; z-index: 2; }
+.radar-cadence article { min-height: 180px; padding: 24px; border-right: 1px solid #ddd2bc; background: #fffdf8; box-shadow: 0 16px 40px rgba(30,45,37,.08); }
+.radar-cadence article:last-child { border-right: 0; }
+.radar-cadence b { color: #ae3928; font-size: 10px; letter-spacing: .12em; }
+.radar-cadence strong { display: block; margin: 16px 0 8px; font: 800 20px Georgia, "Songti SC", serif; }
+.radar-cadence p { margin: 0; color: #68736c; font-size: 11px; line-height: 1.75; }
+.radar-source-board, .radar-decision-rule, .archive-summary-grid, .archive-next-step { max-width: 1100px; margin: 0 auto; padding: 85px 28px 0; }
+.workspace-section-heading > span { display: block; margin-top: 8px; color: #7d857e; font-size: 11px; }
+.radar-source-grid { margin-top: 28px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; }
+.radar-source-grid > article { min-height: 245px; padding: 22px; border: 1px solid #dbd1bd; background: #fffdf8; }
+.radar-source-grid header { display: flex; justify-content: space-between; gap: 12px; }
+.radar-source-grid header span { color: #a83829; font-size: 9px; font-weight: 850; letter-spacing: .08em; }
+.radar-source-grid time { color: #938b7c; font-size: 8px; }
+.radar-source-grid h3 { margin: 19px 0 8px; font: 800 19px Georgia, "Songti SC", serif; }
+.radar-source-grid p { min-height: 48px; margin: 0 0 16px; color: #69736d; font-size: 11px; line-height: 1.7; }
+.radar-source-grid article > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.radar-source-grid article > div a { padding: 5px 7px; color: #285947; background: #e7f0eb; font-size: 9px; font-weight: 750; }
+.official-source-link { display: inline-block; margin-top: 18px; color: #9d392b; border-bottom: 1px solid #d6b9ae; font-size: 9px; font-weight: 800; }
+.radar-decision-rule { display: grid; grid-template-columns: .65fr 1.35fr; gap: 45px; }
+.radar-decision-rule ol { margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, 1fr); list-style: none; }
+.radar-decision-rule li { min-height: 95px; padding: 17px; display: flex; gap: 12px; border: 1px solid #d8cfbd; background: #e8dfcd; }
+.radar-decision-rule li b { color: #b23b2a; font: 800 14px Georgia, serif; }
+.radar-decision-rule li span { color: #687168; font-size: 10px; line-height: 1.6; }
+.radar-decision-rule li strong { display: block; color: #234738; font-size: 12px; }
+.archive-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+.archive-summary-grid article { min-height: 260px; padding: 24px; display: flex; flex-direction: column; border: 1px solid #dbd1bd; background: #fffdf8; }
+.archive-summary-grid article > span { color: #9b382a; font-size: 10px; font-weight: 850; letter-spacing: .1em; }
+.archive-summary-grid strong { margin: 23px 0 10px; color: #214b3d; font: 850 44px Georgia, serif; }
+.archive-summary-grid strong small { font-size: 13px; }
+.archive-summary-grid p { margin: 0; color: #6d766f; font-size: 11px; line-height: 1.75; }
+.archive-summary-grid a { margin-top: auto; padding-top: 18px; color: #9e382a; border-top: 1px solid #e3dbc9; font-size: 10px; font-weight: 850; }
+.archive-next-step { display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center; }
+.archive-next-step span { display: block; margin-top: 10px; color: #707970; font-size: 11px; line-height: 1.7; }
+.archive-next-step > a { padding: 13px 17px; color: #fff6dc; background: #214b3d; font-size: 11px; font-weight: 850; }
+.plan-actions { display: grid; justify-items: stretch; gap: 6px; min-width: 116px; }
+.plan-actions a { padding: 8px 10px; border-radius: 8px; color: #fff; background: #257a62; text-align: center; font-size: 9px; font-weight: 750; }
+
+@media (max-width: 1100px) {
+  .platform-stage .answer-composer { left: 330px; right: 22px; }
+}
+
+@media (max-width: 850px) {
+  .dashboard-hero { grid-template-columns: 1fr; gap: 35px; }
+  .dashboard-metrics, .radar-cadence, .archive-summary-grid { grid-template-columns: 1fr; }
+  .dashboard-metrics article, .radar-cadence article { min-height: 0; border-right: 0; border-bottom: 1px solid #ded4c0; }
+  .dashboard-workspaces > div { grid-template-columns: 1fr; }
+  .dashboard-workspaces > div > a { min-height: 210px; }
+  .dashboard-loop, .radar-decision-rule { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 720px) {
+  body { padding-bottom: 64px; }
+  .unified-platform-shell { display: block; }
+  .platform-rail { position: fixed; inset: auto 0 0; z-index: 90; width: 100%; height: 64px; min-height: 0; padding: 6px 7px; display: block; border: 0; border-top: 1px solid rgba(255,255,255,.13); box-shadow: 0 -8px 30px rgba(12,30,23,.16); }
+  .platform-rail-brand, .platform-rail > p { display: none; }
+  .platform-rail nav { height: 100%; margin: 0; grid-template-columns: repeat(5, 1fr); gap: 3px; }
+  .platform-rail nav a { min-height: 0; padding: 3px; gap: 2px; border-radius: 9px; }
+  .platform-rail nav a.active::before { inset: auto auto -6px; width: 28px; height: 3px; }
+  .platform-rail nav i { width: 23px; height: 23px; border: 0; font-size: 10px; }
+  .platform-rail nav span { font-size: 8px; }
+  .platform-stage .answer-composer { left: 14px; right: 14px; bottom: 76px; }
+  .dashboard-hero, .workspace-page-hero { padding-left: 22px; padding-right: 22px; }
+  .dashboard-hero h1, .workspace-page-hero h1 { font-size: 42px; }
+  .dashboard-metrics, .dashboard-workspaces, .dashboard-loop, .radar-cadence, .radar-source-board, .radar-decision-rule, .archive-summary-grid, .archive-next-step { padding-left: 14px; padding-right: 14px; }
+  .dashboard-workspaces, .dashboard-loop, .radar-source-board, .radar-decision-rule, .archive-summary-grid, .archive-next-step { padding-top: 64px; }
+  .dashboard-loop ol, .radar-decision-rule ol { grid-template-columns: 1fr; }
+  .dashboard-loop li { border-right: 0; border-bottom: 1px solid #d9cfb9 !important; }
+  .dashboard-loop li:last-child { border-bottom: 0 !important; }
+  .radar-source-grid { grid-template-columns: 1fr; }
+  .archive-next-step { grid-template-columns: 1fr; }
+  .archive-next-step > a { justify-self: start; }
+  .plan-actions { grid-column: 2; justify-items: start; }
+}
