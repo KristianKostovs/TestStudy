@@ -74,7 +74,7 @@ test("Python 课程拆成总览与四个独立章节页面", async () => {
   }
 });
 
-test("Python 关卡同时支持本机 Codex 对话与异步备用队列", async () => {
+test("Python 关卡提供 Codex 内嵌入口并保留旧本机与异步备用路径", async () => {
   const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
   const route = await readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8");
   const queue = await readFile(new URL("../app/grading-queue/GradingQueueClient.tsx", import.meta.url), "utf8");
@@ -99,6 +99,8 @@ test("Python 关卡同时支持本机 Codex 对话与异步备用队列", async 
   assert.match(queue, /领取并复制 Codex 批改单/);
   assert.match(queue, /保存批改结果并标记完成/);
   assert.match(source, /localCodexBridge/);
+  assert.match(source, /codexPluginUrl/);
+  assert.match(source, /在 Codex 中打开内嵌学习版/);
   assert.match(source, /本机 Codex 已连接/);
   assert.match(source, /立即批改当前答案/);
   assert.match(source, /继续和 Codex 对话/);
