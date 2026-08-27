@@ -3,7 +3,7 @@ import { learningModules, sourceAdapters } from "../learning-registry";
 
 export const metadata: Metadata = {
   title: "技术雷达 | 测试能力修炼场",
-  description: "每周发现测试技术变化，每月评审哪些内容应进入课程。",
+  description: "每天巡检本地知识库、每周发现官方变化，每月评审哪些内容应进入课程。",
 };
 
 const radarSources = sourceAdapters.filter((source) => source.kind === "technology_radar");
@@ -18,13 +18,13 @@ export default function RadarPage() {
       <header className="workspace-page-hero radar-hero">
         <p>YOUR TECHNOLOGY RADAR</p>
         <h1>新技术先进入雷达，<br /><em>经过判断再进入课程</em></h1>
-        <span>每周发现官方变化，每月做一次课程影响评审。更新不是机械加关，而是判断它带来了新能力、必要前置知识，还是只需补充案例。</span>
+        <span>每天巡检本地项目、每周发现官方变化，每月做一次课程影响评审。更新不是机械加关，而是判断它带来了新能力、必要前置知识，还是只需补充案例。</span>
       </header>
 
       <section className="radar-cadence">
         <article><b>每周新增</b><strong>发现候选</strong><p>读取官方发布、版本说明和权威规范，记录变化与影响方向。</p></article>
         <article><b>每月更新</b><strong>课程评审</strong><p>新能力才新增主关；用法变化更新知识卡；项目变化优先更新练习。</p></article>
-        <article><b>随时触发</b><strong>项目差异</strong><p>本地项目出现新的可迁移能力时，进入待评审队列而不是直接堆内容。</p></article>
+        <article><b>每天 19:30</b><strong>本地知识库巡检</strong><p>自动识别 AI测试赋能 下的不同项目；发现变化后进入 Knowledge Diff 待评审队列。</p></article>
       </section>
 
       <section className="radar-source-board">

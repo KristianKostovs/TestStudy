@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "root": "/path/to/AI测试赋能",
+  "discoverTopLevelProjects": true,
+  "outputDirectory": "work/knowledge-diff",
+  "maxFileBytes": 2097152,
+  "extensions": [
+    ".md",
+    ".py",
+    ".yaml",
+    ".yml",
+    ".json",
+    ".html",
+    ".js",
+    ".mjs",
+    ".ts",
+    ".tsx",
+    ".toml",
+    ".ini",
+    ".txt",
+    ".java"
+  ],
+  "sources": []
+}
