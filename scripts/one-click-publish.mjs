@@ -131,8 +131,6 @@ console.log("Codex 将检查两台电脑的修改、验证网站并发布。过�
 const result = run(codex, [
   "exec",
   "--approve-for-me",
-  "--sandbox",
-  "workspace-write",
   "--cd",
   projectDirectory,
   "--color",
