@@ -92,6 +92,7 @@ test("Python 课程拆成总览与四个独立章节页面", async () => {
 
 test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路径", async () => {
   const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
+  const courseStyles = await readFile(new URL("../app/courses/python-framework/course-flow.css", import.meta.url), "utf8");
   const route = await readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8");
   const queue = await readFile(new URL("../app/grading-queue/GradingQueueClient.tsx", import.meta.url), "utf8");
   const bridge = await readFile(new URL("../local-companion/server.mjs", import.meta.url), "utf8");
@@ -104,6 +105,15 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
   assert.match(source, /event\.key === "Tab"/);
   assert.match(source, /event\.key === "Enter"/);
   assert.match(source, /wrap="soft"/);
+  assert.match(source, /code-editor-shell/);
+  assert.match(source, /code-editor-gutter/);
+  assert.match(source, /Ln \{editorPositions\[level\.id\]\?\.line/);
+  assert.match(source, /载入起步代码/);
+  assert.match(source, /course-workspace/);
+  assert.match(source, /suite-topbar course-suite-topbar/);
+  assert.match(courseStyles, /\.code-editor-statusbar/);
+  assert.match(courseStyles, /\.course-workspace[\s\S]*font-family: var\(--font-geist-sans\)/);
+  assert.match(courseStyles, /\.course-workspace \.chapter-card[\s\S]*border-radius: 15px/);
   assert.match(source, /fetch\("\/api\/course-grade"/);
   assert.match(source, /action: "enqueue"/);
   assert.match(source, /待评判/);

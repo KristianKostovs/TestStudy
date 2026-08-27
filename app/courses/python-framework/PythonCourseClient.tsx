@@ -879,6 +879,8 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [codexChatDrafts, setCodexChatDrafts] = useState<Record<number, string>>({});
   const [codexBusyLevel, setCodexBusyLevel] = useState<number | null>(null);
   const [codexErrors, setCodexErrors] = useState<Record<number, string>>({});
+  const [editorPositions, setEditorPositions] = useState<Record<number, { line: number; column: number }>>({});
+  const [editorScrollTops, setEditorScrollTops] = useState<Record<number, number>>({});
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
@@ -1052,6 +1054,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     setTaskDrafts(nextDrafts);
     saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades);
     if (textarea && selectionStart !== undefined && selectionEnd !== undefined) {
+      updateEditorPosition(id, value, selectionStart);
       window.requestAnimationFrame(() => {
         textarea.focus();
         textarea.setSelectionRange(selectionStart, selectionEnd);
@@ -1143,6 +1146,15 @@ export default function Home({ chapterId }: { chapterId?: number }) {
         updateTaskDraft(id, value.slice(0, nextStart) + value.slice(start), textarea, nextStart, nextStart);
       }
     }
+  }
+
+  function updateEditorPosition(id: number, value: string, cursor: number) {
+    const beforeCursor = value.slice(0, cursor);
+    const lines = beforeCursor.split("\n");
+    setEditorPositions((current) => ({
+      ...current,
+      [id]: { line: lines.length, column: (lines.at(-1)?.length ?? 0) + 1 },
+    }));
   }
 
   function unlockedStage(id: number) {
@@ -1335,7 +1347,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     : "/courses/python-framework/chapters/1";
 
   return (
-    <main className={ready ? "ready" : ""}>
+    <main className={`course-workspace ${ready ? "ready" : ""}`}>
+      <header className="suite-topbar course-suite-topbar">
+        <div>
+          <strong>学习中心 · Python 框架基础</strong>
+          <span>{currentChapter ? `${currentChapter.title} · 一次专注一个学习步骤` : "四章十关，从基础语法走到声明式测试架构"}</span>
+        </div>
+        <div className="suite-live"><i />{currentChapter ? `${completed.filter((id) => currentChapter.levelIds.includes(id)).length} / ${currentChapter.levelIds.length} 关` : `${completed.length} / ${levels.length} 关`}</div>
+      </header>
       <header className="hero">
         <nav>
           <a className="brand" href="/learn"><i>PY</i> Python 框架修炼</a>
@@ -1533,19 +1552,50 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             </div>
                             <div><b>验收标准</b><ul>{level.acceptance.map((item) => <li key={item}>{item}</li>)}</ul></div>
                           </details>
-                          <label className="task-answer-editor">
-                            <span>在这里写你的答案 <i>Tab 缩进 · Shift+Tab 反缩进 · Enter 自动缩进</i></span>
-                            <textarea
-                              value={taskDrafts[level.id] ?? ""}
-                              onChange={(event) => updateTaskDraft(level.id, event.target.value)}
-                              onKeyDown={(event) => handleTaskEditorKeyDown(level.id, event)}
-                              placeholder={support.starter}
-                              spellCheck={false}
-                              wrap="soft"
-                              aria-describedby={`editor-help-${level.id}`}
-                            />
-                            <small id={`editor-help-${level.id}`}>长代码会自动换行；按 Esc 后再按 Tab，可以离开输入框。</small>
-                          </label>
+                          <section className="task-answer-editor" aria-label="Python 答案代码编辑器">
+                            <div className="editor-heading">
+                              <span>在编辑器中完成你的答案</span>
+                              <i>Tab 缩进 · Shift+Tab 反缩进 · Enter 自动缩进</i>
+                            </div>
+                            <div className="code-editor-shell">
+                              <header className="code-editor-toolbar">
+                                <div className="editor-window-dots" aria-hidden="true"><i /><i /><i /></div>
+                                <div className="editor-file-tab"><b>PY</b><span>{`level_${String(level.id).padStart(2, "0")}.py`}</span></div>
+                                <button
+                                  type="button"
+                                  disabled={Boolean((taskDrafts[level.id] ?? "").trim())}
+                                  onClick={() => updateTaskDraft(level.id, support.starter)}
+                                >{(taskDrafts[level.id] ?? "").trim() ? "草稿已自动保存" : "载入起步代码"}</button>
+                              </header>
+                              <div className="code-editor-body">
+                                <pre
+                                  className="code-editor-gutter"
+                                  aria-hidden="true"
+                                  style={{ transform: `translateY(-${editorScrollTops[level.id] ?? 0}px)` }}
+                                >{Array.from({ length: Math.max(1, (taskDrafts[level.id] || support.starter).split("\n").length) }, (_, index) => index + 1).join("\n")}</pre>
+                                <textarea
+                                  value={taskDrafts[level.id] ?? ""}
+                                  onChange={(event) => {
+                                    updateTaskDraft(level.id, event.target.value);
+                                    updateEditorPosition(level.id, event.target.value, event.target.selectionStart);
+                                  }}
+                                  onKeyDown={(event) => handleTaskEditorKeyDown(level.id, event)}
+                                  onSelect={(event) => updateEditorPosition(level.id, event.currentTarget.value, event.currentTarget.selectionStart)}
+                                  onScroll={(event) => setEditorScrollTops((current) => ({ ...current, [level.id]: event.currentTarget.scrollTop }))}
+                                  placeholder={support.starter}
+                                  spellCheck={false}
+                                  wrap="soft"
+                                  aria-label={`第 ${level.id} 关 Python 答案`}
+                                  aria-describedby={`editor-help-${level.id}`}
+                                />
+                              </div>
+                              <footer className="code-editor-statusbar">
+                                <span>Ln {editorPositions[level.id]?.line ?? 1}, Col {editorPositions[level.id]?.column ?? 1}</span>
+                                <span>Spaces: 4</span><span>UTF-8</span><span>Python</span>
+                              </footer>
+                            </div>
+                            <small id={`editor-help-${level.id}`}>支持多行编辑和自动换行；按 Esc 后再按 Tab，可以离开编辑器。</small>
+                          </section>
                           {localCodexStatus === "ready" ? <section className="local-codex-chat" aria-label="与本机 Codex 对话">
                             <header><div><i>CODEX</i><span><b>即时学习助教</b><small>使用当前 Codex 登录额度</small></span></div><em>本机在线</em></header>
                             <div className="codex-chat-messages" aria-live="polite">
