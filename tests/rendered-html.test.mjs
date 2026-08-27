@@ -90,7 +90,7 @@ test("Python 课程拆成总览与四个独立章节页面", async () => {
   }
 });
 
-test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路径", async () => {
+test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与异步备用路径", async () => {
   const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
   const editor = await readFile(new URL("../app/courses/python-framework/PythonAnswerEditor.tsx", import.meta.url), "utf8");
   const courseStyles = await readFile(new URL("../app/courses/python-framework/course-flow.css", import.meta.url), "utf8");
@@ -144,7 +144,7 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
   assert.match(source, /`\/local-codex\$\{path\}`/);
   assert.match(source, /本机 Codex 已连接/);
   assert.match(source, /立即批改当前答案/);
-  assert.match(source, /继续和 Codex 对话/);
+  assert.match(source, /继续和\{tutorName\}对话/);
   assert.match(bridge, /"exec"/);
   assert.match(bridge, /"--ephemeral"/);
   assert.match(bridge, /model_reasoning_effort/);
@@ -160,6 +160,24 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
 
   const response = await render("/grading-queue");
   assert.equal(response.status, 200);
+});
+
+test("DeepSeek 凭据只在受保护的服务端助教接口使用", async () => {
+  const [source, route] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(source, /fetch\(chatUrl, requestInit\)/);
+  assert.match(source, /"\/api\/learning-chat"/);
+  assert.match(source, /DeepSeek 在线助教已启用/);
+  assert.doesNotMatch(source, /DEEPSEEK_API_KEY|api\.deepseek\.com|Bearer/);
+  assert.match(route, /getChatGPTUser/);
+  assert.match(route, /DEEPSEEK_API_KEY/);
+  assert.match(route, /https:\/\/api\.deepseek\.com\/chat\/completions/);
+  assert.match(route, /deepseek-v4-flash/);
+  assert.match(route, /response_format: \{ type: "json_object" \}/);
+  assert.match(route, /score >= 75 && criteria\.every/);
 });
 
 test("Python 学习进度按 ChatGPT 账户同步且保留本机缓存", async () => {

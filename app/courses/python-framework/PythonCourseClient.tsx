@@ -1095,7 +1095,10 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   }, []);
 
   useEffect(() => {
-    if (!chapterId) return;
+    if (!chapterId || window.location.origin !== localLearningOrigin) {
+      setLocalCodexStatus("blocked");
+      return;
+    }
     void checkLocalCodex(10_000);
     const timer = window.setInterval(() => void checkLocalCodex(4_000), 30_000);
     return () => window.clearInterval(timer);
@@ -1244,7 +1247,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     window.location.assign(localLearningUrl);
   }
 
-  async function sendToLocalCodex(level: Level, suggestedMessage?: string) {
+  async function sendToTutor(level: Level, suggestedMessage?: string) {
     const answer = (taskDrafts[level.id] ?? "").trim();
     const message = (suggestedMessage ?? codexChatDrafts[level.id] ?? "").trim();
     if (answer.length < 30) {
@@ -1265,7 +1268,8 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     setCodexErrors((current) => ({ ...current, [level.id]: "" }));
 
     try {
-      const chatUrl = localCodexRequestUrl("/chat");
+      const hostedTutor = window.location.origin !== localLearningOrigin;
+      const chatUrl = hostedTutor ? "/api/learning-chat" : localCodexRequestUrl("/chat");
       const requestInit: RequestInit & { targetAddressSpace?: "local" } = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -1276,10 +1280,10 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           history: previous,
         }),
       };
-      if (chatUrl.startsWith("http")) requestInit.targetAddressSpace = "local";
+      if (!hostedTutor && chatUrl.startsWith("http")) requestInit.targetAddressSpace = "local";
       const response = await fetch(chatUrl, requestInit);
       const result = await response.json() as { reply?: string; grade?: TaskGrade | null; error?: string };
-      if (!response.ok || !result.reply) throw new Error(result.error ?? "本机 Codex 没有返回有效回复");
+      if (!response.ok || !result.reply) throw new Error(result.error ?? `${hostedTutor ? "DeepSeek" : "本机 Codex"} 没有返回有效回复`);
 
       const assistantMessage: CodexChatMessage = { role: "assistant", content: result.reply, createdAt: new Date().toISOString() };
       saveCodexChats({ ...withUser, [level.id]: [...withUser[level.id], assistantMessage] }, level.id);
@@ -1298,11 +1302,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
         }
       }
     } catch (error) {
-      if (error instanceof TypeError) {
+      if (error instanceof TypeError && window.location.origin === localLearningOrigin) {
         setLocalCodexStatus("blocked");
         setLocalCodexMessage("对话请求被浏览器拦截。请重新允许本站访问本地网络后再试。");
       }
-      setCodexErrors((current) => ({ ...current, [level.id]: error instanceof Error ? error.message : "本机 Codex 调用失败" }));
+      setCodexErrors((current) => ({ ...current, [level.id]: error instanceof Error ? error.message : "学习助教调用失败" }));
     } finally {
       setCodexBusyLevel(null);
     }
@@ -1414,7 +1418,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <section>
             <p className="eyebrow">{currentChapter ? `PYTHON QUEST · CHAPTER ${currentChapter.id}` : "PYTHON FRAMEWORK QUEST"}</p>
             <h1>{currentChapter ? currentChapter.title : <>过关斩将，<br /><em>练成框架判断力</em></>}</h1>
-            <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；本地模式可直接与 Codex 对话、即时批改。"}</p>
+            <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；在线助教可以直接对话、提示和即时批改。"}</p>
             <a className="hero-cta" href={currentChapter ? `#level-${currentChapter.levelIds.find((id) => !completed.includes(id)) ?? currentChapter.levelIds[0]}` : nextLevelHref}>{currentChapter ? "进入本章关卡" : nextLevel ? `继续第 ${nextLevel.id} 关` : "回看四章"} <span>→</span></a>
           </section>
           <aside className="progress-card">
@@ -1479,6 +1483,9 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             const gradeSubmission = gradeSubmissions[level.id];
             const grade = taskGrades[level.id] ?? gradeSubmission?.grade ?? null;
             const gradeStatusIndex = gradeSubmission?.status === "completed" ? 3 : gradeSubmission?.status === "judging" ? 2 : gradeSubmission ? 1 : 0;
+            const hostedTutor = cloudSyncStatus !== "local";
+            const tutorAvailable = hostedTutor || localCodexStatus === "ready";
+            const tutorName = hostedTutor ? "DeepSeek" : "Codex";
             return (
               <div key={level.id}>
                 <article id={`level-${level.id}`} className={`level ${done ? "done" : ""} ${!unlocked ? "locked" : ""} ${open ? "open" : ""}`}>
@@ -1570,9 +1577,12 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                         {stage === 4 && <section className="stage-panel"><div className="task task-with-input">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
-                          {localCodexStatus === "ready" ? <aside className="model-setup-notice local-codex-notice" role="status">
+                          {hostedTutor ? <aside className="model-setup-notice local-codex-notice" role="status">
+                            <b><i /> DeepSeek 在线助教已启用</b>
+                            <p>无需连接本机服务。可以直接即时批改、追问“为什么错”或只要一点提示；答案、结果和对话会随账号同步。</p>
+                          </aside> : localCodexStatus === "ready" ? <aside className="model-setup-notice local-codex-notice" role="status">
                             <b><i /> 本机 Codex 已连接</b>
-                            <p>下面的聊天框会使用当前已登录的 Codex。可以即时批改，也可以继续追问“为什么错”或“给我一点提示”。</p>
+                            <p>当前是本机学习模式，聊天框会使用本机已登录的 Codex。</p>
                           </aside> : <aside className="model-setup-notice queue-mode-notice" role="status">
                             <b>{localCodexStatus === "checking"
                               ? "正在请求连接本机 Codex…"
@@ -1612,37 +1622,37 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                               onChange={(value) => updateTaskDraft(level.id, value)}
                             />
                           </Suspense>
-                          {localCodexStatus === "ready" ? <section className="local-codex-chat" aria-label="与本机 Codex 对话">
-                            <header><div><i>CODEX</i><span><b>即时学习助教</b><small>使用当前 Codex 登录额度</small></span></div><em>本机在线</em></header>
+                          {tutorAvailable ? <section className="local-codex-chat" aria-label={`与${tutorName}学习助教对话`}>
+                            <header><div><i>{hostedTutor ? "DS" : "CODEX"}</i><span><b>即时学习助教</b><small>{hostedTutor ? "由 DeepSeek 在线提供 · 对话随账号同步" : "使用当前 Codex 登录额度"}</small></span></div><em>{hostedTutor ? "在线" : "本机在线"}</em></header>
                             <div className="codex-chat-messages" aria-live="polite">
                               {(codexChats[level.id] ?? []).length === 0 && <div className="codex-chat-empty">
                                 <b>答案写好以后，可以直接这样问我：</b>
                                 <p>“请逐条检查验收标准，并告诉我第一处需要修改的地方。”</p>
                               </div>}
                               {(codexChats[level.id] ?? []).map((message, messageIndex) => <article className={message.role} key={`${message.createdAt}-${messageIndex}`}>
-                                <b>{message.role === "assistant" ? "Codex" : "你"}</b><p>{message.content}</p>
+                                <b>{message.role === "assistant" ? tutorName : "你"}</b><p>{message.content}</p>
                               </article>)}
-                              {codexBusyLevel === level.id && <article className="assistant thinking"><b>Codex</b><p>正在阅读你的答案并对照验收标准…</p></article>}
+                              {codexBusyLevel === level.id && <article className="assistant thinking"><b>{tutorName}</b><p>正在阅读你的答案并对照验收标准…</p></article>}
                             </div>
                             <div className="codex-quick-actions">
-                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToLocalCodex(level, "请批改我当前的答案，逐条检查验收标准，并先告诉我最需要修改的一处。")}>立即批改当前答案</button>
-                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToLocalCodex(level, "先不要给完整答案，请根据我当前的实现给一个下一步提示。")}>只给我一点提示</button>
+                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToTutor(level, "请批改我当前的答案，逐条检查验收标准，并先告诉我最需要修改的一处。")}>立即批改当前答案</button>
+                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToTutor(level, "先不要给完整答案，请根据我当前的实现给一个下一步提示。")}>只给我一点提示</button>
                             </div>
                             <label className="codex-chat-composer">
-                              <span>继续和 Codex 对话</span>
+                              <span>继续和{tutorName}对话</span>
                               <textarea
                                 value={codexChatDrafts[level.id] ?? ""}
                                 onChange={(event) => setCodexChatDrafts((current) => ({ ...current, [level.id]: event.target.value }))}
                                 onKeyDown={(event) => {
                                   if ((event.metaKey || event.ctrlKey) && event.key === "Enter") {
                                     event.preventDefault();
-                                    void sendToLocalCodex(level);
+                                    void sendToTutor(level);
                                   }
                                 }}
                                 placeholder="例如：为什么缺少 data 时要抛出 KeyError？"
                               />
                               <small>Ctrl/⌘ + Enter 发送，也可以点击右侧按钮</small>
-                              <button type="button" disabled={codexBusyLevel === level.id || !(codexChatDrafts[level.id] ?? "").trim()} onClick={() => void sendToLocalCodex(level)}>{codexBusyLevel === level.id ? "思考中…" : "发送"}</button>
+                              <button type="button" disabled={codexBusyLevel === level.id || !(codexChatDrafts[level.id] ?? "").trim()} onClick={() => void sendToTutor(level)}>{codexBusyLevel === level.id ? "思考中…" : "发送"}</button>
                             </label>
                             {codexErrors[level.id] && <p className="grading-error" role="alert">{codexErrors[level.id]}</p>}
                           </section> : <>
