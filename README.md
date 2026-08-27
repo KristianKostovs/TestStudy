@@ -93,6 +93,9 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 - `npm run build`: verify the vinext build output
 - `npm test`: build the starter and verify its rendered loading skeleton
 - `npm run db:generate`: generate Drizzle migrations after schema changes
+- `npm run publish:site -- "更新说明"`: safely sync GitHub, validate, and publish the current Site through the signed-in Codex account
+
+For the two-computer workflow, see [两台电脑一键提交并发布](docs/ONE_CLICK_PUBLISH.md).
 
 ## Learn More
 
