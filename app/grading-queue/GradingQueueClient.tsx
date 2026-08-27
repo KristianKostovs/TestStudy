@@ -24,8 +24,8 @@ type Submission = {
 };
 
 const statusCopy = {
-  pending: { label: "待评判", hint: "已进入队列，等待 Codex 领取" },
-  judging: { label: "评判中", hint: "Codex 已领取，结果尚未回填" },
+  pending: { label: "待评判", hint: "答案已保存，可以重新交给 DeepSeek" },
+  judging: { label: "评判中", hint: "DeepSeek 正在逐条对照验收标准" },
   completed: { label: "已完成", hint: "结果已保存，可回到关卡查看" },
 } as const;
 
@@ -35,7 +35,7 @@ async function requestQueue(body?: Record<string, unknown>) {
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   } : { headers: { Accept: "application/json" } });
-  const result = await response.json() as { submissions?: Submission[]; submission?: Submission; prompt?: string; error?: string };
+  const result = await response.json() as { submissions?: Submission[]; submission?: Submission; error?: string };
   if (!response.ok) throw new Error(result.error ?? "批改队列操作失败");
   return result;
 }
@@ -44,8 +44,6 @@ export default function GradingQueueClient() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [busyId, setBusyId] = useState<number | null>(null);
-  const [prompts, setPrompts] = useState<Record<number, string>>({});
-  const [gradeDrafts, setGradeDrafts] = useState<Record<number, string>>({});
   const [notice, setNotice] = useState("");
   const [error, setError] = useState("");
 
@@ -78,42 +76,16 @@ export default function GradingQueueClient() {
     setSubmissions((current) => [next, ...current.filter((item) => item.id !== next.id)]);
   }
 
-  async function claim(item: Submission) {
+  async function grade(item: Submission) {
     setBusyId(item.id);
     setError("");
     setNotice("");
     try {
-      const result = await requestQueue({ action: "claim", id: item.id });
+      const result = await requestQueue({ action: "grade", id: item.id });
       replaceSubmission(result.submission);
-      const prompt = result.prompt ?? "";
-      setPrompts((current) => ({ ...current, [item.id]: prompt }));
-      try {
-        await navigator.clipboard.writeText(prompt);
-        setNotice(`Level ${item.levelId} 的批改任务已复制，状态已变为“评判中”。`);
-      } catch {
-        setNotice("浏览器没有授予剪贴板权限；批改任务已在下方展开，可以手动复制。");
-      }
+      setNotice(`Level ${item.levelId} 已由 DeepSeek 完成批改。`);
     } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "领取失败");
-    } finally {
-      setBusyId(null);
-    }
-  }
-
-  async function complete(item: Submission) {
-    setBusyId(item.id);
-    setError("");
-    setNotice("");
-    try {
-      const raw = (gradeDrafts[item.id] ?? "").trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-      if (!raw) throw new Error("请先粘贴 Codex 返回的 JSON 批改结果");
-      const grade = JSON.parse(raw) as Record<string, unknown>;
-      const result = await requestQueue({ action: "complete", id: item.id, grade });
-      replaceSubmission(result.submission);
-      setGradeDrafts((current) => ({ ...current, [item.id]: "" }));
-      setNotice(`Level ${item.levelId} 已完成批改，学习页面会自动读取结果。`);
-    } catch (reason) {
-      setError(reason instanceof Error ? reason.message : "保存批改结果失败");
+      setError(reason instanceof Error ? reason.message : "DeepSeek 批改失败");
     } finally {
       setBusyId(null);
     }
@@ -123,9 +95,9 @@ export default function GradingQueueClient() {
     <main className="queue-page">
       <header className="queue-hero">
         <nav><a href="/courses/python-framework">← 返回 Python 课程</a><button type="button" onClick={() => void loadQueue()}>刷新队列</button></nav>
-        <p>CODEX ASYNC GRADING</p>
-        <h1>异步批改队列</h1>
-        <span>页面负责保存答案和状态，Codex 负责领取、评判并回填结果。当前流程不调用外部模型 API。</span>
+        <p>DEEPSEEK GRADING HISTORY</p>
+        <h1>在线批改记录</h1>
+        <span>答案提交后由 DeepSeek 立即逐条对照验收标准；失败的记录会保留在这里，稍后可以一键重试。</span>
       </header>
 
       <section className="queue-counts" aria-label="队列统计">
@@ -135,8 +107,8 @@ export default function GradingQueueClient() {
       </section>
 
       <aside className="queue-howto">
-        <b>当前怎么用</b>
-        <p>在学习关卡提交答案后，它会进入这里。之后你可以让 Codex 打开“批改队列”；Codex 领取任务、按照验收标准评分，再把结果保存回来。关闭页面不会丢失记录。</p>
+        <b>这里记录什么</b>
+        <p>课程里的即时对话和备用提交都由同一个 DeepSeek 服务评判。这里用于查看历史结果和重新处理网络中断时留下的待评判答案。</p>
       </aside>
 
       {notice && <p className="queue-notice" role="status">{notice}</p>}
@@ -157,10 +129,7 @@ export default function GradingQueueClient() {
               <details><summary>查看本次答案</summary><pre><code>{item.answer}</code></pre></details>
 
               {item.status !== "completed" && <div className="queue-actions">
-                <button type="button" disabled={busyId === item.id} onClick={() => void claim(item)}>{busyId === item.id ? "处理中…" : item.status === "pending" ? "领取并复制 Codex 批改单" : "重新显示 Codex 批改单"}</button>
-                {prompts[item.id] && <label><span>Codex 批改单</span><textarea readOnly value={prompts[item.id]} onFocus={(event) => event.currentTarget.select()} /></label>}
-                {item.status === "judging" && <label><span>粘贴 Codex 返回的 JSON 结果</span><textarea value={gradeDrafts[item.id] ?? ""} onChange={(event) => setGradeDrafts((current) => ({ ...current, [item.id]: event.target.value }))} placeholder={'{"score": 80, "summary": "…", "strengths": [], "improvements": [], "criteria": [...]}'}/></label>}
-                {item.status === "judging" && <button className="complete-grade" type="button" disabled={busyId === item.id} onClick={() => void complete(item)}>保存批改结果并标记完成</button>}
+                <button type="button" disabled={busyId === item.id || item.status === "judging"} onClick={() => void grade(item)}>{busyId === item.id ? "DeepSeek 批改中…" : item.status === "judging" ? "正在评判" : "重新交给 DeepSeek 批改"}</button>
               </div>}
 
               {item.grade && <section className="queue-grade">

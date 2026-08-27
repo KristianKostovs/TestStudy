@@ -90,7 +90,7 @@ test("Python 课程拆成总览与四个独立章节页面", async () => {
   }
 });
 
-test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与异步备用路径", async () => {
+test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线备用路径", async () => {
   const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
   const editor = await readFile(new URL("../app/courses/python-framework/PythonAnswerEditor.tsx", import.meta.url), "utf8");
   const courseStyles = await readFile(new URL("../app/courses/python-framework/course-flow.css", import.meta.url), "utf8");
@@ -123,13 +123,14 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与异步�
   assert.match(source, /待评判/);
   assert.match(source, /评判中/);
   assert.match(source, /已完成/);
-  assert.match(route, /const gradingMode = "codex_queue"/);
+  assert.match(route, /const gradingMode = "deepseek_online"/);
   assert.match(route, /course_grading_submissions/);
-  assert.match(route, /action === "claim"/);
-  assert.match(route, /action === "complete"/);
-  assert.doesNotMatch(route, /api\.openai\.com/);
-  assert.match(queue, /领取并复制 Codex 批改单/);
-  assert.match(queue, /保存批改结果并标记完成/);
+  assert.match(route, /requestDeepSeekJson/);
+  assert.match(route, /action === "grade"/);
+  assert.doesNotMatch(route, /action === "claim"|action === "complete"|api\.openai\.com/);
+  assert.match(queue, /重新交给 DeepSeek 批改/);
+  assert.match(queue, /课程里的即时对话和备用提交都由同一个 DeepSeek 服务评判/);
+  assert.doesNotMatch(queue, /navigator\.clipboard|粘贴 Codex 返回/);
   assert.match(source, /localCodexBridge/);
   assert.doesNotMatch(source, /codexPluginUrl/);
   assert.match(source, /网页尚未连上本机 Codex/);
@@ -163,9 +164,10 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与异步�
 });
 
 test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
-  const [source, route, provider] = await Promise.all([
+  const [source, route, courseGrade, provider] = await Promise.all([
     readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/deepseek.ts", import.meta.url), "utf8"),
   ]);
 
@@ -177,6 +179,8 @@ test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
   assert.match(route, /requestDeepSeekJson/);
   assert.doesNotMatch(route, /DEEPSEEK_API_KEY|api\.deepseek\.com|Bearer/);
   assert.match(route, /score >= 75 && criteria\.every/);
+  assert.match(courseGrade, /requestDeepSeekJson/);
+  assert.doesNotMatch(courseGrade, /DEEPSEEK_API_KEY|api\.deepseek\.com|Bearer/);
   assert.match(provider, /DEEPSEEK_API_KEY/);
   assert.match(provider, /https:\/\/api\.deepseek\.com\/chat\/completions/);
   assert.match(provider, /deepseek-v4-flash/);

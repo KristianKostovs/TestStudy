@@ -1220,13 +1220,13 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       });
       const result = await response.json() as { submission?: GradeSubmission; error?: string };
       if (!response.ok) {
-        throw new Error(result.error ?? "加入批改队列失败，请稍后重试。");
+        throw new Error(result.error ?? "DeepSeek 备用批改失败，请稍后重试。");
       }
       if (result.submission) setGradeSubmissions((current) => ({ ...current, [id]: result.submission as GradeSubmission }));
     } catch (error) {
       setGradingErrors((current) => ({
         ...current,
-        [id]: error instanceof Error ? error.message : "加入批改队列失败，请稍后重试。",
+        [id]: error instanceof Error ? error.message : "DeepSeek 备用批改失败，请稍后重试。",
       }));
     } finally {
       setGradingLevel(null);
@@ -1409,7 +1409,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <a className="brand" href="/learn"><i>PY</i> Python 框架修炼</a>
           <div className="nav-actions">
             <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/learn"}>{currentChapter ? "← 返回章节选择" : "← 返回学习中心"}</a>
-            <a className="text-button" href="/grading-queue">备用批改队列</a>
+            <a className="text-button" href="/grading-queue">在线批改记录</a>
             <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={() => void resetProgress()}>重置进度</button>
           </div>
@@ -1595,7 +1595,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                               void checkLocalCodex(20_000, true);
                             }}>允许并重新连接</button>}
                             <a className="check-local-codex" href={localCodexHealthUrl} target="_blank" rel="noreferrer">检查本机服务</a>
-                            <a href="/grading-queue">暂时使用网页备用批改队列</a>
+                            <a href="/grading-queue">暂时使用 DeepSeek 在线备用批改</a>
                             <details className="local-codex-help">
                               <summary>没有出现授权窗口？</summary>
                               <ol>
@@ -1658,15 +1658,15 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           </section> : <>
                             {gradeSubmission && <ol className="grading-steps" aria-label="异步批改状态">
                               {[
-                                [1, "待评判", "答案已排队"],
-                                [2, "评判中", "Codex 已领取"],
+                                [1, "待评判", "答案已保存"],
+                                [2, "评判中", "DeepSeek 正在检查"],
                                 [3, "已完成", "结果已回填"],
                               ].map(([index, label, hint]) => <li className={`${gradeStatusIndex === index ? "active" : ""} ${gradeStatusIndex > index ? "done" : ""}`} key={label}>
                                 <b>{gradeStatusIndex > index ? "✓" : index}</b><span><strong>{label}</strong><small>{hint}</small></span>
                               </li>)}
                             </ol>}
                             <button className="model-grade-button" type="button" disabled={gradingLevel === level.id || queueLoading || gradeSubmission?.status === "judging"} onClick={() => submitTask(level.id)}>
-                              {queueLoading ? "正在连接批改队列…" : gradingLevel === level.id ? "正在加入队列…" : gradeSubmission?.status === "judging" ? "Codex 评判中，请稍后回来查看" : gradeSubmission?.status === "pending" ? "更新队列中的答案" : gradeSubmission?.status === "completed" ? "修改答案后再次排队" : "提交到备用批改队列"}
+                              {queueLoading ? "正在连接在线批改…" : gradingLevel === level.id ? "DeepSeek 正在批改…" : gradeSubmission?.status === "judging" ? "DeepSeek 评判中，请稍后回来查看" : gradeSubmission?.status === "pending" ? "重新提交给 DeepSeek" : gradeSubmission?.status === "completed" ? "修改答案后重新批改" : "使用 DeepSeek 备用批改"}
                             </button>
                             {queueError && <p className="grading-error" role="alert">{queueError}</p>}
                             {gradingErrors[level.id] && <p className="grading-error" role="alert">{gradingErrors[level.id]}</p>}
@@ -1771,7 +1771,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       <footer>
         <p>PYTHON FRAMEWORK QUEST</p>
         <h2>{completed.length === levels.length ? "Python 已出师。回到首页，选择下一条修炼路线。" : "看懂只是第一步，能独立完成任务才算真正掌握。"}</h2>
-        <span>学习进度和草稿保存在本浏览器；异步批改任务与结果保存在站点数据库。</span>
+        <span>学习进度、答案、对话和 DeepSeek 批改结果会按账号同步；本机模式仍保留浏览器缓存。</span>
       </footer>
     </main>
   );
