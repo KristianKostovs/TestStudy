@@ -1,10 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
-import type { KeyboardEvent as ReactKeyboardEvent } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import "./course-flow.css";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
 /* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
+
+const PythonAnswerEditor = lazy(() => import("./PythonAnswerEditor"));
 
 type Level = {
   id: number;
@@ -879,8 +880,6 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [codexChatDrafts, setCodexChatDrafts] = useState<Record<number, string>>({});
   const [codexBusyLevel, setCodexBusyLevel] = useState<number | null>(null);
   const [codexErrors, setCodexErrors] = useState<Record<number, string>>({});
-  const [editorPositions, setEditorPositions] = useState<Record<number, { line: number; column: number }>>({});
-  const [editorScrollTops, setEditorScrollTops] = useState<Record<number, number>>({});
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
@@ -1043,118 +1042,10 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     } satisfies ProgressState));
   }
 
-  function updateTaskDraft(
-    id: number,
-    value: string,
-    textarea?: HTMLTextAreaElement,
-    selectionStart?: number,
-    selectionEnd?: number,
-  ) {
+  function updateTaskDraft(id: number, value: string) {
     const nextDrafts = { ...taskDrafts, [id]: value };
     setTaskDrafts(nextDrafts);
     saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades);
-    if (textarea && selectionStart !== undefined && selectionEnd !== undefined) {
-      updateEditorPosition(id, value, selectionStart);
-      window.requestAnimationFrame(() => {
-        textarea.focus();
-        textarea.setSelectionRange(selectionStart, selectionEnd);
-      });
-    }
-  }
-
-  function handleTaskEditorKeyDown(id: number, event: ReactKeyboardEvent<HTMLTextAreaElement>) {
-    if (event.nativeEvent.isComposing) return;
-    const textarea = event.currentTarget;
-    const value = textarea.value;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const indent = "    ";
-
-    if (event.key === "Escape") {
-      textarea.dataset.allowNextTab = "true";
-      return;
-    }
-
-    if (event.key === "Tab") {
-      if (textarea.dataset.allowNextTab === "true") {
-        delete textarea.dataset.allowNextTab;
-        return;
-      }
-      event.preventDefault();
-      const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
-
-      if (event.shiftKey) {
-        const effectiveEnd = end > start && value[end - 1] === "\n" ? end - 1 : end;
-        const nextLineBreak = value.indexOf("\n", effectiveEnd);
-        const blockEnd = nextLineBreak === -1 ? value.length : nextLineBreak;
-        const block = value.slice(lineStart, blockEnd);
-        let removedTotal = 0;
-        let removedFirst = 0;
-        const unindented = block.split("\n").map((line, index) => {
-          const removable = line.startsWith("\t") ? 1 : Math.min(indent.length, line.match(/^ */)?.[0].length ?? 0);
-          removedTotal += removable;
-          if (index === 0) removedFirst = removable;
-          return line.slice(removable);
-        }).join("\n");
-        const nextValue = value.slice(0, lineStart) + unindented + value.slice(blockEnd);
-        const nextSelectionStart = Math.max(lineStart, start - removedFirst);
-        const nextSelectionEnd = Math.max(nextSelectionStart, end - removedTotal);
-        updateTaskDraft(id, nextValue, textarea, nextSelectionStart, nextSelectionEnd);
-        return;
-      }
-
-      if (start === end) {
-        const nextValue = value.slice(0, start) + indent + value.slice(end);
-        updateTaskDraft(id, nextValue, textarea, start + indent.length, start + indent.length);
-        return;
-      }
-
-      const effectiveEnd = value[end - 1] === "\n" ? end - 1 : end;
-      const nextLineBreak = value.indexOf("\n", effectiveEnd);
-      const blockEnd = nextLineBreak === -1 ? value.length : nextLineBreak;
-      const block = value.slice(lineStart, blockEnd);
-      const indented = block.split("\n").map((line) => indent + line).join("\n");
-      const lineCount = block.split("\n").length;
-      const nextValue = value.slice(0, lineStart) + indented + value.slice(blockEnd);
-      updateTaskDraft(id, nextValue, textarea, start + indent.length, end + indent.length * lineCount);
-      return;
-    }
-
-    delete textarea.dataset.allowNextTab;
-
-    if (event.key === "Enter") {
-      event.preventDefault();
-      const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
-      const lineBeforeCursor = value.slice(lineStart, start);
-      const leadingWhitespace = lineBeforeCursor.match(/^[\t ]*/)?.[0] ?? "";
-      const shouldIndent = lineBeforeCursor.trimEnd().endsWith(":");
-      const nextIndent = leadingWhitespace + (shouldIndent ? indent : "");
-      const insertion = `\n${nextIndent}`;
-      const nextValue = value.slice(0, start) + insertion + value.slice(end);
-      const nextCursor = start + insertion.length;
-      updateTaskDraft(id, nextValue, textarea, nextCursor, nextCursor);
-      return;
-    }
-
-    if (event.key === "Backspace" && start === end) {
-      const lineStart = value.lastIndexOf("\n", Math.max(0, start - 1)) + 1;
-      const beforeCursor = value.slice(lineStart, start);
-      if (beforeCursor.length > 0 && /^ +$/.test(beforeCursor)) {
-        event.preventDefault();
-        const removeCount = beforeCursor.length % indent.length || indent.length;
-        const nextStart = Math.max(lineStart, start - removeCount);
-        updateTaskDraft(id, value.slice(0, nextStart) + value.slice(start), textarea, nextStart, nextStart);
-      }
-    }
-  }
-
-  function updateEditorPosition(id: number, value: string, cursor: number) {
-    const beforeCursor = value.slice(0, cursor);
-    const lines = beforeCursor.split("\n");
-    setEditorPositions((current) => ({
-      ...current,
-      [id]: { line: lines.length, column: (lines.at(-1)?.length ?? 0) + 1 },
-    }));
   }
 
   function unlockedStage(id: number) {
@@ -1552,50 +1443,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             </div>
                             <div><b>验收标准</b><ul>{level.acceptance.map((item) => <li key={item}>{item}</li>)}</ul></div>
                           </details>
-                          <section className="task-answer-editor" aria-label="Python 答案代码编辑器">
-                            <div className="editor-heading">
-                              <span>在编辑器中完成你的答案</span>
-                              <i>Tab 缩进 · Shift+Tab 反缩进 · Enter 自动缩进</i>
-                            </div>
-                            <div className="code-editor-shell">
-                              <header className="code-editor-toolbar">
-                                <div className="editor-window-dots" aria-hidden="true"><i /><i /><i /></div>
-                                <div className="editor-file-tab"><b>PY</b><span>{`level_${String(level.id).padStart(2, "0")}.py`}</span></div>
-                                <button
-                                  type="button"
-                                  disabled={Boolean((taskDrafts[level.id] ?? "").trim())}
-                                  onClick={() => updateTaskDraft(level.id, support.starter)}
-                                >{(taskDrafts[level.id] ?? "").trim() ? "草稿已自动保存" : "载入起步代码"}</button>
-                              </header>
-                              <div className="code-editor-body">
-                                <pre
-                                  className="code-editor-gutter"
-                                  aria-hidden="true"
-                                  style={{ transform: `translateY(-${editorScrollTops[level.id] ?? 0}px)` }}
-                                >{Array.from({ length: Math.max(1, (taskDrafts[level.id] || support.starter).split("\n").length) }, (_, index) => index + 1).join("\n")}</pre>
-                                <textarea
-                                  value={taskDrafts[level.id] ?? ""}
-                                  onChange={(event) => {
-                                    updateTaskDraft(level.id, event.target.value);
-                                    updateEditorPosition(level.id, event.target.value, event.target.selectionStart);
-                                  }}
-                                  onKeyDown={(event) => handleTaskEditorKeyDown(level.id, event)}
-                                  onSelect={(event) => updateEditorPosition(level.id, event.currentTarget.value, event.currentTarget.selectionStart)}
-                                  onScroll={(event) => setEditorScrollTops((current) => ({ ...current, [level.id]: event.currentTarget.scrollTop }))}
-                                  placeholder={support.starter}
-                                  spellCheck={false}
-                                  wrap="soft"
-                                  aria-label={`第 ${level.id} 关 Python 答案`}
-                                  aria-describedby={`editor-help-${level.id}`}
-                                />
-                              </div>
-                              <footer className="code-editor-statusbar">
-                                <span>Ln {editorPositions[level.id]?.line ?? 1}, Col {editorPositions[level.id]?.column ?? 1}</span>
-                                <span>Spaces: 4</span><span>UTF-8</span><span>Python</span>
-                              </footer>
-                            </div>
-                            <small id={`editor-help-${level.id}`}>支持多行编辑和自动换行；按 Esc 后再按 Tab，可以离开编辑器。</small>
-                          </section>
+                          <Suspense fallback={<div className="editor-loading" role="status">正在启动 Python IDE 检查器…</div>}>
+                            <PythonAnswerEditor
+                              levelId={level.id}
+                              value={taskDrafts[level.id] ?? ""}
+                              starter={support.starter}
+                              onChange={(value) => updateTaskDraft(level.id, value)}
+                            />
+                          </Suspense>
                           {localCodexStatus === "ready" ? <section className="local-codex-chat" aria-label="与本机 Codex 对话">
                             <header><div><i>CODEX</i><span><b>即时学习助教</b><small>使用当前 Codex 登录额度</small></span></div><em>本机在线</em></header>
                             <div className="codex-chat-messages" aria-live="polite">
