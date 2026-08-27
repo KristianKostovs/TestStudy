@@ -99,6 +99,7 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 
 For the two-computer workflow, see [两台电脑一键提交并发布](docs/ONE_CLICK_PUBLISH.md).
 For the source-computer patrol workflow, see [本地知识库巡检](docs/LOCAL_KNOWLEDGE_PATROL.md).
+For weekly official candidates and monthly course/interview drafts, see [官方技术雷达与面试内容更新](docs/OFFICIAL_RADAR_WORKFLOW.md).
 
 ## Learn More
 
