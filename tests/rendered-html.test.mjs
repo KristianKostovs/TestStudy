@@ -162,6 +162,31 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
   assert.equal(response.status, 200);
 });
 
+test("Python 学习进度按 ChatGPT 账户同步且保留本机缓存", async () => {
+  const [source, syncRoute, syncMerge, schema, migration] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/learning-sync/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/learning-sync.ts", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0004_curious_james_howlett.sql", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(source, /fetch\("\/api\/learning-sync"/);
+  assert.match(source, /python-framework-quest-sync-meta-v1/);
+  assert.match(source, /已同步到账号 · 换电脑登录即可继续/);
+  assert.match(source, /本机已保存/);
+  assert.match(source, /method: "DELETE"/);
+  assert.match(syncRoute, /getChatGPTUser/);
+  assert.doesNotMatch(syncRoute, /site-owner/);
+  assert.match(syncRoute, /baseRevision/);
+  assert.match(syncRoute, /status: 409/);
+  assert.match(syncRoute, /owner_id = \? AND course_id = \?/);
+  assert.match(syncMerge, /mergeLearningStates/);
+  assert.match(syncMerge, /progress\.taskDrafts\.\$\{levelId\}/);
+  assert.match(schema, /courseLearningStates/);
+  assert.match(migration, /PRIMARY KEY\(`owner_id`, `course_id`\)/);
+});
+
 test("面试陪练是独立入口并且不使用课程分享图", async () => {
   const homeHtml = await (await render("/")).text();
   assert.match(homeHtml, /href=["']\/interview["']/);

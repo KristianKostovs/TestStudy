@@ -1,8 +1,19 @@
 "use client";
 
-import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./course-flow.css";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
+import {
+  emptyLearningState,
+  mergeLearningStates,
+  normalizeLearningState,
+  sameLearningState,
+  stampLearningState,
+  type CodexChatMessage,
+  type LearningSyncState,
+  type ProgressState,
+  type TaskGrade,
+} from "./learning-sync";
 /* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
 
 const PythonAnswerEditor = lazy(() => import("./PythonAnswerEditor"));
@@ -805,6 +816,8 @@ function InteractiveCode({
 const storageKey = "python-framework-quest-v2";
 const legacyStorageKey = "python-framework-quest-v1";
 const codexChatStorageKey = "python-framework-quest-codex-chats-v1";
+const syncMetaStorageKey = "python-framework-quest-sync-meta-v1";
+const courseId = "python-framework";
 const localCodexBridge = "http://127.0.0.1:4317";
 const localCodexHealthUrl = `${localCodexBridge}/health`;
 const localLearningOrigin = "http://127.0.0.1:3000";
@@ -816,23 +829,6 @@ function localCodexRequestUrl(path: "/health" | "/chat") {
     : `${localCodexBridge}${path}`;
 }
 
-type ProgressState = {
-  completed: number[];
-  quizPassed: number[];
-  stageUnlocked?: Record<number, number>;
-  taskDrafts?: Record<number, string>;
-  taskGrades?: Record<number, TaskGrade>;
-};
-
-type TaskGrade = {
-  passed: boolean;
-  score: number;
-  summary: string;
-  strengths: string[];
-  improvements: string[];
-  criteria: Array<{ criterion: string; met: boolean; evidence: string }>;
-};
-
 type GradeSubmission = {
   id: number;
   levelId: number;
@@ -843,13 +839,16 @@ type GradeSubmission = {
   updatedAt: string;
 };
 
-type CodexChatMessage = {
-  role: "user" | "assistant";
-  content: string;
-  createdAt: string;
-};
-
 type LocalCodexStatus = "checking" | "ready" | "blocked" | "not_ready";
+type CloudSyncStatus = "loading" | "saving" | "synced" | "offline" | "local";
+
+type LearningSyncResponse = {
+  courseId?: string;
+  state?: LearningSyncState | null;
+  revision?: number;
+  updatedAt?: string | null;
+  error?: string;
+};
 
 const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "自动小测"];
 
@@ -883,10 +882,108 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [activeKnowledge, setActiveKnowledge] = useState<KnowledgePoint | null>(null);
   const [openId, setOpenId] = useState(currentChapter?.levelIds[0] ?? 1);
   const [ready, setReady] = useState(false);
+  const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>("loading");
+  const [cloudSyncMessage, setCloudSyncMessage] = useState("正在读取账号学习记录…");
+  const snapshotRef = useRef<LearningSyncState>(emptyLearningState());
+  const syncRevisionRef = useRef(0);
+  const syncTimerRef = useRef<number | null>(null);
+
+  const writeLocalSnapshot = useCallback((snapshot: LearningSyncState) => {
+    window.localStorage.setItem(storageKey, JSON.stringify(snapshot.progress));
+    window.localStorage.setItem(codexChatStorageKey, JSON.stringify(snapshot.chats));
+    window.localStorage.setItem(syncMetaStorageKey, JSON.stringify({ clocks: snapshot.clocks }));
+  }, []);
+
+  const applySnapshot = useCallback((snapshot: LearningSyncState) => {
+    snapshotRef.current = snapshot;
+    setCompleted(snapshot.progress.completed);
+    setQuizPassed(snapshot.progress.quizPassed);
+    setStageUnlocked(snapshot.progress.stageUnlocked);
+    setTaskDrafts(snapshot.progress.taskDrafts);
+    setTaskGrades(snapshot.progress.taskGrades);
+    setCodexChats(snapshot.chats);
+    setActiveStages((current) => ({ ...snapshot.progress.stageUnlocked, ...current }));
+    writeLocalSnapshot(snapshot);
+  }, [writeLocalSnapshot]);
+
+  const pushStateToCloud = useCallback(async () => {
+    if (window.location.origin === localLearningOrigin) {
+      setCloudSyncStatus("local");
+      setCloudSyncMessage("本机模式已保存；返回线上页面后会同步到账号");
+      return;
+    }
+
+    setCloudSyncStatus("saving");
+    setCloudSyncMessage("正在同步到账号…");
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const sent = snapshotRef.current;
+      try {
+        const response = await fetch("/api/learning-sync", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            courseId,
+            state: sent,
+            baseRevision: syncRevisionRef.current,
+          }),
+        });
+        const result = await response.json() as LearningSyncResponse;
+        if (response.status === 401) {
+          setCloudSyncStatus("local");
+          setCloudSyncMessage("当前页面没有登录身份，进度暂存在本机");
+          return;
+        }
+        if (response.status === 409) {
+          const remote = result.state
+            ? normalizeLearningState(result.state.progress, result.state.chats, result.state.clocks)
+            : emptyLearningState();
+          syncRevisionRef.current = result.revision ?? 0;
+          applySnapshot(mergeLearningStates(snapshotRef.current, remote));
+          continue;
+        }
+        if (!response.ok || !result.state) throw new Error(result.error ?? "云端暂时不可用");
+
+        syncRevisionRef.current = result.revision ?? syncRevisionRef.current + 1;
+        if (!sameLearningState(snapshotRef.current, sent)) continue;
+        setCloudSyncStatus("synced");
+        setCloudSyncMessage("已同步到账号 · 换电脑登录即可继续");
+        return;
+      } catch (error) {
+        setCloudSyncStatus("offline");
+        setCloudSyncMessage(error instanceof Error ? `本机已保存 · ${error.message}` : "本机已保存 · 稍后自动重试");
+        return;
+      }
+    }
+    setCloudSyncStatus("offline");
+    setCloudSyncMessage("检测到其他电脑正在更新，本机记录已保留，请稍后重试");
+  }, [applySnapshot]);
+
+  const scheduleCloudSync = useCallback((delay = 700) => {
+    if (syncTimerRef.current !== null) window.clearTimeout(syncTimerRef.current);
+    if (window.location.origin === localLearningOrigin) {
+      setCloudSyncStatus("local");
+      setCloudSyncMessage("本机模式已保存；返回线上页面后会同步到账号");
+      return;
+    }
+    setCloudSyncStatus("saving");
+    setCloudSyncMessage("修改已保存，准备同步…");
+    syncTimerRef.current = window.setTimeout(() => {
+      syncTimerRef.current = null;
+      void pushStateToCloud();
+    }, delay);
+  }, [pushStateToCloud]);
+
+  const persistSnapshot = useCallback((snapshot: LearningSyncState, changedKeys: string[]) => {
+    const stamped = stampLearningState(snapshot, changedKeys);
+    snapshotRef.current = stamped;
+    writeLocalSnapshot(stamped);
+    scheduleCloudSync();
+  }, [scheduleCloudSync, writeLocalSnapshot]);
 
   useEffect(() => {
+    let active = true;
     try {
-      if (window.location.origin === localLearningOrigin && window.name) {
+      if (window.name) {
         const transfer = JSON.parse(window.name) as { kind?: string; progress?: unknown; chats?: unknown };
         if (transfer.kind === localTransferKind) {
           if (typeof transfer.progress === "string" && transfer.progress.length <= 100_000) {
@@ -898,42 +995,71 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           window.name = "";
         }
       }
-      const stored = window.localStorage.getItem(storageKey);
-      if (stored) {
-        const progressState = JSON.parse(stored) as ProgressState;
-        setCompleted(progressState.completed ?? []);
-        setQuizPassed(progressState.quizPassed ?? []);
-        setStageUnlocked(progressState.stageUnlocked ?? {});
-        setTaskDrafts(progressState.taskDrafts ?? {});
-        setTaskGrades(progressState.taskGrades ?? {});
-        setActiveStages(progressState.stageUnlocked ?? {});
-      } else {
+      let stored = window.localStorage.getItem(storageKey);
+      if (!stored) {
         const legacy = window.localStorage.getItem(legacyStorageKey);
         if (legacy) {
           const previousCompleted = JSON.parse(legacy) as number[];
-          setCompleted(previousCompleted);
-          setQuizPassed(previousCompleted);
-          window.localStorage.setItem(storageKey, JSON.stringify({
+          stored = JSON.stringify({
             completed: previousCompleted,
             quizPassed: previousCompleted,
-          } satisfies ProgressState));
+          });
         }
       }
+      const progressState = stored ? JSON.parse(stored) as Partial<ProgressState> : {};
+      const storedChats = window.localStorage.getItem(codexChatStorageKey);
+      const chats = storedChats ? JSON.parse(storedChats) as Record<number, CodexChatMessage[]> : {};
+      const storedMeta = window.localStorage.getItem(syncMetaStorageKey);
+      const meta = storedMeta ? JSON.parse(storedMeta) as { clocks?: Record<string, string> } : {};
+      const local = normalizeLearningState(progressState, chats, meta.clocks);
+      applySnapshot(local);
     } catch {
-      setCompleted([]);
+      applySnapshot(emptyLearningState());
     } finally {
       setReady(true);
     }
-  }, []);
 
-  useEffect(() => {
-    try {
-      const storedChats = window.localStorage.getItem(codexChatStorageKey);
-      if (storedChats) setCodexChats(JSON.parse(storedChats) as Record<number, CodexChatMessage[]>);
-    } catch {
-      setCodexChats({});
+    if (window.location.origin === localLearningOrigin) {
+      setCloudSyncStatus("local");
+      setCloudSyncMessage("本机模式已保存；返回线上页面后会同步到账号");
+      return () => { active = false; };
     }
-  }, []);
+
+    const loadCloudState = async () => {
+      try {
+        const response = await fetch("/api/learning-sync", { headers: { Accept: "application/json" }, cache: "no-store" });
+        const result = await response.json() as LearningSyncResponse;
+        if (!active) return;
+        if (response.status === 401) {
+          setCloudSyncStatus("local");
+          setCloudSyncMessage("请登录 ChatGPT 账户后启用跨电脑同步");
+          return;
+        }
+        if (!response.ok) throw new Error(result.error ?? "读取云端记录失败");
+        syncRevisionRef.current = result.revision ?? 0;
+        const remote = result.state
+          ? normalizeLearningState(result.state.progress, result.state.chats, result.state.clocks)
+          : emptyLearningState();
+        const merged = mergeLearningStates(snapshotRef.current, remote);
+        applySnapshot(merged);
+        if (!result.state || !sameLearningState(merged, remote)) {
+          await pushStateToCloud();
+        } else {
+          setCloudSyncStatus("synced");
+          setCloudSyncMessage("已同步到账号 · 换电脑登录即可继续");
+        }
+      } catch (error) {
+        if (!active) return;
+        setCloudSyncStatus("offline");
+        setCloudSyncMessage(error instanceof Error ? `本机已保存 · ${error.message}` : "本机已保存 · 云端暂时不可用");
+      }
+    };
+    void loadCloudState();
+    return () => {
+      active = false;
+      if (syncTimerRef.current !== null) window.clearTimeout(syncTimerRef.current);
+    };
+  }, [applySnapshot, pushStateToCloud]);
 
   const checkLocalCodex = useCallback(async (timeoutMs = 10_000, showChecking = false) => {
     if (showChecking) {
@@ -1032,20 +1158,24 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     nextStageUnlocked = stageUnlocked,
     nextTaskDrafts = taskDrafts,
     nextTaskGrades = taskGrades,
+    changedKeys: string[] = [],
   ) {
-    window.localStorage.setItem(storageKey, JSON.stringify({
-      completed: nextCompleted,
-      quizPassed: nextQuizPassed,
-      stageUnlocked: nextStageUnlocked,
-      taskDrafts: nextTaskDrafts,
-      taskGrades: nextTaskGrades,
-    } satisfies ProgressState));
+    persistSnapshot({
+      ...snapshotRef.current,
+      progress: {
+        completed: nextCompleted,
+        quizPassed: nextQuizPassed,
+        stageUnlocked: nextStageUnlocked,
+        taskDrafts: nextTaskDrafts,
+        taskGrades: nextTaskGrades,
+      },
+    }, changedKeys);
   }
 
   function updateTaskDraft(id: number, value: string) {
     const nextDrafts = { ...taskDrafts, [id]: value };
     setTaskDrafts(nextDrafts);
-    saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades);
+    saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades, [`progress.taskDrafts.${id}`]);
   }
 
   function unlockedStage(id: number) {
@@ -1062,7 +1192,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     const nextUnlocked = { ...stageUnlocked, [id]: Math.max(unlockedStage(id), nextStage) };
     setStageUnlocked(nextUnlocked);
     setActiveStages((current) => ({ ...current, [id]: nextStage }));
-    saveProgress(completed, quizPassed, nextUnlocked);
+    saveProgress(completed, quizPassed, nextUnlocked, taskDrafts, taskGrades, [`progress.stageUnlocked.${id}`]);
   }
 
   function selectStage(id: number, stage: number) {
@@ -1100,9 +1230,9 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     }
   }
 
-  function saveCodexChats(nextChats: Record<number, CodexChatMessage[]>) {
+  function saveCodexChats(nextChats: Record<number, CodexChatMessage[]>, changedLevel: number) {
     setCodexChats(nextChats);
-    window.localStorage.setItem(codexChatStorageKey, JSON.stringify(nextChats));
+    persistSnapshot({ ...snapshotRef.current, chats: nextChats }, [`chats.${changedLevel}`]);
   }
 
   function enterLocalLearningMode() {
@@ -1129,7 +1259,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     const previous = codexChats[level.id] ?? [];
     const userMessage: CodexChatMessage = { role: "user", content: message, createdAt: new Date().toISOString() };
     const withUser = { ...codexChats, [level.id]: [...previous, userMessage] };
-    saveCodexChats(withUser);
+    saveCodexChats(withUser, level.id);
     setCodexChatDrafts((current) => ({ ...current, [level.id]: "" }));
     setCodexBusyLevel(level.id);
     setCodexErrors((current) => ({ ...current, [level.id]: "" }));
@@ -1152,16 +1282,19 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       if (!response.ok || !result.reply) throw new Error(result.error ?? "本机 Codex 没有返回有效回复");
 
       const assistantMessage: CodexChatMessage = { role: "assistant", content: result.reply, createdAt: new Date().toISOString() };
-      saveCodexChats({ ...withUser, [level.id]: [...withUser[level.id], assistantMessage] });
+      saveCodexChats({ ...withUser, [level.id]: [...withUser[level.id], assistantMessage] }, level.id);
       if (result.grade) {
         const nextGrades = { ...taskGrades, [level.id]: result.grade };
         setTaskGrades(nextGrades);
         if (result.grade.passed) {
           const nextUnlocked = { ...stageUnlocked, [level.id]: 5 };
           setStageUnlocked(nextUnlocked);
-          saveProgress(completed, quizPassed, nextUnlocked, taskDrafts, nextGrades);
+          saveProgress(completed, quizPassed, nextUnlocked, taskDrafts, nextGrades, [
+            `progress.stageUnlocked.${level.id}`,
+            `progress.taskGrades.${level.id}`,
+          ]);
         } else {
-          saveProgress(completed, quizPassed, stageUnlocked, taskDrafts, nextGrades);
+          saveProgress(completed, quizPassed, stageUnlocked, taskDrafts, nextGrades, [`progress.taskGrades.${level.id}`]);
         }
       }
     } catch (error) {
@@ -1187,7 +1320,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       const nextQuizPassed = quizPassed.includes(id) ? quizPassed : [...quizPassed, id].sort((a, b) => a - b);
       setQuizPassed(nextQuizPassed);
       setQuizFeedback((current) => ({ ...current, [id]: `答对了。${quiz.explanation}` }));
-      saveProgress(completed, nextQuizPassed);
+      saveProgress(completed, nextQuizPassed, stageUnlocked, taskDrafts, taskGrades, ["progress.quizPassed"]);
       return;
     }
 
@@ -1200,7 +1333,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
       ? completed.filter((item) => item !== id)
       : [...completed, id].sort((a, b) => a - b);
     setCompleted(next);
-    saveProgress(next, quizPassed);
+    saveProgress(next, quizPassed, stageUnlocked, taskDrafts, taskGrades, [`progress.completed.${id}`]);
     if (!completed.includes(id) && id < levels.length) {
       const nextLevel = levels.find((level) => level.id === id + 1);
       const nextChapter = getChapterForLevel(id + 1);
@@ -1213,8 +1346,25 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     }
   }
 
-  function resetProgress() {
-    if (!window.confirm("确定清空当前浏览器的学习进度和草稿吗？服务器里的批改记录不会删除。")) return;
+  async function resetProgress() {
+    const online = window.location.origin !== localLearningOrigin;
+    if (!window.confirm(online
+      ? "确定清空此账号在所有电脑上的学习进度、草稿和助教对话吗？服务器里的批改队列不会删除。"
+      : "确定清空这台电脑上的学习进度、草稿和助教对话吗？")) return;
+    if (online) {
+      setCloudSyncStatus("saving");
+      setCloudSyncMessage("正在清空账号学习记录…");
+      try {
+        const response = await fetch("/api/learning-sync", { method: "DELETE" });
+        const result = await response.json() as LearningSyncResponse;
+        if (!response.ok) throw new Error(result.error ?? "云端记录清空失败");
+        syncRevisionRef.current = 0;
+      } catch (error) {
+        setCloudSyncStatus("offline");
+        setCloudSyncMessage(error instanceof Error ? error.message : "云端记录清空失败");
+        return;
+      }
+    }
     setCompleted([]);
     setQuizPassed([]);
     setQuizSelections({});
@@ -1228,9 +1378,13 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     setCodexChatDrafts({});
     setCodexErrors({});
     setOpenId(currentChapter?.levelIds[0] ?? 1);
+    snapshotRef.current = emptyLearningState();
     window.localStorage.removeItem(storageKey);
     window.localStorage.removeItem(legacyStorageKey);
     window.localStorage.removeItem(codexChatStorageKey);
+    window.localStorage.removeItem(syncMetaStorageKey);
+    setCloudSyncStatus(online ? "synced" : "local");
+    setCloudSyncMessage(online ? "账号学习记录已清空" : "本机学习记录已清空");
   }
 
   const nextLevelHref = nextLevel
@@ -1253,7 +1407,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/learn"}>{currentChapter ? "← 返回章节选择" : "← 返回学习中心"}</a>
             <a className="text-button" href="/grading-queue">备用批改队列</a>
             <span className="rank">Python 段位 <b>{rank}</b></span>
-            <button className="text-button" onClick={resetProgress}>重置进度</button>
+            <button className="text-button" onClick={() => void resetProgress()}>重置进度</button>
           </div>
         </nav>
         <div className="hero-grid">
@@ -1266,7 +1420,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <aside className="progress-card">
             <div className="progress-top"><span>Python 当前进度</span><strong>{progress}%</strong></div>
             <div className="bar"><i style={{ width: `${progress}%` }} /></div>
-            <p>{completed.length} / {levels.length} 关已通过 · 进度保存在当前浏览器</p>
+            <p>{completed.length} / {levels.length} 关已通过</p>
+            <div className={`course-sync-state ${cloudSyncStatus}`} role="status" aria-live="polite">
+              <i aria-hidden="true" />
+              <span>{cloudSyncMessage}</span>
+              {cloudSyncStatus === "offline" && (
+                <button type="button" onClick={() => void pushStateToCloud()}>重试</button>
+              )}
+            </div>
             <ol>{levels.map((level) => <li className={completed.includes(level.id) ? "lit" : ""} key={level.id} title={level.title}>{level.id}</li>)}</ol>
           </aside>
         </div>

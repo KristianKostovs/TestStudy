@@ -1,5 +1,5 @@
 import { sql } from "drizzle-orm";
-import { index, integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
+import { index, integer, primaryKey, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const interviewProfiles = sqliteTable("interview_profiles", {
   id: text("id").primaryKey(),
@@ -88,4 +88,15 @@ export const courseGradingSubmissions = sqliteTable("course_grading_submissions"
 }, (table) => [
   index("idx_course_grading_owner_status_created").on(table.ownerId, table.status, table.createdAt),
   index("idx_course_grading_owner_level_created").on(table.ownerId, table.levelId, table.createdAt),
+]);
+
+export const courseLearningStates = sqliteTable("course_learning_states", {
+  ownerId: text("owner_id").notNull(),
+  courseId: text("course_id").notNull(),
+  stateJson: text("state_json").notNull(),
+  revision: integer("revision").notNull().default(1),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  primaryKey({ columns: [table.ownerId, table.courseId] }),
 ]);

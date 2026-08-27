@@ -243,6 +243,15 @@
 .course-workspace .progress-card ol { gap: 5px; }
 .course-workspace .progress-card li { color: #8e918e; border-color: #dfe5e1; border-radius: 6px; background: #fff; font: 650 9px var(--font-geist-mono), monospace; }
 .course-workspace .progress-card li.lit { color: #fff; border-color: #0f8a6a; background: #0f8a6a; }
+.course-workspace .course-sync-state { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 7px; margin: 11px 0 2px; padding: 9px 10px; color: #56615b; border: 1px solid #dce5df; border-radius: 9px; background: #fff; font-size: 9px; line-height: 1.45; }
+.course-workspace .course-sync-state > i { width: 7px; height: 7px; border-radius: 50%; background: #aeb8b2; }
+.course-workspace .course-sync-state.synced > i { background: #0f8a6a; box-shadow: 0 0 0 3px rgba(15, 138, 106, .12); }
+.course-workspace .course-sync-state.saving > i, .course-workspace .course-sync-state.loading > i { background: #d8a43a; animation: sync-pulse 1.2s ease-in-out infinite; }
+.course-workspace .course-sync-state.offline { color: #865f1d; border-color: #ead7ae; background: #fffaf0; }
+.course-workspace .course-sync-state.offline > i { background: #d8a43a; }
+.course-workspace .course-sync-state.local > i { background: #78827c; }
+.course-workspace .course-sync-state button { padding: 2px 0; border: 0; color: #0f8a6a; background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
+@keyframes sync-pulse { 50% { opacity: .35; transform: scale(.82); } }
 .course-workspace .principles { width: min(1080px, calc(100% - 56px)); max-width: none; margin: 28px auto 0; padding: 0; gap: 11px; }
 .course-workspace .principles article { min-height: 125px; padding: 20px; border: 1px solid #e3e4e1; border-radius: 14px; box-shadow: none; }
 .course-workspace .principles b { color: #0f8a6a; font: 720 11px var(--font-geist-mono), monospace; }
