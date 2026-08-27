@@ -110,6 +110,7 @@
 .model-setup-notice p { margin: 6px 0 0; line-height: 1.65; }
 .queue-mode-notice a { display: inline-block; margin: 8px 14px 0 0; color: var(--green); font-weight: 900; text-decoration: none; }
 .retry-local-codex { margin: 9px 12px 0 0; padding: 7px 12px; border: 1px solid #b78a36; color: #694814; background: #fff8e8; font: inherit; font-weight: 800; cursor: pointer; }
+.open-local-learning { margin: 9px 12px 0 0; padding: 8px 14px; border: 1px solid var(--green); color: #fff; background: var(--green); font: inherit; font-weight: 900; cursor: pointer; }
 .check-local-codex { padding: 7px 0; }
 .local-codex-help { margin-top: 12px; border-top: 1px solid rgba(183, 138, 54, .35); }
 .local-codex-help summary { padding-top: 10px; color: #694814; font-weight: 800; cursor: pointer; }

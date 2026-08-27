@@ -806,6 +806,14 @@ const legacyStorageKey = "python-framework-quest-v1";
 const codexChatStorageKey = "python-framework-quest-codex-chats-v1";
 const localCodexBridge = "http://127.0.0.1:4317";
 const localCodexHealthUrl = `${localCodexBridge}/health`;
+const localLearningOrigin = "http://127.0.0.1:3000";
+const localTransferKind = "python-framework-quest-local-transfer-v1";
+
+function localCodexRequestUrl(path: "/health" | "/chat") {
+  return window.location.origin === localLearningOrigin
+    ? `/local-codex${path}`
+    : `${localCodexBridge}${path}`;
+}
 
 type ProgressState = {
   completed: number[];
@@ -846,6 +854,9 @@ const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "
 
 export default function Home({ chapterId }: { chapterId?: number }) {
   const currentChapter = chapterId ? getPythonCourseChapter(chapterId) : undefined;
+  const localLearningUrl = `${localLearningOrigin}${chapterId
+    ? `/courses/python-framework/chapters/${chapterId}`
+    : "/courses/python-framework"}`;
   const visibleLevels = currentChapter
     ? levels.filter((level) => currentChapter.levelIds.includes(level.id))
     : [];
@@ -874,6 +885,18 @@ export default function Home({ chapterId }: { chapterId?: number }) {
 
   useEffect(() => {
     try {
+      if (window.location.origin === localLearningOrigin && window.name) {
+        const transfer = JSON.parse(window.name) as { kind?: string; progress?: unknown; chats?: unknown };
+        if (transfer.kind === localTransferKind) {
+          if (typeof transfer.progress === "string" && transfer.progress.length <= 100_000) {
+            window.localStorage.setItem(storageKey, transfer.progress);
+          }
+          if (typeof transfer.chats === "string" && transfer.chats.length <= 200_000) {
+            window.localStorage.setItem(codexChatStorageKey, transfer.chats);
+          }
+          window.name = "";
+        }
+      }
       const stored = window.localStorage.getItem(storageKey);
       if (stored) {
         const progressState = JSON.parse(stored) as ProgressState;
@@ -919,11 +942,13 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
     try {
-      const response = await fetch(localCodexHealthUrl, {
+      const healthUrl = localCodexRequestUrl("/health");
+      const requestInit: RequestInit & { targetAddressSpace?: "local" } = {
         signal: controller.signal,
         cache: "no-store",
-        targetAddressSpace: "local",
-      } as RequestInit & { targetAddressSpace: "local" });
+      };
+      if (healthUrl.startsWith("http")) requestInit.targetAddressSpace = "local";
+      const response = await fetch(healthUrl, requestInit);
       const result = await response.json() as { ok?: boolean; message?: string };
       if (response.ok && result.ok) {
         setLocalCodexStatus("ready");
@@ -1177,6 +1202,15 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     window.localStorage.setItem(codexChatStorageKey, JSON.stringify(nextChats));
   }
 
+  function enterLocalLearningMode() {
+    window.name = JSON.stringify({
+      kind: localTransferKind,
+      progress: window.localStorage.getItem(storageKey),
+      chats: window.localStorage.getItem(codexChatStorageKey),
+    });
+    window.location.assign(localLearningUrl);
+  }
+
   async function sendToLocalCodex(level: Level, suggestedMessage?: string) {
     const answer = (taskDrafts[level.id] ?? "").trim();
     const message = (suggestedMessage ?? codexChatDrafts[level.id] ?? "").trim();
@@ -1198,17 +1232,19 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     setCodexErrors((current) => ({ ...current, [level.id]: "" }));
 
     try {
-      const response = await fetch(`${localCodexBridge}/chat`, {
+      const chatUrl = localCodexRequestUrl("/chat");
+      const requestInit: RequestInit & { targetAddressSpace?: "local" } = {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        targetAddressSpace: "local",
         body: JSON.stringify({
           level: { id: level.id, title: level.title, task: level.task, acceptance: level.acceptance },
           answer,
           message,
           history: previous,
         }),
-      } as RequestInit & { targetAddressSpace: "local" });
+      };
+      if (chatUrl.startsWith("http")) requestInit.targetAddressSpace = "local";
+      const response = await fetch(chatUrl, requestInit);
       const result = await response.json() as { reply?: string; grade?: TaskGrade | null; error?: string };
       if (!response.ok || !result.reply) throw new Error(result.error ?? "本机 Codex 没有返回有效回复");
 
@@ -1473,6 +1509,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                                 ? "本机服务已启动，Codex 还未就绪"
                                 : "网页尚未连上本机 Codex"}</b>
                             <p>{localCodexMessage || "首次使用时，浏览器会询问是否允许访问本地网络；请选择允许。授权只用于连接本机 127.0.0.1。"}</p>
+                            {localCodexStatus !== "checking" && <button type="button" className="open-local-learning" onClick={enterLocalLearningMode}>进入本机学习模式</button>}
                             {localCodexStatus !== "checking" && <button type="button" className="retry-local-codex" onClick={() => {
                               void checkLocalCodex(20_000, true);
                             }}>允许并重新连接</button>}
@@ -1481,9 +1518,9 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             <details className="local-codex-help">
                               <summary>没有出现授权窗口？</summary>
                               <ol>
-                                <li>打开地址栏左侧的“网站设置”。</li>
-                                <li>把“本地网络访问”改为“允许”，再刷新当前页。</li>
-                                <li>若“检查本机服务”也打不开，说明本机后台服务没有运行。</li>
+                                <li>Codex 内嵌浏览器不显示授权窗口时，选择“进入本机学习模式”。</li>
+                                <li>页面会在当前浏览器打开本机版本，并带上已有课程进度、答案和对话。</li>
+                                <li>若本机版本也打不开，再使用“检查本机服务”确认后台状态。</li>
                               </ol>
                             </details>
                           </aside>}

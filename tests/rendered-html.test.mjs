@@ -96,6 +96,8 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
   const queue = await readFile(new URL("../app/grading-queue/GradingQueueClient.tsx", import.meta.url), "utf8");
   const bridge = await readFile(new URL("../local-companion/server.mjs", import.meta.url), "utf8");
   const launcher = await readFile(new URL("../启动本地Codex学习站.command", import.meta.url), "utf8");
+  const localSiteAgent = await readFile(new URL("../deploy/com.baiyi.python-framework-quest-site.plist", import.meta.url), "utf8");
+  const viteConfig = await readFile(new URL("../vite.config.ts", import.meta.url), "utf8");
 
   assert.match(source, /const learningStages = \["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
   assert.match(source, /<textarea/);
@@ -117,11 +119,15 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
   assert.match(source, /localCodexBridge/);
   assert.doesNotMatch(source, /codexPluginUrl/);
   assert.match(source, /网页尚未连上本机 Codex/);
-  assert.match(source, /targetAddressSpace: "local"/);
+  assert.match(source, /requestInit\.targetAddressSpace = "local"/);
   assert.match(source, /允许并重新连接/);
   assert.match(source, /检查本机服务/);
   assert.match(source, /本地网络访问/);
   assert.match(source, /checkLocalCodex\(20_000, true\)/);
+  assert.match(source, /进入本机学习模式/);
+  assert.match(source, /python-framework-quest-local-transfer-v1/);
+  assert.match(source, /window\.location\.assign\(localLearningUrl\)/);
+  assert.match(source, /`\/local-codex\$\{path\}`/);
   assert.match(source, /本机 Codex 已连接/);
   assert.match(source, /立即批改当前答案/);
   assert.match(source, /继续和 Codex 对话/);
@@ -132,6 +138,11 @@ test("Python 关卡在正式网页内连接本机 Codex 并保留异步备用路
   assert.match(bridge, /Logged in/);
   assert.match(bridge, /python-framework-quest\.leafy-slug-3142\.chatgpt\.site/);
   assert.match(launcher, /node local-companion\/server\.mjs/);
+  assert.match(localSiteAgent, /127\.0\.0\.1/);
+  assert.match(localSiteAgent, /<string>3000<\/string>/);
+  assert.match(localSiteAgent, /KeepAlive/);
+  assert.match(viteConfig, /"\/local-codex"/);
+  assert.match(viteConfig, /127\.0\.0\.1:4317/);
 
   const response = await render("/grading-queue");
   assert.equal(response.status, 200);
