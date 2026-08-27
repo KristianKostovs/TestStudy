@@ -265,6 +265,8 @@ test("技术雷达与成长档案是独立页面", async () => {
   const radar = await (await render("/radar")).text();
   assert.match(radar, /每周新增/);
   assert.match(radar, /每月更新/);
+  assert.match(radar, /每天 19:30/);
+  assert.match(radar, /本地知识库巡检/);
   assert.match(radar, /新技术先进入雷达/);
 
   const growth = await (await render("/growth")).text();

@@ -94,8 +94,11 @@ actions tied to the current ChatGPT user. Leave public content anonymous.
 - `npm test`: build the starter and verify its rendered loading skeleton
 - `npm run db:generate`: generate Drizzle migrations after schema changes
 - `npm run publish:site -- "更新说明"`: safely sync GitHub, validate, and publish the current Site through the signed-in Codex account
+- `npm run knowledge:scan`: compare local learning knowledge bases with the acknowledged fingerprint baseline
+- `npm run knowledge:ack`: acknowledge a reviewed Knowledge Diff and advance the local baseline
 
 For the two-computer workflow, see [两台电脑一键提交并发布](docs/ONE_CLICK_PUBLISH.md).
+For the source-computer patrol workflow, see [本地知识库巡检](docs/LOCAL_KNOWLEDGE_PATROL.md).
 
 ## Learn More
 
