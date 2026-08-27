@@ -5,7 +5,8 @@ import { courseForCompetency } from "../capability-registry";
 
 type Profile = { current_role: string; target_role: string; horizon: string; focus: string };
 type Question = { id: number; prompt: string; competency: string; tags: string[]; source_ref: string };
-type Diagnosis = { summary: string; strengths: string[]; improvements: string[]; followUp: string };
+type Diagnosis = { summary: string; strengths: string[]; improvements: string[]; followUp: string; provider?: "deepseek"; model?: string };
+type LatestDiagnosis = { score: number; diagnosis: Diagnosis; weakTags: string[] };
 type Attempt = { id: number; prompt: string; competency: string; answer_text: string; score: number; diagnosis: Diagnosis; weakTags: string[]; created_at: string };
 type Score = { competency: string; score: number | null; evidence_count: number };
 type Signal = { id: string; title: string; summary: string; competency: string; source_url: string; source_type: string; observed_at: string };
@@ -34,7 +35,7 @@ async function requestState(body?: Record<string, unknown>) {
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
   } : undefined);
-  const result = await response.json() as InterviewState & { error?: string; latestDiagnosis?: { score: number; diagnosis: Diagnosis; weakTags: string[] } };
+  const result = await response.json() as InterviewState & { error?: string; latestDiagnosis?: LatestDiagnosis };
   if (!response.ok) throw new Error(result.error ?? "请求失败");
   return result;
 }
@@ -45,7 +46,7 @@ export default function InterviewCoachClient() {
   const [selectedModuleId, setSelectedModuleId] = useState<string | null>(null);
   const [questionIndex, setQuestionIndex] = useState(0);
   const [answer, setAnswer] = useState("");
-  const [latestDiagnosis, setLatestDiagnosis] = useState<{ score: number; diagnosis: Diagnosis; weakTags: string[] } | null>(null);
+  const [latestDiagnosis, setLatestDiagnosis] = useState<LatestDiagnosis | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [refreshNote, setRefreshNote] = useState("");
@@ -157,7 +158,7 @@ export default function InterviewCoachClient() {
       <section className="interview-main">
         <header className="interview-topbar">
           <div><strong>{title}</strong><span>{subtitle}</span></div>
-          <div className="live-source"><i />数据源快照 · {data.lastRefreshedAt ?? "待更新"}</div>
+          <div className="live-source"><i />DeepSeek 在线诊断 · 数据源 {data.lastRefreshedAt ?? "待更新"}</div>
         </header>
 
         {activeView === "overview" && (
@@ -216,7 +217,7 @@ export default function InterviewCoachClient() {
                 <div>
                   <p className="message-label">面试官 · {selectedModule?.title ?? "综合模拟面试"} · {question.competency}</p>
                   <h1>{question.prompt}</h1>
-                  <p>请用真实经历回答，建议按“背景—判断—行动—结果—复盘”组织。回答会被持久保存，并用来更新薄弱项与计划。</p>
+                  <p>请用真实经历回答，建议按“背景—判断—行动—结果—复盘”组织。回答会交给 DeepSeek 逐项诊断，并用来更新薄弱项与成长计划。</p>
                   <div className="question-tags">{question.tags.map((tag) => <span key={tag}>{tag}</span>)}</div>
                 </div>
               </section>
@@ -226,7 +227,7 @@ export default function InterviewCoachClient() {
                   <div className="coach-feedback">
                     <div className="coach-avatar">AI</div>
                     <div>
-                      <p className="message-label">即时诊断 · {latestDiagnosis.score} 分</p>
+                      <p className="message-label">DeepSeek 即时诊断 · {latestDiagnosis.score} 分</p>
                       <p>{latestDiagnosis.diagnosis.summary}</p>
                       <div className="diagnosis-points">
                         {latestDiagnosis.diagnosis.strengths.length > 0 && <p><b>已展现：</b>{latestDiagnosis.diagnosis.strengths.join("、")}</p>}
@@ -242,7 +243,7 @@ export default function InterviewCoachClient() {
             </div>
             <div className="answer-composer">
               <textarea aria-label="输入你的面试回答" placeholder="输入你的回答……" value={answer} onChange={(event) => setAnswer(event.target.value)} onKeyDown={(event) => { if ((event.metaKey || event.ctrlKey) && event.key === "Enter") void submitAnswer(); }} />
-              <div><span>回答将写入个人档案 · 按 Ctrl/⌘ + Enter 提交</span><button type="button" onClick={() => void submitAnswer()} disabled={answer.trim().length < 12 || saving}>{saving ? "·" : "↑"}</button></div>
+              <div><span>{saving ? "DeepSeek 正在阅读回答并生成成长建议……" : "回答将写入个人档案 · 按 Ctrl/⌘ + Enter 提交"}</span><button type="button" onClick={() => void submitAnswer()} disabled={answer.trim().length < 12 || saving}>{saving ? "···" : "↑"}</button></div>
             </div>
           </>
         )}

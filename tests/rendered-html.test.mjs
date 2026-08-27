@@ -104,7 +104,7 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与异步�
   assert.match(source, /const learningStages = \["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
   assert.match(source, /<PythonAnswerEditor/);
   assert.match(editor, /@codemirror\/lang-python/);
-  assert.match(editor, /indentUnit\.of\("    "\)/);
+  assert.match(editor, /indentUnit\.of\(" {4}"\)/);
   assert.match(editor, /keymap\.of\(\[indentWithTab\]\)/);
   assert.match(editor, /autocompletion/);
   assert.match(editor, /lintGutter/);
@@ -162,10 +162,11 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与异步�
   assert.equal(response.status, 200);
 });
 
-test("DeepSeek 凭据只在受保护的服务端助教接口使用", async () => {
-  const [source, route] = await Promise.all([
+test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
+  const [source, route, provider] = await Promise.all([
     readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/deepseek.ts", import.meta.url), "utf8"),
   ]);
 
   assert.match(source, /fetch\(chatUrl, requestInit\)/);
@@ -173,11 +174,15 @@ test("DeepSeek 凭据只在受保护的服务端助教接口使用", async () =>
   assert.match(source, /DeepSeek 在线助教已启用/);
   assert.doesNotMatch(source, /DEEPSEEK_API_KEY|api\.deepseek\.com|Bearer/);
   assert.match(route, /getChatGPTUser/);
-  assert.match(route, /DEEPSEEK_API_KEY/);
-  assert.match(route, /https:\/\/api\.deepseek\.com\/chat\/completions/);
-  assert.match(route, /deepseek-v4-flash/);
-  assert.match(route, /response_format: \{ type: "json_object" \}/);
+  assert.match(route, /requestDeepSeekJson/);
+  assert.doesNotMatch(route, /DEEPSEEK_API_KEY|api\.deepseek\.com|Bearer/);
   assert.match(route, /score >= 75 && criteria\.every/);
+  assert.match(provider, /DEEPSEEK_API_KEY/);
+  assert.match(provider, /https:\/\/api\.deepseek\.com\/chat\/completions/);
+  assert.match(provider, /deepseek-v4-flash/);
+  assert.match(provider, /response_format: \{ type: "json_object" \}/);
+  assert.match(provider, /thinking: \{ type: "disabled" \}/);
+  assert.match(provider, /\[已隐藏\]/);
 });
 
 test("Python 学习进度按 ChatGPT 账户同步且保留本机缓存", async () => {
@@ -231,6 +236,27 @@ test("面试系统以数据驱动能力地图为首屏", async () => {
   assert.match(client, /去学「\{course\.courseTitle\}」/);
 });
 
+test("面试回答真实调用 DeepSeek，并把诊断转成成长计划", async () => {
+  const [client, api, growth] = await Promise.all([
+    readFile(new URL("../app/interview/InterviewCoachClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/interview/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/growth/GrowthArchiveClient.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(client, /DeepSeek 即时诊断/);
+  assert.match(client, /DeepSeek 正在阅读回答并生成成长建议/);
+  assert.match(api, /getChatGPTUser/);
+  assert.match(api, /requestDeepSeekJson/);
+  assert.match(api, /analyzeInterviewAnswer/);
+  assert.match(api, /SELECT prompt, competency, tags_json, source_ref/);
+  assert.match(api, /只依据回答中实际出现的内容评分/);
+  assert.match(api, /analysis\.plan/);
+  assert.match(api, /durationMinutes/);
+  assert.doesNotMatch(api, /function analyzeAnswer|lengthScore|hasStructure|hasEvidence/);
+  assert.match(growth, /真实学习行为 \+ DeepSeek 诊断/);
+  assert.match(growth, /诊断后的任务会进入同一份成长计划/);
+});
+
 test("技术雷达与成长档案是独立页面", async () => {
   const radar = await (await render("/radar")).text();
   assert.match(radar, /每周新增/);
@@ -239,7 +265,7 @@ test("技术雷达与成长档案是独立页面", async () => {
 
   const growth = await (await render("/growth")).text();
   assert.match(growth, /GROWTH ARCHIVE/);
-  assert.match(growth, /课程进度来自本机学习记录/);
+  assert.match(growth, /课程进度来自学习记录/);
 });
 
 test("成长平台入口统一沿用面试系统视觉语言", async () => {
@@ -265,7 +291,7 @@ test("质量工程与保障补齐白盒测试和质量门禁路线", async () =>
   ]);
 
   assert.match(registry, /id: "quality-engineering"/);
-  for (const topic of ["黑盒、白盒与灰盒测试", "代码分支与白盒用例", "覆盖率与覆盖率误区", "CI\/CD 质量门禁"]) {
+  for (const topic of ["黑盒、白盒与灰盒测试", "代码分支与白盒用例", "覆盖率与覆盖率误区", "CI/CD 质量门禁"]) {
     assert.match(registry, new RegExp(topic));
   }
   assert.match(registry, /foundation\.quality_engineering/);

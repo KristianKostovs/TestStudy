@@ -1,6 +1,6 @@
-import { env } from "cloudflare:workers";
 import { getChatGPTUser } from "../../chatgpt-auth";
 import { getGradingRubric } from "../../courses/python-framework/grading-rubrics";
+import { requestDeepSeekJson } from "../../deepseek";
 
 type TaskGrade = {
   passed: boolean;
@@ -10,13 +10,6 @@ type TaskGrade = {
   improvements: string[];
   criteria: Array<{ criterion: string; met: boolean; evidence: string }>;
 };
-
-type DeepSeekResponse = {
-  choices?: Array<{ message?: { content?: string } }>;
-  error?: { message?: string };
-};
-
-const model = "deepseek-v4-flash";
 
 function cleanText(value: unknown, maxLength: number) {
   return String(value ?? "").trim().slice(0, maxLength);
@@ -97,9 +90,7 @@ function parseGrade(value: unknown, acceptance: string[]): TaskGrade | null {
   };
 }
 
-function parseModelOutput(content: string, acceptance: string[]) {
-  const normalized = content.trim().replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "");
-  const parsed = JSON.parse(normalized) as Record<string, unknown>;
+function parseModelOutput(parsed: Record<string, unknown>, acceptance: string[], model: string) {
   const reply = cleanText(parsed.reply, 8_000);
   if (!reply) throw new Error("模型没有返回教学回复");
   return { reply, grade: parseGrade(parsed.grade, acceptance), provider: "deepseek", model };
@@ -122,49 +113,12 @@ export async function POST(request: Request) {
     if (answer.length < 30) return Response.json({ error: "请先写至少 30 个字符的答案，再让助教批改" }, { status: 400 });
     if (!message) return Response.json({ error: "请先输入想对助教说的话" }, { status: 400 });
 
-    const runtimeEnv = env as typeof env & { DEEPSEEK_API_KEY?: string };
-    const apiKey = runtimeEnv.DEEPSEEK_API_KEY;
-    if (!apiKey) return Response.json({ error: "在线助教尚未配置" }, { status: 503 });
     const prompt = buildPrompt(levelId, answer, message, cleanHistory(payload.history));
     if (!prompt) return Response.json({ error: "关卡材料不存在" }, { status: 404 });
-
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 90_000);
-    let providerResponse: Response;
-    try {
-      providerResponse = await fetch("https://api.deepseek.com/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${apiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model,
-          messages: [{ role: "user", content: prompt }],
-          thinking: { type: "disabled" },
-          response_format: { type: "json_object" },
-          max_tokens: 2_000,
-          temperature: 0.2,
-          stream: false,
-        }),
-        signal: controller.signal,
-      });
-    } finally {
-      clearTimeout(timeout);
-    }
-
-    const result = await providerResponse.json() as DeepSeekResponse;
-    if (!providerResponse.ok) {
-      const detail = cleanText(result.error?.message, 300);
-      return Response.json({ error: detail ? `DeepSeek 暂时不可用：${detail}` : `DeepSeek 暂时不可用（${providerResponse.status}）` }, { status: 502 });
-    }
-    const content = result.choices?.[0]?.message?.content;
-    if (!content) return Response.json({ error: "DeepSeek 没有返回有效内容" }, { status: 502 });
-    return Response.json(parseModelOutput(content, rubric.acceptance));
+    const result = await requestDeepSeekJson({ prompt, maxTokens: 2_000 });
+    return Response.json(parseModelOutput(result.data, rubric.acceptance, result.model));
   } catch (error) {
-    const message = error instanceof DOMException && error.name === "AbortError"
-      ? "DeepSeek 响应超时，请稍后重试"
-      : error instanceof Error ? error.message : "在线助教调用失败";
+    const message = error instanceof Error ? error.message : "在线助教调用失败";
     return Response.json({ error: message }, { status: 500 });
   }
 }

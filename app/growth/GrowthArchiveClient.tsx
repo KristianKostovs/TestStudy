@@ -45,17 +45,17 @@ export default function GrowthArchiveClient() {
     <main className="ready growth-archive-page">
       <header className="suite-topbar">
         <div><strong>成长档案</strong><span>课程进度与真实回答证据分别记录、统一查看</span></div>
-        <div className="suite-live"><i />档案来自真实学习行为</div>
+        <div className="suite-live"><i />真实学习行为 + DeepSeek 诊断</div>
       </header>
       <header className="workspace-page-hero archive-hero">
         <p>YOUR GROWTH ARCHIVE</p>
         <h1>把学过的、练过的、<br /><em>暴露出的薄弱项放在一起看</em></h1>
-        <span>这里不创造第二套分数。课程进度来自本机学习记录，面试能力来自你的真实回答证据。</span>
+        <span>这里不创造第二套分数。课程进度来自学习记录，面试能力来自真实回答与 DeepSeek 逐项诊断，诊断后的任务会进入同一份成长计划。</span>
       </header>
 
       <section className="archive-summary-grid">
         <article><span>Python 已通关</span><strong>{pythonCompleted}<small>/10</small></strong><p>{pythonCompleted ? "继续完成下一关的任务与自动小测。" : "还没有本机通关记录，可以从第一关开始。"}</p><a href="/courses/python-framework">继续学习 →</a></article>
-        <article><span>面试能力证据</span><strong>{interview?.attempts.length ?? "—"}<small> 次回答</small></strong><p>{interviewUnavailable ? "面试数据暂时无法读取，不影响本机课程记录。" : assessed.length ? `已有 ${assessed.length} 个能力项形成证据。` : "完成第一次回答后才会形成能力判断。"}</p><a href="/interview">进入面试成长 →</a></article>
+        <article><span>面试能力证据</span><strong>{interview?.attempts.length ?? "—"}<small> 次回答</small></strong><p>{interviewUnavailable ? "面试数据暂时无法读取，不影响课程记录。" : assessed.length ? `已有 ${assessed.length} 个能力项经过 DeepSeek 诊断并形成证据。` : "完成第一次回答后，DeepSeek 才会依据真实内容形成能力判断。"}</p><a href="/interview">进入面试成长 →</a></article>
         <article><span>面试准备度</span><strong>{average === null ? "—" : `${average}%`}</strong><p>{average === null ? "没有真实回答前，不显示虚假的能力分。" : `当前还有 ${openPlans} 项成长任务待完成。`}</p><a href="/interview">查看成长计划 →</a></article>
       </section>
 
