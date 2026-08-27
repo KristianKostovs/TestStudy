@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.baiyi.python-framework-quest-site</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/usr/local/bin/node</string>
+    <string>/Users/baiyi/01448193/物资运营/python-framework-quest/node_modules/vinext/dist/cli.js</string>
+    <string>dev</string>
+    <string>--hostname</string>
+    <string>127.0.0.1</string>
+    <string>--port</string>
+    <string>3000</string>
+  </array>
+  <key>WorkingDirectory</key>
+  <string>/Users/baiyi/01448193/物资运营/python-framework-quest</string>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>ProcessType</key>
+  <string>Interactive</string>
+  <key>StandardOutPath</key>
+  <string>/Users/baiyi/Library/Logs/python-framework-quest-site.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/baiyi/Library/Logs/python-framework-quest-site-error.log</string>
+</dict>
+</plist>

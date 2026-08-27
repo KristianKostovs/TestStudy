@@ -1,0 +1,41 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1787627647561,
+      "tag": "0000_fresh_skin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1787627681482,
+      "tag": "0001_calm_dreadnoughts",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1787629836690,
+      "tag": "0002_cultured_grey_gargoyle",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1787652782950,
+      "tag": "0003_cynical_ben_urich",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1787816826621,
+      "tag": "0004_curious_james_howlett",
+      "breakpoints": true
+    }
+  ]
+}
