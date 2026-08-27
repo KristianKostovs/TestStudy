@@ -1,0 +1,138 @@
+{
+  "version": 1,
+  "timezone": "Asia/Shanghai",
+  "weeklySchedule": "每周一 09:30",
+  "monthlySchedule": "每月第一个周一 10:00",
+  "candidateDirectory": "work/technology-radar/candidates",
+  "reviewDirectory": "work/technology-radar/reviews",
+  "sources": [
+    {
+      "id": "python-whats-new",
+      "title": "Python What's New",
+      "authority": "Python Software Foundation",
+      "url": "https://docs.python.org/3/whatsnew/index.html",
+      "courseModules": ["python-framework"],
+      "interviewCompetencies": ["技术深度"],
+      "scope": "正式版本的新特性、弃用、移除和迁移影响"
+    },
+    {
+      "id": "python-peps",
+      "title": "Python PEP Index",
+      "authority": "Python Software Foundation",
+      "url": "https://peps.python.org/",
+      "courseModules": ["python-framework"],
+      "interviewCompetencies": ["技术深度", "架构判断"],
+      "scope": "已接受、最终、弃用和仍在讨论的语言提案；草案只能观察"
+    },
+    {
+      "id": "pytest-changelog",
+      "title": "pytest Changelog",
+      "authority": "pytest",
+      "url": "https://docs.pytest.org/en/stable/changelog.html",
+      "courseModules": ["python-framework", "ui-automation", "api-automation", "quality-engineering"],
+      "interviewCompetencies": ["技术深度", "CI/CD"],
+      "scope": "fixture、参数化、插件、弃用、兼容性和稳定性变化"
+    },
+    {
+      "id": "playwright-python-releases",
+      "title": "Playwright Python Release Notes",
+      "authority": "Microsoft Playwright",
+      "url": "https://playwright.dev/python/docs/release-notes",
+      "courseModules": ["ui-automation"],
+      "interviewCompetencies": ["Web 自动化"],
+      "scope": "Locator、等待、Trace、浏览器行为、弃用和 Agent 能力"
+    },
+    {
+      "id": "openai-evals",
+      "title": "OpenAI Evals",
+      "authority": "OpenAI",
+      "url": "https://developers.openai.com/api/docs/guides/evals",
+      "courseModules": ["ai-testing"],
+      "interviewCompetencies": ["AI 质量方法", "Agent 系统测试"],
+      "scope": "评估数据集、grader、评测设计、Agent 评估与质量闭环"
+    },
+    {
+      "id": "openai-agents-python-releases",
+      "title": "OpenAI Agents SDK Python Releases",
+      "authority": "OpenAI",
+      "url": "https://github.com/openai/openai-agents-python/releases",
+      "courseModules": ["ai-testing"],
+      "interviewCompetencies": ["Agent 系统测试", "AI 质量方法"],
+      "scope": "工具调用、MCP、tracing、guardrail、恢复与评估能力"
+    },
+    {
+      "id": "locust-releases",
+      "title": "Locust Releases",
+      "authority": "Locust",
+      "url": "https://github.com/locustio/locust/releases",
+      "courseModules": ["performance-testing"],
+      "interviewCompetencies": ["性能与可靠性"],
+      "scope": "负载生成、协议用户、分布式执行和性能诊断变化"
+    },
+    {
+      "id": "coverage-py-changes",
+      "title": "coverage.py Change History",
+      "authority": "coverage.py",
+      "url": "https://coverage.readthedocs.io/en/latest/changes.html",
+      "courseModules": ["quality-engineering", "python-framework"],
+      "interviewCompetencies": ["技术深度", "CI/CD"],
+      "scope": "语句与分支覆盖、上下文、并行合并和报告变化"
+    },
+    {
+      "id": "owasp-asvs-releases",
+      "title": "OWASP ASVS Releases",
+      "authority": "OWASP",
+      "url": "https://github.com/OWASP/ASVS/releases",
+      "courseModules": ["quality-engineering", "ai-testing"],
+      "interviewCompetencies": ["安全测试", "Agent 系统测试"],
+      "scope": "稳定安全验证标准；bleeding-edge 版本只能观察"
+    },
+    {
+      "id": "istqb-ctfl",
+      "title": "ISTQB CTFL 4.0",
+      "authority": "ISTQB",
+      "url": "https://istqb.org/certifications/certified-tester-foundation-level-ctfl-v4-0/",
+      "courseModules": ["quality-engineering"],
+      "interviewCompetencies": ["测试基础"],
+      "scope": "测试基础、静态测试、黑盒与白盒技术、风险和测试管理"
+    },
+    {
+      "id": "istqb-quality-devops",
+      "title": "ISTQB Quality in DevOps",
+      "authority": "ISTQB",
+      "url": "https://istqb.org/certifications/certified-tester-quality-in-devops-ct-qdo/",
+      "courseModules": ["quality-engineering"],
+      "interviewCompetencies": ["CI/CD", "架构判断"],
+      "scope": "价值流、持续测试、质量门禁、度量和持续改进"
+    },
+    {
+      "id": "nist-airc",
+      "title": "NIST AI Resource Center",
+      "authority": "NIST",
+      "url": "https://airc.nist.gov/",
+      "courseModules": ["ai-testing"],
+      "interviewCompetencies": ["AI 质量方法", "安全测试"],
+      "scope": "AI RMF、TEVV、可信 AI 风险与测量方法"
+    }
+  ],
+  "interviewSignals": [
+    {
+      "id": "official-employer-jobs",
+      "title": "目标雇主官方岗位信号",
+      "authority": "目标雇主官方招聘站",
+      "urls": ["https://jobs.apple.com/en-ca/details/200665346/ai-qa-engineer"],
+      "scope": "目标雇主官方招聘页中的测试开发、AI QA、质量工程岗位要求",
+      "interviewCompetencies": ["AI 质量方法", "项目表达", "架构判断"],
+      "rule": "页面失效时只记录失效，不推断岗位仍存在；只调整面试能力优先级和题目场景，不得成为课程技术事实"
+    },
+    {
+      "id": "authoritative-skills-reports",
+      "title": "权威技能趋势报告",
+      "authority": "World Economic Forum",
+      "urls": ["https://www.weforum.org/publications/the-future-of-jobs-report-2025/in-full/3-skills-outlook/"],
+      "scope": "政府、标准组织和权威研究机构的技能趋势报告",
+      "interviewCompetencies": ["项目表达", "架构判断", "AI 质量方法"],
+      "rule": "只形成岗位趋势候选；必须保存原始链接、发布日期和有效期"
+    }
+  ]
+}

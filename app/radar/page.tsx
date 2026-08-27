@@ -3,7 +3,7 @@ import { learningModules, sourceAdapters } from "../learning-registry";
 
 export const metadata: Metadata = {
   title: "技术雷达 | 测试能力修炼场",
-  description: "每天巡检本地知识库、每周发现官方变化，每月评审哪些内容应进入课程。",
+  description: "每天巡检本地知识库、每周发现官方变化，每月形成课程与面试内容修改草稿。",
 };
 
 const radarSources = sourceAdapters.filter((source) => source.kind === "technology_radar");
@@ -18,13 +18,23 @@ export default function RadarPage() {
       <header className="workspace-page-hero radar-hero">
         <p>YOUR TECHNOLOGY RADAR</p>
         <h1>新技术先进入雷达，<br /><em>经过判断再进入课程</em></h1>
-        <span>每天巡检本地项目、每周发现官方变化，每月做一次课程影响评审。更新不是机械加关，而是判断它带来了新能力、必要前置知识，还是只需补充案例。</span>
+        <span>每天巡检本地项目、每周发现官方变化，每月同时评审课程和面试内容。自动任务只形成候选与草稿，正式更新仍由你确认。</span>
       </header>
 
       <section className="radar-cadence">
-        <article><b>每周新增</b><strong>发现候选</strong><p>读取官方发布、版本说明和权威规范，记录变化与影响方向。</p></article>
-        <article><b>每月更新</b><strong>课程评审</strong><p>新能力才新增主关；用法变化更新知识卡；项目变化优先更新练习。</p></article>
+        <article><b>周一 09:30</b><strong>官方候选</strong><p>扫描 Python、pytest、Playwright、AI Evals、Locust 等官方来源，只记录可追溯候选。</p></article>
+        <article><b>首个周一 10:00</b><strong>双线草稿</strong><p>评审上月候选，分别形成课程修改草稿与面试内容修改草稿。</p></article>
         <article><b>每天 19:30</b><strong>本地知识库巡检</strong><p>自动识别 AI测试赋能 下的不同项目；发现变化后进入 Knowledge Diff 待评审队列。</p></article>
+      </section>
+
+      <section className="radar-decision-rule">
+        <div><p>TWO DESTINATIONS</p><h2>同一份证据，两条独立去向</h2></div>
+        <ol>
+          <li><b>课</b><span><strong>课程草稿</strong>修事实、补知识卡、更新练习或建议新关卡</span></li>
+          <li><b>面</b><span><strong>面试草稿</strong>更新能力优先级、题目、追问与评分证据</span></li>
+          <li><b>审</b><span><strong>人工确认</strong>候选和草稿都不会自动修改线上内容</span></li>
+          <li><b>发</b><span><strong>一键发布</strong>只有确认后才提交、测试并发布</span></li>
+        </ol>
       </section>
 
       <section className="radar-source-board">

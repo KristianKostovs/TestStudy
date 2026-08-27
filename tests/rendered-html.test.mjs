@@ -263,10 +263,13 @@ test("面试回答真实调用 DeepSeek，并把诊断转成成长计划", async
 
 test("技术雷达与成长档案是独立页面", async () => {
   const radar = await (await render("/radar")).text();
-  assert.match(radar, /每周新增/);
-  assert.match(radar, /每月更新/);
+  assert.match(radar, /周一 09:30/);
+  assert.match(radar, /首个周一 10:00/);
   assert.match(radar, /每天 19:30/);
   assert.match(radar, /本地知识库巡检/);
+  assert.match(radar, /课程修改草稿/);
+  assert.match(radar, /面试内容修改草稿/);
+  assert.match(radar, /人工确认/);
   assert.match(radar, /新技术先进入雷达/);
 
   const growth = await (await render("/growth")).text();
