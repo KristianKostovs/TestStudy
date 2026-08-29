@@ -175,6 +175,22 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.equal(response.status, 200);
 });
 
+test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完整任务", async () => {
+  const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
+  const rubric = await readFile(new URL("../app/courses/python-framework/grading-rubrics.ts", import.meta.url), "utf8");
+
+  assert.equal((source.match(/\n    answerPrerequisites:/g) ?? []).length, 10);
+  assert.match(source, /写答案前必须会/);
+  assert.match(source, /field[\s\S]*default_factory[\s\S]*可变默认值/);
+  assert.match(source, /referenceAnswer: `from dataclasses import dataclass, field[\s\S]*def adjust_stock_action[\s\S]*-> ActionResult/);
+  assert.match(source, /referenceAnswer: `import pytest[\s\S]*@pytest\.mark\.parametrize/);
+  assert.match(source, /class FlowEntry\(BaseModel\)[\s\S]*test_empty_entry_is_rejected/);
+  assert.match(source, /def run_entry\(entry, adapters, context\)[\s\S]*context\["resolved_fixture"\]/);
+  assert.match(source, /httpx\.MockTransport\(handler\)[\s\S]*business_error/);
+  assert.match(source, /requirement_cases\.yaml[\s\S]*teardown:[\s\S]*always:/);
+  assert.match(rubric, /action 明确返回并构造 ActionResult/);
+});
+
 test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
   const [source, route, courseGrade, provider] = await Promise.all([
     readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
