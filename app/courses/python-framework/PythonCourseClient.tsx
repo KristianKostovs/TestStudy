@@ -1256,7 +1256,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     window.location.assign(localLearningUrl);
   }
 
-  async function sendToTutor(level: Level, suggestedMessage?: string) {
+  async function sendToTutor(level: Level, suggestedMessage?: string, includeHistory = true) {
     const answer = (taskDraftsRef.current[level.id] ?? "").trim();
     const message = (suggestedMessage ?? codexChatDrafts[level.id] ?? "").trim();
     if (answer.length < 30) {
@@ -1286,7 +1286,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           level: { id: level.id, title: level.title, task: level.task, acceptance: level.acceptance },
           answer,
           message,
-          history: previous,
+          history: includeHistory ? previous : [],
         }),
       };
       if (!hostedTutor && chatUrl.startsWith("http")) requestInit.targetAddressSpace = "local";
@@ -1646,7 +1646,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                               {codexBusyLevel === level.id && <article className="assistant thinking"><b>{tutorName}</b><p>正在阅读你的答案并对照验收标准…</p></article>}
                             </div>
                             <div className="codex-quick-actions">
-                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToTutor(level, "请批改我当前的答案，逐条检查验收标准，并先告诉我最需要修改的一处。")}>立即批改当前答案</button>
+                              <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToTutor(level, "请批改我当前的答案，逐条检查验收标准，并先告诉我最需要修改的一处。", false)}>立即批改当前答案</button>
                               <button type="button" disabled={codexBusyLevel === level.id} onClick={() => void sendToTutor(level, "先不要给完整答案，请根据我当前的实现给一个下一步提示。")}>只给我一点提示</button>
                             </div>
                             <label className="codex-chat-composer">

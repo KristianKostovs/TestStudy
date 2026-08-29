@@ -123,6 +123,8 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(source, /action: "enqueue"/);
   assert.match(source, /taskDraftsRef\.current\[id\]/);
   assert.match(source, /taskDraftsRef\.current\[level\.id\]/);
+  assert.match(source, /history: includeHistory \? previous : \[\]/);
+  assert.match(source, /sendToTutor\(level, "请批改我当前的答案[^\n]+", false\)/);
   assert.match(source, /gradeSubmission\?\.answer\.trim\(\) === currentDraft\.trim\(\)/);
   assert.match(source, /待评判/);
   assert.match(source, /评判中/);
