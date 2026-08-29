@@ -1,0 +1,52 @@
+.queue-page { min-height: 100vh; padding: 0 22px 70px; background: #f5efdf; }
+.queue-hero { max-width: 980px; margin: 0 auto; padding: 32px 0 38px; border-bottom: 1px solid #d5c49e; }
+.queue-hero nav { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 46px; }
+.queue-hero nav a { color: #244f3e; font-weight: 900; text-decoration: none; }
+.queue-hero nav button { padding: 9px 14px; border: 1px solid #244f3e; color: #244f3e; background: transparent; cursor: pointer; }
+.queue-hero > p { margin: 0; color: #b43d2c; font-size: 11px; font-weight: 900; letter-spacing: .18em; }
+.queue-hero h1 { margin: 10px 0 12px; color: #102e23; font: 800 48px Georgia, "Songti SC", serif; }
+.queue-hero > span { color: #5f6b64; line-height: 1.8; }
+.queue-counts { max-width: 980px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 25px auto 0; }
+.queue-counts article { display: flex; align-items: baseline; gap: 10px; padding: 18px 20px; border: 1px solid #d8c8a7; background: #fffaf0; }
+.queue-counts b { color: #244f3e; font: 800 30px Georgia; }
+.queue-counts span { color: #746a58; font-weight: 800; }
+.queue-howto, .queue-notice, .queue-error { max-width: 980px; margin: 18px auto 0; padding: 16px 18px; border-left: 4px solid #d8a43a; background: #fff7e3; }
+.queue-howto b { color: #8a5e12; }
+.queue-howto p { margin: 6px 0 0; color: #675e4f; line-height: 1.7; }
+.queue-notice { color: #245441; border-left-color: #245441; background: #ecf5ef; }
+.queue-error { color: #8c3025; border-left-color: #b43d2c; background: #fff0e9; }
+.queue-list { max-width: 980px; display: grid; gap: 18px; margin: 28px auto 0; }
+.queue-empty { padding: 40px; color: #746a58; border: 1px dashed #b9a984; background: #fffaf0; text-align: center; }
+.queue-item { padding: 22px; border: 1px solid #d8c8a7; border-top: 5px solid #d8a43a; background: #fffdf8; }
+.queue-item.judging { border-top-color: #244f3e; }
+.queue-item.completed { border-top-color: #b43d2c; }
+.queue-item > header { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.queue-item > header span { color: #b43d2c; font-size: 10px; font-weight: 900; letter-spacing: .14em; }
+.queue-item h2 { margin: 5px 0 0; color: #17382b; font: 800 24px Georgia, "Songti SC", serif; }
+.queue-item > header i { padding: 7px 11px; color: #6e5122; background: #f8e8bb; font-size: 11px; font-style: normal; font-weight: 900; }
+.queue-item.judging > header i { color: white; background: #244f3e; }
+.queue-item.completed > header i { color: white; background: #b43d2c; }
+.queue-state { display: flex; justify-content: space-between; gap: 14px; margin: 16px 0; padding: 12px 0; border-top: 1px solid #e2d6bc; border-bottom: 1px solid #e2d6bc; color: #6f6b60; font-size: 12px; }
+.queue-state b { color: #425c50; }
+.queue-item details summary { color: #74531e; font-weight: 900; cursor: pointer; }
+.queue-item pre { max-height: 280px; overflow: auto; margin: 12px 0 0; padding: 16px; color: #e8efe9; background: #0f3024; white-space: pre-wrap; overflow-wrap: anywhere; }
+.queue-actions { display: grid; gap: 12px; margin-top: 18px; }
+.queue-actions > button { padding: 13px 16px; border: 0; color: #2b2417; background: #d8a43a; font-weight: 900; cursor: pointer; }
+.queue-actions > button:disabled { opacity: .6; cursor: not-allowed; }
+.queue-actions > button.complete-grade { color: white; background: #244f3e; }
+.queue-actions label { display: grid; gap: 7px; color: #244f3e; font-size: 12px; font-weight: 900; }
+.queue-actions textarea { width: 100%; min-height: 180px; padding: 14px; resize: vertical; border: 1px solid #7f917f; color: #e8efe9; background: #0f3024; font: 12px/1.7 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; }
+.queue-grade { display: grid; grid-template-columns: 120px 1fr; gap: 18px; margin-top: 18px; padding: 18px; background: #edf4ef; }
+.queue-grade strong { color: #244f3e; font: 800 40px Georgia; }
+.queue-grade strong small { display: block; font: 800 11px sans-serif; }
+.queue-grade p { margin: 5px 0; line-height: 1.7; }
+.queue-grade ul { grid-column: 1 / -1; margin: 0; padding: 0; list-style: none; }
+.queue-grade li { display: grid; grid-template-columns: minmax(190px, .8fr) 1.2fr; gap: 14px; padding: 11px 0; border-top: 1px solid #c8d7cc; }
+.queue-grade li span { color: #5e6862; }
+@media (max-width: 700px) {
+  .queue-hero h1 { font-size: 38px; }
+  .queue-counts { grid-template-columns: 1fr; }
+  .queue-state { display: grid; }
+  .queue-grade { grid-template-columns: 1fr; }
+  .queue-grade li { grid-template-columns: 1fr; gap: 5px; }
+}
