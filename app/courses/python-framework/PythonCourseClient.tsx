@@ -37,6 +37,7 @@ type Level = {
 type LearningSupport = {
   beforeYouStart: string;
   glossary: { term: string; meaning: string }[];
+  answerPrerequisites: { title: string; explanation: string; example: string }[];
   exampleTitle: string;
   example: string;
   walkthrough: string[];
@@ -162,7 +163,7 @@ class QueryRequest:
 class DatabaseProvider(Protocol):
     def query(self, request: QueryRequest) -> Sequence[Mapping[str, Any]]: ...`,
     task: "定义 ActionResult dataclass，包含 success、request、response、outputs 和 side_effects，再写一个构造它的 action。",
-    acceptance: ["核心字段有明确类型", "可选字段有合理默认值", "返回结果不依赖神秘 dict 结构"],
+    acceptance: ["核心字段有明确类型", "可选字段有合理默认值且不会共享可变对象", "action 明确返回并构造 ActionResult"],
     reward: "获得「契约印」",
   },
   {
@@ -356,6 +357,12 @@ const supportByLevel: Record<number, LearningSupport> = {
       { term: "flowNo", meaning: "data 里的交易流水号字段，字段名由真实接口 DTO 决定。" },
       { term: "data.flowNo", meaning: "一条字段路径：先进入 data，再取 flowNo。" },
     ],
+    answerPrerequisites: [
+      { title: "函数参数与 return", explanation: "参数是传入函数的数据；return 把最终找到的值交还给调用者。", example: "def get_by_path(data, path): ... return current" },
+      { title: "split 与 for", explanation: "split 把点路径拆成列表，for 再按顺序逐层读取。", example: "for part in path.split(\".\"):" },
+      { title: "主动抛出 KeyError", explanation: "字段不存在时应立即给出明确错误，而不是返回模糊的 None。", example: "raise KeyError(f\"找不到字段: {path}\")" },
+      { title: "f-string", explanation: "字符串前的 f 让大括号中的变量值进入错误信息。", example: "f\"找不到字段: {path}\"" },
+    ],
     exampleTitle: "先看接口响应的真实结构",
     example: `response = {
     "success": True,
@@ -388,7 +395,21 @@ KeyError: '找不到字段: data.flowNo'
         if not isinstance(current, dict) or part not in current:
             raise KeyError(f"找不到字段: {path}")
         current = current[part]
-    return current`,
+    return current
+
+
+response = {
+    "success": True,
+    "data": {"flowNo": "FLOW-710"},
+}
+
+assert get_by_path(response, "data.flowNo") == "FLOW-710"
+assert response == {"success": True, "data": {"flowNo": "FLOW-710"}}
+
+try:
+    get_by_path({}, "data.flowNo")
+except KeyError as error:
+    assert "data.flowNo" in str(error)`,
     quiz: {
       question: "在这份 response 中，data 是什么？",
       options: ["Python 固定的特殊对象", "response 中一个名为 data 的 dict 字段", "数据库连接", "flowNo 的别名"],
@@ -404,6 +425,12 @@ KeyError: '找不到字段: data.flowNo'
       { term: "deepcopy", meaning: "连同内层 dict/list 一起复制，得到彼此隔离的数据。" },
       { term: "finally", meaning: "不论 try 成功还是失败都会执行的清理区块。" },
     ],
+    answerPrerequisites: [
+      { title: "引用共享", explanation: "赋值或浅拷贝可能让两个变量继续指向同一个内层 dict。", example: "case_a[\"request\"] is case_b[\"request\"]" },
+      { title: "deepcopy", explanation: "深拷贝会递归复制嵌套的 dict/list，使两条用例真正隔离。", example: "case_a = deepcopy(fixture)" },
+      { title: "pytest 失败复现", explanation: "先用断言证明浅拷贝会污染，再改成深拷贝让同一断言通过。", example: "assert case_b[\"request\"][\"businessStatus\"] == 710" },
+      { title: "try / finally", explanation: "清理放在 finally，确保调用成功或失败时资源都会关闭。", example: "try: call_api(body)\nfinally: client.close()" },
+    ],
     exampleTitle: "两个变量可能指向同一个内层 dict",
     example: `fixture = {"request": {"businessStatus": 710}}
 case_a = dict(fixture)
@@ -414,16 +441,42 @@ print(case_b["request"]["businessStatus"])  # 720！`,
     walkthrough: ["dict(fixture) 只复制了外层。", "case_a 和 case_b 的 request 仍是同一个对象。", "deepcopy 会把内层 request 也复制。"],
     starter: `from copy import deepcopy
 
+fixture = {"request": {"businessStatus": 710}}
+
 case_a = deepcopy(fixture)
 case_b = deepcopy(fixture)
 # 修改 case_a，然后断言 case_b 未变`,
     verifyCommand: "pytest -q test_level_02.py",
     expected: "2 passed",
     hint: "先写一条故意失败的测试复现污染，再把 dict(fixture) 改为 deepcopy(fixture)。",
-    referenceAnswer: `case_a = deepcopy(fixture)
-case_b = deepcopy(fixture)
-case_a["request"]["businessStatus"] = 720
-assert case_b["request"]["businessStatus"] == 710`,
+    referenceAnswer: `import pytest
+from copy import deepcopy
+
+
+fixture = {"request": {"businessStatus": 710}}
+
+
+def test_shallow_copy_reproduces_pollution():
+    case_a = dict(fixture)
+    case_b = dict(fixture)
+    case_a["request"]["businessStatus"] = 720
+    assert case_b["request"]["businessStatus"] == 720
+
+
+def test_deepcopy_isolates_and_cleanup_always_runs():
+    case_a = deepcopy(fixture)
+    case_b = deepcopy(fixture)
+    cleanup_log = []
+
+    with pytest.raises(RuntimeError):
+        try:
+            case_a["request"]["businessStatus"] = 720
+            raise RuntimeError("模拟接口调用失败")
+        finally:
+            cleanup_log.append("client.close")
+
+    assert case_b["request"]["businessStatus"] == 710
+    assert cleanup_log == ["client.close"]`,
     quiz: { question: "dict(fixture) 对嵌套 dict 做了什么？", options: ["全部深度复制", "只复制外层", "把 dict 变成 tuple", "锁定数据不可修改"], correct: 1, explanation: "dict(x) 是浅拷贝，嵌套的 dict/list 仍可能共享。" },
   },
   3: {
@@ -434,24 +487,59 @@ assert case_b["request"]["businessStatus"] == 710`,
       { term: "callable", meaning: "可以用括号执行的对象，最常见是函数。" },
       { term: "callable ref", meaning: "用 package.module:function 表示一个函数的字符串地址。" },
     ],
+    answerPrerequisites: [
+      { title: "先导入工具", explanation: "动态导入不是内置语法，需要从 importlib 导入 import_module。", example: "from importlib import import_module" },
+      { title: "拆分模块与函数名", explanation: "只按第一个冒号拆分，得到 module_name 和 function_name。", example: "module_name, function_name = ref.split(\":\", 1)" },
+      { title: "getattr 与 callable", explanation: "先按字符串取属性，再确认取得的对象确实可以调用。", example: "handler = getattr(module, function_name)" },
+      { title: "异常测试", explanation: "模块不存在、属性不存在和属性不可调用是不同失败路径，都要单独验证。", example: "with pytest.raises((ModuleNotFoundError, AttributeError, TypeError)):" },
+    ],
     exampleTitle: "字符串怎样定位到函数",
     example: `ewms.stock.adapters:resolve_fixture
 
 ewms.stock.adapters  -> 模块地址
 resolve_fixture      -> 模块里的函数`,
     walkthrough: ["冒号左边交给 import_module() 导入。", "冒号右边交给 getattr() 取属性。", "最后用 callable() 确认它真的能执行。"],
-    starter: `def resolve_callable(ref: str):
+    starter: `from importlib import import_module
+
+
+def resolve_callable(ref: str):
     module_name, function_name = ref.split(":", 1)
     # 导入 module，取出 function，检查 callable
     pass`,
     verifyCommand: "pytest -q test_level_03.py",
     expected: "3 passed（成功导入、模块不存在、函数不存在）",
     hint: "需要 import_module、getattr 和 callable 三步。",
-    referenceAnswer: `module = import_module(module_name)
-handler = getattr(module, function_name)
-if not callable(handler):
-    raise TypeError(f"{ref} 不可调用")
-return handler`,
+    referenceAnswer: `from importlib import import_module
+
+import pytest
+
+
+def resolve_callable(ref: str):
+    module_name, function_name = ref.split(":", 1)
+    module = import_module(module_name)
+    handler = getattr(module, function_name)
+    if not callable(handler):
+        raise TypeError(f"{ref} 不可调用")
+    return handler
+
+
+def test_resolve_real_function():
+    assert resolve_callable("math:sqrt")(9) == 3
+
+
+def test_missing_module():
+    with pytest.raises(ModuleNotFoundError):
+        resolve_callable("missing_package:run")
+
+
+def test_missing_function():
+    with pytest.raises(AttributeError):
+        resolve_callable("math:missing_function")
+
+
+def test_rejects_non_callable_attribute():
+    with pytest.raises(TypeError):
+        resolve_callable("math:pi")`,
     quiz: { question: "package.module:function 中冒号右边是什么？", options: ["文件夹", "Python 版本", "模块中的函数名", "HTTP method"], correct: 2, explanation: "左边是模块路径，右边是要取出的函数名。" },
   },
   4: {
@@ -461,25 +549,68 @@ return handler`,
       { term: "dataclass", meaning: "便捷定义结构化数据对象的工具。" },
       { term: "Protocol", meaning: "规定对象需要提供哪些方法，不限制具体实现。" },
       { term: "Any", meaning: "任意类型；使用过多会让错误推迟到运行时。" },
+      { term: "field", meaning: "dataclasses 提供的字段配置工具，可为字段声明安全的默认值工厂。" },
+      { term: "default_factory", meaning: "创建实例时调用指定函数，为每个实例生成独立的 dict 或 list。" },
+      { term: "可变默认值", meaning: "dict/list 创建后还能修改；多个实例共享它会造成状态污染。" },
+    ],
+    answerPrerequisites: [
+      { title: "导入 dataclass 和 field", explanation: "@dataclass 与 field 都来自 dataclasses，参考答案必须把导入写完整。", example: "from dataclasses import dataclass, field" },
+      { title: "联合类型 | None", explanation: "request 可以是字典，也可以在没有请求时使用 None。", example: "request: dict[str, Any] | None = None" },
+      { title: "default_factory", explanation: "传入 dict/list 函数本身，每次创建 ActionResult 都得到新的容器。", example: "outputs: dict[str, Any] = field(default_factory=dict)" },
+      { title: "action 的返回类型", explanation: "action 不返回神秘 dict，而是明确声明并构造 ActionResult。", example: "def adjust_stock_action(...) -> ActionResult:" },
+      { title: "f-string", explanation: "副作用描述需要插入变量时，在字符串前加 f。", example: "f\"库存变化：sku={sku_id}\"" },
     ],
     exampleTitle: "Protocol 只约定能力，不关心连的是哪个数据库",
     example: `class DatabaseProvider(Protocol):
     def query(self, request: QueryRequest) -> list[dict]: ...`,
     walkthrough: ["任何对象只要有符合签名的 query() 就能作为 Provider。", "真实 MySQL Provider 和 FakeDatabase 都可以满足它。", "这让 Mock 测试不需要真实数据库。"],
-    starter: `@dataclass
+    starter: `from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass
 class ActionResult:
     # 定义 success、request、response、outputs、side_effects
     pass`,
     verifyCommand: "python -m mypy action_result.py && pytest -q test_action_result.py",
     expected: "Success: no issues found\n2 passed",
     hint: "request/response 可能为 None，outputs 和 side_effects 用 default_factory 避免共享默认值。",
-    referenceAnswer: `@dataclass
+    referenceAnswer: `from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass
 class ActionResult:
     success: bool
-    request: dict | None = None
-    response: dict | None = None
-    outputs: dict = field(default_factory=dict)
-    side_effects: list[str] = field(default_factory=list)`,
+    request: dict[str, Any] | None = None
+    response: dict[str, Any] | None = None
+    outputs: dict[str, Any] = field(default_factory=dict)
+    side_effects: list[str] = field(default_factory=list)
+
+
+def adjust_stock_action(sku_id: str, adjust_amount: int) -> ActionResult:
+    request = {"skuId": sku_id, "adjustAmount": adjust_amount}
+    response = {
+        "success": True,
+        "data": {"flowNo": "FLOW-001", "remainingStock": 90},
+    }
+    return ActionResult(
+        success=response["success"],
+        request=request,
+        response=response,
+        outputs={
+            "flow_no": response["data"]["flowNo"],
+            "remaining_stock": response["data"]["remainingStock"],
+        },
+        side_effects=[
+            f"库存发生变化：sku={sku_id}，adjustAmount={adjust_amount}"
+        ],
+    )
+
+
+result = adjust_stock_action("SKU-001", -10)
+assert result.success is True
+assert result.outputs["flow_no"] == "FLOW-001"`,
     quiz: { question: "Protocol 在 Provider 里最主要的作用是什么？", options: ["保存密码", "规定可替换实现必须提供的方法", "自动连接 MySQL", "替代 pytest"], correct: 1, explanation: "Protocol 表达能力契约，让真实实现与 Fake 实现可替换。" },
   },
   5: {
@@ -490,12 +621,21 @@ class ActionResult:
       { term: "parametrize", meaning: "用多组数据生成多条独立用例。" },
       { term: "collect-only", meaning: "只收集用例，不执行测试体。" },
     ],
+    answerPrerequisites: [
+      { title: "导入 pytest", explanation: "fixture 和 parametrize 都由 pytest 提供，完整文件必须先导入。", example: "import pytest" },
+      { title: "fixture 注入", explanation: "测试函数参数名与 fixture 同名时，pytest 会自动创建并传入资源。", example: "def test_status(api_client, status):" },
+      { title: "yield teardown", explanation: "yield 前创建，yield 后清理；测试断言失败也会执行清理。", example: "yield client\nclient.close()" },
+      { title: "parametrize", explanation: "一组输入生成多条独立测试，而不是在一条测试里写循环。", example: "@pytest.mark.parametrize(\"status\", [710, 720])" },
+    ],
     exampleTitle: "yield 把 fixture 分成准备和清理两半",
     example: `client = HttpClient(...)  # 准备
 yield client              # 交给用例
 client.close()            # 清理`,
     walkthrough: ["用例看到的 api_client 就是 yield 后面的 client。", "用例断言失败后，pytest 仍会继续执行 close()。", "collect-only 不会进入用例中的 HTTP 调用。"],
-    starter: `@pytest.fixture
+    starter: `import pytest
+
+
+@pytest.fixture
 def api_client():
     # 创建 client
     # yield client
@@ -503,11 +643,29 @@ def api_client():
     verifyCommand: "pytest --collect-only -q && pytest -q test_level_05.py",
     expected: "2 tests collected\n2 passed",
     hint: "先不写参数化，确保 fixture 可用；再加 @pytest.mark.parametrize。",
-    referenceAnswer: `@pytest.fixture
+    referenceAnswer: `import pytest
+
+
+class FakeHttpClient:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+
+@pytest.fixture
 def api_client():
-    client = HttpClient(base_url="https://example.test")
+    client = FakeHttpClient(base_url="https://example.test")
     yield client
-    client.close()`,
+    client.close()
+
+
+@pytest.mark.parametrize("status", [710, 720])
+def test_status(api_client, status):
+    assert api_client.closed is False
+    assert status in (710, 720)`,
     quiz: { question: "fixture 中 yield 之后的代码什么时候执行？", options: ["收集用例前", "用例结束后，包括用例失败时", "永远不执行", "只有 HTTP 200 时"], correct: 1, explanation: "yield 之后是 fixture teardown，pytest 会在用例结束后执行。" },
   },
   6: {
@@ -518,24 +676,57 @@ def api_client():
       { term: "Pydantic Model", meaning: "用 Python 类声明 schema 并执行校验。" },
       { term: "safe_load", meaning: "PyYAML 的安全解析方式，但它不校验业务结构。" },
     ],
+    answerPrerequisites: [
+      { title: "导入 Pydantic 工具", explanation: "BaseModel 定义模型，model_validator 定义跨字段规则。", example: "from pydantic import BaseModel, model_validator" },
+      { title: "字段可选不等于组合可选", explanation: "action 和 request 各自都能为 None，但不能同时为空。", example: "if not self.action and not self.request:" },
+      { title: "mode=after", explanation: "字段解析完成后再检查多个字段之间的关系，因此能读取 self。", example: "@model_validator(mode=\"after\")" },
+      { title: "异常测试", explanation: "用 pytest.raises 验证无效数据在 Runner 执行前就被拒绝。", example: "with pytest.raises(ValidationError): FlowEntry()" },
+    ],
     exampleTitle: "能解析的 YAML 不一定能执行",
     example: `steps:
   - name: 空步骤
     save_as: result
 # 语法正确，但既没有 action 也没有 request`,
     walkthrough: ["safe_load 会成功返回 dict。", "Runner 真正执行时才发现不知道要做什么。", "Pydantic 应在执行前拒绝这个步骤。"],
-    starter: `class FlowEntry(BaseModel):
+    starter: `from pydantic import BaseModel, model_validator
+
+
+class FlowEntry(BaseModel):
     action: str | None = None
     request: dict | None = None
     # 增加组合校验`,
     verifyCommand: "pytest -q test_flow_entry_schema.py",
     expected: "3 passed",
     hint: "使用 model_validator(mode=\"after\")，在 action 和 request 都为空时 raise ValueError。",
-    referenceAnswer: `@model_validator(mode="after")
-def has_executor(self):
-    if not self.action and not self.request:
-        raise ValueError("必须声明 action 或 request")
-    return self`,
+    referenceAnswer: `import pytest
+from pydantic import BaseModel, ValidationError, model_validator
+
+
+class FlowEntry(BaseModel):
+    action: str | None = None
+    request: dict | None = None
+    save_as: str | None = None
+
+    @model_validator(mode="after")
+    def has_executor(self):
+        if not self.action and not self.request:
+            raise ValueError("必须声明 action 或 request")
+        return self
+
+
+def test_action_entry_is_valid():
+    entry = FlowEntry(action="fixture.resolve", save_as="fixture")
+    assert entry.action == "fixture.resolve"
+
+
+def test_request_entry_is_valid():
+    entry = FlowEntry(request={"method": "GET", "url": "/stock"})
+    assert entry.request["method"] == "GET"
+
+
+def test_empty_entry_is_rejected():
+    with pytest.raises(ValidationError, match="必须声明 action 或 request"):
+        FlowEntry()`,
     quiz: { question: "yaml.safe_load() 成功能证明什么？", options: ["用例一定可执行", "YAML 语法可被解析", "adapter 一定存在", "真实接口一定成功"], correct: 1, explanation: "safe_load 只证明文本可解析，不证明声明式用例结构或业务正确。" },
   },
   7: {
@@ -545,6 +736,12 @@ def has_executor(self):
       { term: "signature", meaning: "函数的参数列表和调用形式。" },
       { term: "dispatch", meaning: "根据 action name 选择并执行对应 handler。" },
       { term: "context", meaning: "单条用例执行期间保存步骤输出的字典。" },
+    ],
+    answerPrerequisites: [
+      { title: "函数也是值", explanation: "adapter 字典可以把 action 名称映射到真正的 handler 函数。", example: "adapters = {\"fixture.resolve\": resolve_fixture}" },
+      { title: "字典查找与明确错误", explanation: "未知 action 应立即报错，不能悄悄跳过。", example: "if action_name not in adapters: raise KeyError(...)" },
+      { title: "save_as", explanation: "save_as 是结果写入 context 时使用的键名。", example: "context[entry[\"save_as\"]] = result" },
+      { title: "后一步读取前一步", explanation: "第二个 handler 从同一条用例的 context 读取第一个结果。", example: "previous = context[\"resolved_fixture\"]" },
     ],
     exampleTitle: "save_as 把上一步结果放进 context",
     example: `action: after_sale.notify
@@ -559,10 +756,45 @@ context["processing_result"] = handler_result`,
     verifyCommand: "pytest -q test_mini_runner.py",
     expected: "4 passed",
     hint: "先不做模板渲染，只实现 action 查找和 save_as；然后再增加第二步读取 context。",
-    referenceAnswer: `handler = adapters[entry["action"]]
-result = handler(entry, context)
-if entry.get("save_as"):
-    context[entry["save_as"]] = result`,
+    referenceAnswer: `def run_entry(entry, adapters, context):
+    action_name = entry["action"]
+    if action_name not in adapters:
+        raise KeyError(f"未绑定 action: {action_name}")
+
+    result = adapters[action_name](entry, context)
+    if entry.get("save_as"):
+        context[entry["save_as"]] = result
+    return result
+
+
+def resolve_fixture(entry, context):
+    return {"skuId": "SKU-001", "available": 100}
+
+
+def build_request(entry, context):
+    fixture = context["resolved_fixture"]
+    return {"skuId": fixture["skuId"], "adjustAmount": -10}
+
+
+adapters = {
+    "fixture.resolve": resolve_fixture,
+    "request.build": build_request,
+}
+context = {}
+
+run_entry(
+    {"action": "fixture.resolve", "save_as": "resolved_fixture"},
+    adapters,
+    context,
+)
+request = run_entry(
+    {"action": "request.build", "save_as": "request"},
+    adapters,
+    context,
+)
+
+assert request == {"skuId": "SKU-001", "adjustAmount": -10}
+assert context["request"] == request`,
     quiz: { question: "save_as 最主要的用途是什么？", options: ["修改 HTTP method", "给步骤输出命名并存入 context", "关闭数据库", "安装 adapter"], correct: 1, explanation: "save_as 是步骤输出在当前用例 context 中的名字。" },
   },
   8: {
@@ -573,6 +805,12 @@ if entry.get("save_as"):
       { term: "MockTransport", meaning: "拦截 HTTPX 请求并在本地返回预设响应。" },
       { term: "timeout", meaning: "请求最多等待多久，避免无限卡住。" },
     ],
+    answerPrerequisites: [
+      { title: "导入 httpx 与 json", explanation: "MockTransport 来自 httpx；请求体 bytes 可用 json.loads 解析。", example: "import json\nimport httpx" },
+      { title: "MockTransport 回调", explanation: "Client 发请求时不会联网，而是把 request 交给 handler。", example: "transport = httpx.MockTransport(handler)" },
+      { title: "三条独立分支", explanation: "业务成功、HTTP 500、HTTP 200 但业务失败必须分别构造和断言。", example: "if amount == 500: return httpx.Response(500)" },
+      { title: "请求也要断言", explanation: "测试不仅检查响应，还要确认路径和请求体确实正确。", example: "assert request.url.path == \"/stock/adjust\"" },
+    ],
     exampleTitle: "HTTP 200 也可能是业务失败",
     example: `HTTP 200
 {
@@ -581,15 +819,59 @@ if entry.get("save_as"):
   "msg": "库存不足"
 }`,
     walkthrough: ["200 说明服务器正常返回了 HTTP 响应。", "success=false 说明库存调整没有办成。", "异常用例应保留这份响应用于断言，不能提前吞掉。"],
-    starter: `def handler(request: httpx.Request):
+    starter: `import json
+import httpx
+
+
+def handler(request: httpx.Request):
     # 根据路径和请求体返回不同响应`,
     verifyCommand: "pytest -q test_http_modes.py",
     expected: "3 passed（成功、HTTP 500、HTTP 200 + success=false）",
     hint: "在 handler 里用 json.loads(request.content) 读请求体，根据 adjustAmount 返回不同结果。",
-    referenceAnswer: `if payload["adjustAmount"] > available:
+    referenceAnswer: `import json
+
+import httpx
+
+
+def handler(request: httpx.Request):
+    assert request.url.path == "/stock/adjust"
+    payload = json.loads(request.content)
+    amount = payload["adjustAmount"]
+
+    if amount == 500:
+        return httpx.Response(500, json={"message": "server error"})
+    if amount > 100:
+        return httpx.Response(200, json={
+            "success": False,
+            "code": "A4500",
+            "msg": "库存不足",
+        })
     return httpx.Response(200, json={
-        "success": False, "code": "A4500", "msg": "库存不足"
-    })`,
+        "success": True,
+        "data": {"flowNo": "FLOW-001"},
+    })
+
+
+transport = httpx.MockTransport(handler)
+with httpx.Client(transport=transport, timeout=2.0) as client:
+    success = client.post(
+        "https://example.test/stock/adjust",
+        json={"adjustAmount": 10},
+    )
+    http_error = client.post(
+        "https://example.test/stock/adjust",
+        json={"adjustAmount": 500},
+    )
+    business_error = client.post(
+        "https://example.test/stock/adjust",
+        json={"adjustAmount": 101},
+    )
+
+assert success.status_code == 200
+assert success.json()["success"] is True
+assert http_error.status_code == 500
+assert business_error.status_code == 200
+assert business_error.json()["success"] is False`,
     quiz: { question: "HTTP 200 且 response.success=false 代表什么？", options: ["传输层和业务都成功", "传输层成功，业务失败", "网络超时", "Python 语法错误"], correct: 1, explanation: "HTTP status 和业务 success 是两层不同的判定。" },
   },
   9: {
@@ -599,6 +881,12 @@ if entry.get("save_as"):
       { term: "Adapter", meaning: "把声明式 action 转成真实业务调用。" },
       { term: "Registry", meaning: "保存名字到能力的映射，负责发现，不负责业务决策。" },
       { term: "resolve", meaning: "根据当前需求的业务约束选择可执行数据。" },
+    ],
+    answerPrerequisites: [
+      { title: "先按职责分类", explanation: "先判断函数是在访问基础设施、表达稳定动作，还是做需求特有决策。", example: "query_rows -> Provider" },
+      { title: "依赖方向", explanation: "需求层可以调用 Shared Action 和 Provider，基础设施层不能反过来依赖具体需求。", example: "Requirement -> Shared Action -> Provider" },
+      { title: "用变化原因判断边界", explanation: "因为数据库驱动变化的是 Provider；因为业务约束变化的是 Requirement。", example: "select_legal_sku -> Requirement" },
+      { title: "先写理由再移动", explanation: "题目要求的不只是标签，还要说明每个函数为何属于该层。", example: "[Requirement] 包含当前售后场景的库存约束" },
     ],
     exampleTitle: "同一个“数据库查询”其实有两层问题",
     example: `Provider: 我怎么安全执行参数化 SQL？
@@ -611,9 +899,34 @@ resolve:  这个售后用例需要哪个仓库和 SKU？`,
     verifyCommand: "pytest -q tests/provider tests/shared_actions tests/requirements",
     expected: "三组测试独立通过",
     hint: "先不移动代码，只给每个函数标注它应属于哪层以及理由。",
-    referenceAnswer: `Provider -> request/query 执行、连接和参数化
-Shared Action -> 库存快照、通知状态、统一结果
-Requirement -> 合法 SKU 选择、本用例差值和风险约束`,
+    referenceAnswer: `# [Provider]
+def query_rows(connection, sql, params):
+    """只负责连接、参数化 SQL 和返回结果；不理解售后规则。"""
+    return connection.execute(sql, params).fetchall()
+
+
+# [Shared Action]
+def capture_inventory_snapshot(provider, sku_id):
+    """多个需求都会复用的稳定动作：按 sku_id 获取库存快照。"""
+    return provider.query_inventory(sku_id)
+
+
+# [Requirement]
+def select_legal_after_sale_sku(rows, constraints):
+    """当前售后需求特有：根据库存、占用和风险约束选择 SKU。"""
+    candidates = [
+        row for row in rows
+        if row["available"] >= constraints["minimum_available"]
+        and row["locked"] is False
+    ]
+    if not candidates:
+        raise LookupError("没有满足本售后场景约束的 SKU")
+    return candidates[0]
+
+
+# 依赖方向：Requirement -> Shared Action -> Provider
+# Provider 不应导入或调用 select_legal_after_sale_sku，
+# 因为“选哪个 SKU”是会随需求变化的业务决策。`,
     quiz: { question: "“这个需求应该选哪个库存 SKU”应放在哪里？", options: ["DatabaseProvider", "HTTP Client", "需求/场景层 resolve", "Registry"], correct: 2, explanation: "选什么数据是业务求解，不是基础访问能力。" },
   },
   10: {
@@ -623,6 +936,12 @@ Requirement -> 合法 SKU 选择、本用例差值和风险约束`,
       { term: "Mock full flow", meaning: "用本地假实现跑完 setup 到 teardown 的全链路。" },
       { term: "evidence", meaning: "每步的请求、响应、业务标识和失败诊断。" },
       { term: "teardown.always", meaning: "无论前面成功还是失败都要执行的恢复/清理步骤。" },
+    ],
+    answerPrerequisites: [
+      { title: "先复用前面关卡", explanation: "Boss 战是组装题：复用 fixture、schema、Runner、MockTransport 和 ActionResult。", example: "Level 5 + 6 + 7 + 8 -> Boss flow" },
+      { title: "完整生命周期", explanation: "YAML 至少要表达 setup、steps、assertions 和 teardown.always。", example: "setup -> steps -> assertions -> teardown.always" },
+      { title: "静态门禁", explanation: "先检查 YAML、schema、导入和 collect-only，不接触真实环境。", example: "pytest --collect-only -q" },
+      { title: "成功与失败证据", explanation: "两种路径都保存已执行步骤、请求、响应和 teardown 结果。", example: "evidence = {\"steps\": [], \"teardown\": []}" },
     ],
     exampleTitle: "Boss 战完成定义",
     example: `1. requirement_cases.yaml 有完整生命周期
@@ -639,12 +958,45 @@ Requirement -> 合法 SKU 选择、本用例差值和风险约束`,
     verifyCommand: "python verify_declarative_delivery.py ... && pytest -q tests/test_boss_mock.py",
     expected: "三级静态门禁通过\nMock 全链路通过\nevidence JSON 包含 request/response",
     hint: "可以直接复用第 5、6、7、8 关产物，不要重写 Client、Provider 或 Runner。",
-    referenceAnswer: `建议链路：
-fixture.resolve -> inventory.snapshot -> after_sale.notify -> assertion
-teardown.always -> fixture.restore
+    referenceAnswer: `# requirement_cases.yaml
+name: boss_01_after_sale
+common_flow:
+  setup:
+    - action: fixture.resolve
+      save_as: resolved_fixture
+    - action: inventory.snapshot
+      source: resolved_fixture
+      save_as: before_snapshot
+  steps:
+    - action: after_sale.notify
+      request:
+        skuId: "{{ resolved_fixture.skuId }}"
+        adjustAmount: -10
+      save_as: processing_result
+  assertions:
+    - source: processing_result.response
+      path: success
+      equals: true
+    - source: processing_result.response
+      path: data.flowNo
+      exists: true
+  teardown:
+    always:
+      - action: fixture.restore
+        source: before_snapshot
 
-成功证据：HTTP 200 + response + flowNo
-失败证据：主异常 + 已完成步骤 + teardown 诊断`,
+# adapters.py
+# 每个 action 都返回 ActionResult：
+# request/response 保存调用证据，outputs 给后续步骤使用，
+# side_effects 记录库存变化和恢复动作。
+
+# tests/test_boss_mock.py 至少验证：
+# 1. YAML 通过 FlowEntry schema 校验；
+# 2. 所有 action ref 都能导入；
+# 3. pytest --collect-only 不访问网络；
+# 4. MockTransport 成功路径保存 flowNo；
+# 5. MockTransport 失败路径保留主异常和已完成步骤；
+# 6. 成功和失败两条路径都执行 fixture.restore。`,
     quiz: { question: "Boss 链路第一次运行应优先选什么？", options: ["直接扣减真实 SIT 库存", "先跑静态门禁和 Mock 全链路", "先写管理面", "删除 teardown 简化流程"], correct: 1, explanation: "静态门禁和 Mock 能先验证结构、导入、模板、断言和清理，不产生真实副作用。" },
   },
 };
@@ -1564,6 +1916,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           </section>
                           <aside className="ai-lens"><span>AI 审查镜</span><p>{level.aiLens}</p></aside>
                           </div>
+                          <section className="answer-prerequisites">
+                            <div className="stage-intro"><span>写答案前必须会</span><h4>参考答案不会再突然出现没讲过的语法</h4></div>
+                            <div>
+                              {support.answerPrerequisites.map((item) => <article key={item.title}>
+                                <b>{item.title}</b><p>{item.explanation}</p><code>{item.example}</code>
+                              </article>)}
+                            </div>
+                          </section>
                           <div className="code-wrap interactive-code-wrap">
                           <div><span>PYTHON / YAML</span><i>带虚线的代码可以点击解释</i></div>
                           <pre><code><InteractiveCode code={level.code} knowledge={knowledge} onOpen={setActiveKnowledge} /></code></pre>

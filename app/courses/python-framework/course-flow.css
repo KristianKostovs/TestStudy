@@ -66,6 +66,12 @@
 .stage-panel { animation: reveal .22s ease; }
 .stage-intro span { color: #f3c65a; font-size: 11px; font-weight: 900; letter-spacing: .14em; }
 .stage-intro h4 { margin: 7px 0 0; color: #f7f0df; font: 800 23px Georgia, "Songti SC", serif; }
+.answer-prerequisites { margin-top: 24px; padding: 20px; border-radius: 12px; color: #e6eee8; background: #17352a; }
+.answer-prerequisites > div:last-child { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 16px; }
+.answer-prerequisites article { padding: 14px; border: 1px solid #3f5c50; border-radius: 9px; background: #10271e; }
+.answer-prerequisites article b { color: #f3c65a; }
+.answer-prerequisites article p { margin: 7px 0 10px; color: #c7d6ce; line-height: 1.6; }
+.answer-prerequisites article code { display: block; overflow-wrap: anywhere; color: #fff; }
 .stage-continue {
   width: 100%;
   margin-top: 22px;
@@ -317,6 +323,7 @@
 .course-workspace > footer span { color: #aeb3af; font-size: 10px; }
 
 @media (max-width: 760px) {
+  .answer-prerequisites > div:last-child { grid-template-columns: 1fr; }
   .chapter-grid { grid-template-columns: 1fr; }
   .chapter-card { min-height: 270px; padding: 24px; }
   .stage-tabs { grid-template-columns: 1fr; }
