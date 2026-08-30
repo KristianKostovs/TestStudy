@@ -13,6 +13,8 @@ type JsonRequest = {
   maxTokens?: number;
   temperature?: number;
   timeoutMs?: number;
+  thinking?: boolean;
+  reasoningEffort?: "low" | "high" | "max";
 };
 
 function cleanProviderMessage(value: unknown) {
@@ -37,6 +39,8 @@ export async function requestDeepSeekJson({
   maxTokens = 2_000,
   temperature = 0.2,
   timeoutMs = 90_000,
+  thinking = false,
+  reasoningEffort = "high",
 }: JsonRequest) {
   const runtimeEnv = env as typeof env & { DEEPSEEK_API_KEY?: string };
   const apiKey = runtimeEnv.DEEPSEEK_API_KEY;
@@ -55,10 +59,10 @@ export async function requestDeepSeekJson({
       body: JSON.stringify({
         model: DEEPSEEK_MODEL,
         messages: [{ role: "user", content: prompt }],
-        thinking: { type: "disabled" },
+        thinking: { type: thinking ? "enabled" : "disabled" },
+        ...(thinking ? { reasoning_effort: reasoningEffort } : { temperature }),
         response_format: { type: "json_object" },
         max_tokens: maxTokens,
-        temperature,
         stream: false,
       }),
       signal: controller.signal,

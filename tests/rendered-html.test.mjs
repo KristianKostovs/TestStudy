@@ -177,17 +177,18 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
 
 test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完整任务", async () => {
   const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
+  const answers = await readFile(new URL("../app/courses/python-framework/reference-answers.ts", import.meta.url), "utf8");
   const rubric = await readFile(new URL("../app/courses/python-framework/grading-rubrics.ts", import.meta.url), "utf8");
 
   assert.equal((source.match(/\n    answerPrerequisites:/g) ?? []).length, 10);
   assert.match(source, /写答案前必须会/);
   assert.match(source, /field[\s\S]*default_factory[\s\S]*可变默认值/);
-  assert.match(source, /referenceAnswer: `from dataclasses import dataclass, field[\s\S]*def adjust_stock_action[\s\S]*-> ActionResult/);
-  assert.match(source, /referenceAnswer: `import pytest[\s\S]*@pytest\.mark\.parametrize/);
-  assert.match(source, /class FlowEntry\(BaseModel\)[\s\S]*test_empty_entry_is_rejected/);
-  assert.match(source, /def run_entry\(entry, adapters, context\)[\s\S]*context\["resolved_fixture"\]/);
-  assert.match(source, /httpx\.MockTransport\(handler\)[\s\S]*business_error/);
-  assert.match(source, /requirement_cases\.yaml[\s\S]*teardown:[\s\S]*always:/);
+  assert.match(answers, /from dataclasses import dataclass, field[\s\S]*def adjust_stock_action[\s\S]*-> ActionResult/);
+  assert.match(answers, /@pytest\.mark\.parametrize/);
+  assert.match(answers, /class FlowEntry\(BaseModel\)[\s\S]*test_empty_entry_is_rejected/);
+  assert.match(answers, /def run_entry\(entry, adapters, context\)[\s\S]*context\["resolved_fixture"\]/);
+  assert.match(answers, /httpx\.MockTransport\(handler\)[\s\S]*business_error/);
+  assert.match(answers, /requirement_cases\.yaml[\s\S]*teardown:[\s\S]*always:/);
   assert.match(rubric, /action 明确返回并构造 ActionResult/);
 });
 
@@ -201,6 +202,30 @@ test("Level 5 批改遵循 collect-only 的真实生命周期而不是模型猜�
   assert.match(rubric, /不得仅凭猜测 HttpClient 构造函数可能联网而扣分/);
   assert.match(chatRoute, /权威判定说明（优先于对话历史和模型猜测）/);
   assert.match(gradeRoute, /权威判定说明（优先于模型猜测）/);
+});
+
+test("DeepSeek 明确索要答案时给完整正确答案并在两条批改路径进行复核", async () => {
+  const [source, answers, rubric, chatRoute, gradeRoute, provider] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/reference-answers.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/grading-rubrics.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/deepseek.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.equal((source.match(/referenceAnswer: referenceAnswers\[/g) ?? []).length, 10);
+  assert.equal((answers.match(/^  \d+: `/gm) ?? []).length, 10);
+  assert.match(rubric, /referenceAnswer: referenceAnswers\[rubric\.levelId\]/);
+  assert.match(chatRoute, /response_mode=full_answer/);
+  assert.match(chatRoute, /不得以助教引导为由拒绝、拖延或只给提示/);
+  assert.match(chatRoute, /previous_judgment_wrong/);
+  assert.match(chatRoute, /我重新核对后发现之前的判断有误/);
+  assert.match(gradeRoute, /独立做第二遍复核/);
+  assert.match(gradeRoute, /canonical_reference_answer/);
+  assert.match(provider, /thinking \? "enabled" : "disabled"/);
+  assert.match(chatRoute, /thinking: true, reasoningEffort: "high"/);
+  assert.match(gradeRoute, /thinking: true, reasoningEffort: "high"/);
 });
 
 test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
@@ -225,7 +250,7 @@ test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
   assert.match(provider, /https:\/\/api\.deepseek\.com\/chat\/completions/);
   assert.match(provider, /deepseek-v4-flash/);
   assert.match(provider, /response_format: \{ type: "json_object" \}/);
-  assert.match(provider, /thinking: \{ type: "disabled" \}/);
+  assert.match(provider, /thinking: \{ type: thinking \? "enabled" : "disabled" \}/);
   assert.match(provider, /\[已隐藏\]/);
 });
 
