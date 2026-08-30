@@ -225,6 +225,10 @@ test("DeepSeek 明确索要答案时给完整正确答案并在两条批改路�
   assert.match(gradeRoute, /canonical_reference_answer/);
   assert.match(provider, /attempt\.thinking \? "enabled" : "disabled"/);
   assert.match(provider, /attempts\.push\(\{ thinking: false/);
+  assert.match(provider, /parseDeepSeekEnvelope/);
+  assert.match(provider, /response\.text\(\)/);
+  assert.match(provider, /startsWith\("data:"\)/);
+  assert.match(provider, /空或非 JSON 响应/);
   assert.match(provider, /自动重试后仍未恢复/);
   assert.match(chatRoute, /maxTokens: 8_000, thinking: true, reasoningEffort: "low"/);
   assert.match(gradeRoute, /maxTokens: 6_000, thinking: true, reasoningEffort: "low"/);
