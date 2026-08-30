@@ -631,7 +631,12 @@ assert result.outputs["flow_no"] == "FLOW-001"`,
     example: `client = HttpClient(...)  # 准备
 yield client              # 交给用例
 client.close()            # 清理`,
-    walkthrough: ["用例看到的 api_client 就是 yield 后面的 client。", "用例断言失败后，pytest 仍会继续执行 close()。", "collect-only 不会进入用例中的 HTTP 调用。"],
+    walkthrough: [
+      "用例看到的 api_client 就是 yield 后面的 client。",
+      "用例断言失败后，pytest 仍会继续执行 close()。",
+      "collect-only 会导入测试模块、发现 fixture 依赖并展开参数化，但不会执行普通 fixture 的 setup、yield、teardown 或测试函数体。",
+      "模块顶层语句和 pytest_generate_tests 等收集钩子仍会在收集阶段运行，因此真实 HTTP/数据库调用不能放在那里。",
+    ],
     starter: `import pytest
 
 
@@ -642,7 +647,7 @@ def api_client():
     # 关闭 client`,
     verifyCommand: "pytest --collect-only -q && pytest -q test_level_05.py",
     expected: "2 tests collected\n2 passed",
-    hint: "先不写参数化，确保 fixture 可用；再加 @pytest.mark.parametrize。",
+    hint: "先不写参数化，确保 fixture 可用；再加 @pytest.mark.parametrize。collect-only 不执行普通 fixture，判断网络风险时要检查模块顶层代码和收集钩子。",
     referenceAnswer: `import pytest
 
 

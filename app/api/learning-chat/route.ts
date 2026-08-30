@@ -56,6 +56,9 @@ function buildPrompt(levelId: number, answer: string, message: string, history: 
     `标题：${rubric.title}`,
     `任务：${rubric.task}`,
     `验收标准：\n${rubric.acceptance.map((item, index) => `${index + 1}. ${item}`).join("\n")}`,
+    rubric.authoritativeNotes?.length
+      ? `权威判定说明（优先于对话历史和模型猜测）：\n${rubric.authoritativeNotes.map((item, index) => `${index + 1}. ${item}`).join("\n")}`
+      : "权威判定说明：无额外说明。",
     "</level>",
     historyText ? `<conversation_history>\n${historyText}\n</conversation_history>` : "<conversation_history />",
     `<current_student_answer>\n${answer}\n</current_student_answer>`,
