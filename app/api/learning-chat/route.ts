@@ -116,12 +116,9 @@ function parseModelOutput(parsed: Record<string, unknown>, acceptance: string[],
   const selfCheck = parsed.self_check && typeof parsed.self_check === "object" && !Array.isArray(parsed.self_check)
     ? parsed.self_check as Record<string, unknown>
     : null;
-  if (!selfCheck || selfCheck.reviewed !== true || typeof selfCheck.previous_judgment_wrong !== "boolean") {
-    throw new Error("模型没有完成判定复核");
-  }
   let reply = cleanText(parsed.reply, 8_000);
   if (!reply) throw new Error("模型没有返回教学回复");
-  if (selfCheck.previous_judgment_wrong && !/(判断有误|之前.{0,8}(?:错|不准确)|需要纠正)/.test(reply)) {
+  if (selfCheck?.reviewed === true && selfCheck.previous_judgment_wrong === true && !/(判断有误|之前.{0,8}(?:错|不准确)|需要纠正)/.test(reply)) {
     reply = `我重新核对后发现之前的判断有误。\n\n${reply}`;
   }
   return { reply, grade: parseGrade(parsed.grade, acceptance), provider: "deepseek", model };
@@ -146,7 +143,7 @@ export async function POST(request: Request) {
 
     const prompt = buildPrompt(levelId, answer, message, cleanHistory(payload.history));
     if (!prompt) return Response.json({ error: "关卡材料不存在" }, { status: 404 });
-    const result = await requestDeepSeekJson({ prompt, maxTokens: 4_000, thinking: true, reasoningEffort: "high" });
+    const result = await requestDeepSeekJson({ prompt, maxTokens: 8_000, thinking: true, reasoningEffort: "low" });
     return Response.json(parseModelOutput(result.data, rubric.acceptance, result.model));
   } catch (error) {
     const message = error instanceof Error ? error.message : "在线助教调用失败";

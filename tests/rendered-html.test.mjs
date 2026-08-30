@@ -223,9 +223,11 @@ test("DeepSeek 明确索要答案时给完整正确答案并在两条批改路�
   assert.match(chatRoute, /我重新核对后发现之前的判断有误/);
   assert.match(gradeRoute, /独立做第二遍复核/);
   assert.match(gradeRoute, /canonical_reference_answer/);
-  assert.match(provider, /thinking \? "enabled" : "disabled"/);
-  assert.match(chatRoute, /thinking: true, reasoningEffort: "high"/);
-  assert.match(gradeRoute, /thinking: true, reasoningEffort: "high"/);
+  assert.match(provider, /attempt\.thinking \? "enabled" : "disabled"/);
+  assert.match(provider, /attempts\.push\(\{ thinking: false/);
+  assert.match(provider, /自动重试后仍未恢复/);
+  assert.match(chatRoute, /maxTokens: 8_000, thinking: true, reasoningEffort: "low"/);
+  assert.match(gradeRoute, /maxTokens: 6_000, thinking: true, reasoningEffort: "low"/);
 });
 
 test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
@@ -250,7 +252,7 @@ test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
   assert.match(provider, /https:\/\/api\.deepseek\.com\/chat\/completions/);
   assert.match(provider, /deepseek-v4-flash/);
   assert.match(provider, /response_format: \{ type: "json_object" \}/);
-  assert.match(provider, /thinking: \{ type: thinking \? "enabled" : "disabled" \}/);
+  assert.match(provider, /thinking: \{ type: attempt\.thinking \? "enabled" : "disabled" \}/);
   assert.match(provider, /\[已隐藏\]/);
 });
 
