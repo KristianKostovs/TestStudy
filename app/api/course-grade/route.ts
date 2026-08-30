@@ -37,10 +37,6 @@ function parseGrade(value: unknown): TaskGrade | null {
   }
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) return null;
   const grade = candidate as Record<string, unknown>;
-  const selfCheck = grade.self_check && typeof grade.self_check === "object" && !Array.isArray(grade.self_check)
-    ? grade.self_check as Record<string, unknown>
-    : null;
-  if (!selfCheck || selfCheck.reviewed !== true || typeof selfCheck.revised !== "boolean") return null;
   const score = Number(grade.score);
   const criteria = Array.isArray(grade.criteria) ? grade.criteria : [];
   if (!Number.isInteger(score) || score < 0 || score > 100 || typeof grade.summary !== "string" || !criteria.length) return null;
@@ -124,7 +120,7 @@ async function gradeSubmission(row: Row, currentOwnerId: string) {
   await env.DB.prepare("UPDATE course_grading_submissions SET status = 'judging', updated_at = CURRENT_TIMESTAMP, claimed_at = COALESCE(claimed_at, CURRENT_TIMESTAMP) WHERE id = ? AND owner_id = ?")
     .bind(Number(row.id), currentOwnerId).run();
   try {
-    const result = await requestDeepSeekJson({ prompt, maxTokens: 3_000, thinking: true, reasoningEffort: "high" });
+    const result = await requestDeepSeekJson({ prompt, maxTokens: 6_000, thinking: true, reasoningEffort: "low" });
     const grade = parseGrade(result.data);
     if (!grade) throw new Error("DeepSeek 返回的批改结果结构不完整");
     const completed = await env.DB.prepare("UPDATE course_grading_submissions SET status = 'completed', grade_json = ?, updated_at = CURRENT_TIMESTAMP, completed_at = CURRENT_TIMESTAMP WHERE id = ? AND owner_id = ? RETURNING *")
