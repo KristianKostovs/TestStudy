@@ -90,6 +90,9 @@ function gradingPrompt(row: Row) {
     `关卡：Level ${levelId} · ${rubric.title}`,
     `任务：${rubric.task}`,
     `验收标准：\n${rubric.acceptance.map((item, index) => `${index + 1}. ${item}`).join("\n")}`,
+    rubric.authoritativeNotes?.length
+      ? `权威判定说明（优先于模型猜测）：\n${rubric.authoritativeNotes.map((item, index) => `${index + 1}. ${item}`).join("\n")}`
+      : "权威判定说明：无额外说明。",
     `学员当前答案：\n<current_student_answer>\n${String(row.answer_text)}\n</current_student_answer>`,
     "",
     "输出结构：",

@@ -191,6 +191,18 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.match(rubric, /action 明确返回并构造 ActionResult/);
 });
 
+test("Level 5 批改遵循 collect-only 的真实生命周期而不是模型猜测", async () => {
+  const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
+  const rubric = await readFile(new URL("../app/courses/python-framework/grading-rubrics.ts", import.meta.url), "utf8");
+  const chatRoute = await readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8");
+  const gradeRoute = await readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8");
+
+  assert.match(source, /collect-only 会导入测试模块[\s\S]*不会执行普通 fixture 的 setup、yield、teardown/);
+  assert.match(rubric, /不得仅凭猜测 HttpClient 构造函数可能联网而扣分/);
+  assert.match(chatRoute, /权威判定说明（优先于对话历史和模型猜测）/);
+  assert.match(gradeRoute, /权威判定说明（优先于模型猜测）/);
+});
+
 test("DeepSeek 凭据只在受保护的统一服务层使用", async () => {
   const [source, route, courseGrade, provider] = await Promise.all([
     readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
