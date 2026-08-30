@@ -3,6 +3,7 @@
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./course-flow.css";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
+import { referenceAnswers } from "./reference-answers";
 import {
   emptyLearningState,
   mergeLearningStates,
@@ -389,27 +390,7 @@ const supportByLevel: Record<number, LearningSupport> = {
 KeyError: '找不到字段: data.flowNo'
 原始 response 保持不变`,
     hint: "先用 path.split(\".\") 看看能得到什么；每轮循环用 current = current[part] 向内走一层。",
-    referenceAnswer: `def get_by_path(data: dict, path: str):
-    current = data
-    for part in path.split("."):
-        if not isinstance(current, dict) or part not in current:
-            raise KeyError(f"找不到字段: {path}")
-        current = current[part]
-    return current
-
-
-response = {
-    "success": True,
-    "data": {"flowNo": "FLOW-710"},
-}
-
-assert get_by_path(response, "data.flowNo") == "FLOW-710"
-assert response == {"success": True, "data": {"flowNo": "FLOW-710"}}
-
-try:
-    get_by_path({}, "data.flowNo")
-except KeyError as error:
-    assert "data.flowNo" in str(error)`,
+    referenceAnswer: referenceAnswers[1],
     quiz: {
       question: "在这份 response 中，data 是什么？",
       options: ["Python 固定的特殊对象", "response 中一个名为 data 的 dict 字段", "数据库连接", "flowNo 的别名"],
@@ -449,34 +430,7 @@ case_b = deepcopy(fixture)
     verifyCommand: "pytest -q test_level_02.py",
     expected: "2 passed",
     hint: "先写一条故意失败的测试复现污染，再把 dict(fixture) 改为 deepcopy(fixture)。",
-    referenceAnswer: `import pytest
-from copy import deepcopy
-
-
-fixture = {"request": {"businessStatus": 710}}
-
-
-def test_shallow_copy_reproduces_pollution():
-    case_a = dict(fixture)
-    case_b = dict(fixture)
-    case_a["request"]["businessStatus"] = 720
-    assert case_b["request"]["businessStatus"] == 720
-
-
-def test_deepcopy_isolates_and_cleanup_always_runs():
-    case_a = deepcopy(fixture)
-    case_b = deepcopy(fixture)
-    cleanup_log = []
-
-    with pytest.raises(RuntimeError):
-        try:
-            case_a["request"]["businessStatus"] = 720
-            raise RuntimeError("模拟接口调用失败")
-        finally:
-            cleanup_log.append("client.close")
-
-    assert case_b["request"]["businessStatus"] == 710
-    assert cleanup_log == ["client.close"]`,
+    referenceAnswer: referenceAnswers[2],
     quiz: { question: "dict(fixture) 对嵌套 dict 做了什么？", options: ["全部深度复制", "只复制外层", "把 dict 变成 tuple", "锁定数据不可修改"], correct: 1, explanation: "dict(x) 是浅拷贝，嵌套的 dict/list 仍可能共享。" },
   },
   3: {
@@ -509,37 +463,7 @@ def resolve_callable(ref: str):
     verifyCommand: "pytest -q test_level_03.py",
     expected: "3 passed（成功导入、模块不存在、函数不存在）",
     hint: "需要 import_module、getattr 和 callable 三步。",
-    referenceAnswer: `from importlib import import_module
-
-import pytest
-
-
-def resolve_callable(ref: str):
-    module_name, function_name = ref.split(":", 1)
-    module = import_module(module_name)
-    handler = getattr(module, function_name)
-    if not callable(handler):
-        raise TypeError(f"{ref} 不可调用")
-    return handler
-
-
-def test_resolve_real_function():
-    assert resolve_callable("math:sqrt")(9) == 3
-
-
-def test_missing_module():
-    with pytest.raises(ModuleNotFoundError):
-        resolve_callable("missing_package:run")
-
-
-def test_missing_function():
-    with pytest.raises(AttributeError):
-        resolve_callable("math:missing_function")
-
-
-def test_rejects_non_callable_attribute():
-    with pytest.raises(TypeError):
-        resolve_callable("math:pi")`,
+    referenceAnswer: referenceAnswers[3],
     quiz: { question: "package.module:function 中冒号右边是什么？", options: ["文件夹", "Python 版本", "模块中的函数名", "HTTP method"], correct: 2, explanation: "左边是模块路径，右边是要取出的函数名。" },
   },
   4: {
@@ -575,42 +499,7 @@ class ActionResult:
     verifyCommand: "python -m mypy action_result.py && pytest -q test_action_result.py",
     expected: "Success: no issues found\n2 passed",
     hint: "request/response 可能为 None，outputs 和 side_effects 用 default_factory 避免共享默认值。",
-    referenceAnswer: `from dataclasses import dataclass, field
-from typing import Any
-
-
-@dataclass
-class ActionResult:
-    success: bool
-    request: dict[str, Any] | None = None
-    response: dict[str, Any] | None = None
-    outputs: dict[str, Any] = field(default_factory=dict)
-    side_effects: list[str] = field(default_factory=list)
-
-
-def adjust_stock_action(sku_id: str, adjust_amount: int) -> ActionResult:
-    request = {"skuId": sku_id, "adjustAmount": adjust_amount}
-    response = {
-        "success": True,
-        "data": {"flowNo": "FLOW-001", "remainingStock": 90},
-    }
-    return ActionResult(
-        success=response["success"],
-        request=request,
-        response=response,
-        outputs={
-            "flow_no": response["data"]["flowNo"],
-            "remaining_stock": response["data"]["remainingStock"],
-        },
-        side_effects=[
-            f"库存发生变化：sku={sku_id}，adjustAmount={adjust_amount}"
-        ],
-    )
-
-
-result = adjust_stock_action("SKU-001", -10)
-assert result.success is True
-assert result.outputs["flow_no"] == "FLOW-001"`,
+    referenceAnswer: referenceAnswers[4],
     quiz: { question: "Protocol 在 Provider 里最主要的作用是什么？", options: ["保存密码", "规定可替换实现必须提供的方法", "自动连接 MySQL", "替代 pytest"], correct: 1, explanation: "Protocol 表达能力契约，让真实实现与 Fake 实现可替换。" },
   },
   5: {
@@ -648,29 +537,7 @@ def api_client():
     verifyCommand: "pytest --collect-only -q && pytest -q test_level_05.py",
     expected: "2 tests collected\n2 passed",
     hint: "先不写参数化，确保 fixture 可用；再加 @pytest.mark.parametrize。collect-only 不执行普通 fixture，判断网络风险时要检查模块顶层代码和收集钩子。",
-    referenceAnswer: `import pytest
-
-
-class FakeHttpClient:
-    def __init__(self, base_url: str):
-        self.base_url = base_url
-        self.closed = False
-
-    def close(self):
-        self.closed = True
-
-
-@pytest.fixture
-def api_client():
-    client = FakeHttpClient(base_url="https://example.test")
-    yield client
-    client.close()
-
-
-@pytest.mark.parametrize("status", [710, 720])
-def test_status(api_client, status):
-    assert api_client.closed is False
-    assert status in (710, 720)`,
+    referenceAnswer: referenceAnswers[5],
     quiz: { question: "fixture 中 yield 之后的代码什么时候执行？", options: ["收集用例前", "用例结束后，包括用例失败时", "永远不执行", "只有 HTTP 200 时"], correct: 1, explanation: "yield 之后是 fixture teardown，pytest 会在用例结束后执行。" },
   },
   6: {
@@ -703,35 +570,7 @@ class FlowEntry(BaseModel):
     verifyCommand: "pytest -q test_flow_entry_schema.py",
     expected: "3 passed",
     hint: "使用 model_validator(mode=\"after\")，在 action 和 request 都为空时 raise ValueError。",
-    referenceAnswer: `import pytest
-from pydantic import BaseModel, ValidationError, model_validator
-
-
-class FlowEntry(BaseModel):
-    action: str | None = None
-    request: dict | None = None
-    save_as: str | None = None
-
-    @model_validator(mode="after")
-    def has_executor(self):
-        if not self.action and not self.request:
-            raise ValueError("必须声明 action 或 request")
-        return self
-
-
-def test_action_entry_is_valid():
-    entry = FlowEntry(action="fixture.resolve", save_as="fixture")
-    assert entry.action == "fixture.resolve"
-
-
-def test_request_entry_is_valid():
-    entry = FlowEntry(request={"method": "GET", "url": "/stock"})
-    assert entry.request["method"] == "GET"
-
-
-def test_empty_entry_is_rejected():
-    with pytest.raises(ValidationError, match="必须声明 action 或 request"):
-        FlowEntry()`,
+    referenceAnswer: referenceAnswers[6],
     quiz: { question: "yaml.safe_load() 成功能证明什么？", options: ["用例一定可执行", "YAML 语法可被解析", "adapter 一定存在", "真实接口一定成功"], correct: 1, explanation: "safe_load 只证明文本可解析，不证明声明式用例结构或业务正确。" },
   },
   7: {
@@ -761,45 +600,7 @@ context["processing_result"] = handler_result`,
     verifyCommand: "pytest -q test_mini_runner.py",
     expected: "4 passed",
     hint: "先不做模板渲染，只实现 action 查找和 save_as；然后再增加第二步读取 context。",
-    referenceAnswer: `def run_entry(entry, adapters, context):
-    action_name = entry["action"]
-    if action_name not in adapters:
-        raise KeyError(f"未绑定 action: {action_name}")
-
-    result = adapters[action_name](entry, context)
-    if entry.get("save_as"):
-        context[entry["save_as"]] = result
-    return result
-
-
-def resolve_fixture(entry, context):
-    return {"skuId": "SKU-001", "available": 100}
-
-
-def build_request(entry, context):
-    fixture = context["resolved_fixture"]
-    return {"skuId": fixture["skuId"], "adjustAmount": -10}
-
-
-adapters = {
-    "fixture.resolve": resolve_fixture,
-    "request.build": build_request,
-}
-context = {}
-
-run_entry(
-    {"action": "fixture.resolve", "save_as": "resolved_fixture"},
-    adapters,
-    context,
-)
-request = run_entry(
-    {"action": "request.build", "save_as": "request"},
-    adapters,
-    context,
-)
-
-assert request == {"skuId": "SKU-001", "adjustAmount": -10}
-assert context["request"] == request`,
+    referenceAnswer: referenceAnswers[7],
     quiz: { question: "save_as 最主要的用途是什么？", options: ["修改 HTTP method", "给步骤输出命名并存入 context", "关闭数据库", "安装 adapter"], correct: 1, explanation: "save_as 是步骤输出在当前用例 context 中的名字。" },
   },
   8: {
@@ -833,50 +634,7 @@ def handler(request: httpx.Request):
     verifyCommand: "pytest -q test_http_modes.py",
     expected: "3 passed（成功、HTTP 500、HTTP 200 + success=false）",
     hint: "在 handler 里用 json.loads(request.content) 读请求体，根据 adjustAmount 返回不同结果。",
-    referenceAnswer: `import json
-
-import httpx
-
-
-def handler(request: httpx.Request):
-    assert request.url.path == "/stock/adjust"
-    payload = json.loads(request.content)
-    amount = payload["adjustAmount"]
-
-    if amount == 500:
-        return httpx.Response(500, json={"message": "server error"})
-    if amount > 100:
-        return httpx.Response(200, json={
-            "success": False,
-            "code": "A4500",
-            "msg": "库存不足",
-        })
-    return httpx.Response(200, json={
-        "success": True,
-        "data": {"flowNo": "FLOW-001"},
-    })
-
-
-transport = httpx.MockTransport(handler)
-with httpx.Client(transport=transport, timeout=2.0) as client:
-    success = client.post(
-        "https://example.test/stock/adjust",
-        json={"adjustAmount": 10},
-    )
-    http_error = client.post(
-        "https://example.test/stock/adjust",
-        json={"adjustAmount": 500},
-    )
-    business_error = client.post(
-        "https://example.test/stock/adjust",
-        json={"adjustAmount": 101},
-    )
-
-assert success.status_code == 200
-assert success.json()["success"] is True
-assert http_error.status_code == 500
-assert business_error.status_code == 200
-assert business_error.json()["success"] is False`,
+    referenceAnswer: referenceAnswers[8],
     quiz: { question: "HTTP 200 且 response.success=false 代表什么？", options: ["传输层和业务都成功", "传输层成功，业务失败", "网络超时", "Python 语法错误"], correct: 1, explanation: "HTTP status 和业务 success 是两层不同的判定。" },
   },
   9: {
@@ -904,34 +662,7 @@ resolve:  这个售后用例需要哪个仓库和 SKU？`,
     verifyCommand: "pytest -q tests/provider tests/shared_actions tests/requirements",
     expected: "三组测试独立通过",
     hint: "先不移动代码，只给每个函数标注它应属于哪层以及理由。",
-    referenceAnswer: `# [Provider]
-def query_rows(connection, sql, params):
-    """只负责连接、参数化 SQL 和返回结果；不理解售后规则。"""
-    return connection.execute(sql, params).fetchall()
-
-
-# [Shared Action]
-def capture_inventory_snapshot(provider, sku_id):
-    """多个需求都会复用的稳定动作：按 sku_id 获取库存快照。"""
-    return provider.query_inventory(sku_id)
-
-
-# [Requirement]
-def select_legal_after_sale_sku(rows, constraints):
-    """当前售后需求特有：根据库存、占用和风险约束选择 SKU。"""
-    candidates = [
-        row for row in rows
-        if row["available"] >= constraints["minimum_available"]
-        and row["locked"] is False
-    ]
-    if not candidates:
-        raise LookupError("没有满足本售后场景约束的 SKU")
-    return candidates[0]
-
-
-# 依赖方向：Requirement -> Shared Action -> Provider
-# Provider 不应导入或调用 select_legal_after_sale_sku，
-# 因为“选哪个 SKU”是会随需求变化的业务决策。`,
+    referenceAnswer: referenceAnswers[9],
     quiz: { question: "“这个需求应该选哪个库存 SKU”应放在哪里？", options: ["DatabaseProvider", "HTTP Client", "需求/场景层 resolve", "Registry"], correct: 2, explanation: "选什么数据是业务求解，不是基础访问能力。" },
   },
   10: {
@@ -963,45 +694,7 @@ def select_legal_after_sale_sku(rows, constraints):
     verifyCommand: "python verify_declarative_delivery.py ... && pytest -q tests/test_boss_mock.py",
     expected: "三级静态门禁通过\nMock 全链路通过\nevidence JSON 包含 request/response",
     hint: "可以直接复用第 5、6、7、8 关产物，不要重写 Client、Provider 或 Runner。",
-    referenceAnswer: `# requirement_cases.yaml
-name: boss_01_after_sale
-common_flow:
-  setup:
-    - action: fixture.resolve
-      save_as: resolved_fixture
-    - action: inventory.snapshot
-      source: resolved_fixture
-      save_as: before_snapshot
-  steps:
-    - action: after_sale.notify
-      request:
-        skuId: "{{ resolved_fixture.skuId }}"
-        adjustAmount: -10
-      save_as: processing_result
-  assertions:
-    - source: processing_result.response
-      path: success
-      equals: true
-    - source: processing_result.response
-      path: data.flowNo
-      exists: true
-  teardown:
-    always:
-      - action: fixture.restore
-        source: before_snapshot
-
-# adapters.py
-# 每个 action 都返回 ActionResult：
-# request/response 保存调用证据，outputs 给后续步骤使用，
-# side_effects 记录库存变化和恢复动作。
-
-# tests/test_boss_mock.py 至少验证：
-# 1. YAML 通过 FlowEntry schema 校验；
-# 2. 所有 action ref 都能导入；
-# 3. pytest --collect-only 不访问网络；
-# 4. MockTransport 成功路径保存 flowNo；
-# 5. MockTransport 失败路径保留主异常和已完成步骤；
-# 6. 成功和失败两条路径都执行 fixture.restore。`,
+    referenceAnswer: referenceAnswers[10],
     quiz: { question: "Boss 链路第一次运行应优先选什么？", options: ["直接扣减真实 SIT 库存", "先跑静态门禁和 Mock 全链路", "先写管理面", "删除 teardown 简化流程"], correct: 1, explanation: "静态门禁和 Mock 能先验证结构、导入、模板、断言和清理，不产生真实副作用。" },
   },
 };
