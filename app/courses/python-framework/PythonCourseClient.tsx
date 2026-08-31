@@ -885,6 +885,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>("loading");
   const [cloudSyncMessage, setCloudSyncMessage] = useState("正在读取账号学习记录…");
   const snapshotRef = useRef<LearningSyncState>(emptyLearningState());
+  const taskDraftsRef = useRef<Record<number, string>>({});
   const syncRevisionRef = useRef(0);
   const syncTimerRef = useRef<number | null>(null);
 
@@ -896,6 +897,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
 
   const applySnapshot = useCallback((snapshot: LearningSyncState) => {
     snapshotRef.current = snapshot;
+    taskDraftsRef.current = snapshot.progress.taskDrafts;
     setCompleted(snapshot.progress.completed);
     setQuizPassed(snapshot.progress.quizPassed);
     setStageUnlocked(snapshot.progress.stageUnlocked);
@@ -1176,9 +1178,16 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   }
 
   function updateTaskDraft(id: number, value: string) {
-    const nextDrafts = { ...taskDrafts, [id]: value };
+    const nextDrafts = { ...taskDraftsRef.current, [id]: value };
+    taskDraftsRef.current = nextDrafts;
+    const nextTaskGrades = { ...snapshotRef.current.progress.taskGrades };
+    delete nextTaskGrades[id];
     setTaskDrafts(nextDrafts);
-    saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, taskGrades, [`progress.taskDrafts.${id}`]);
+    setTaskGrades(nextTaskGrades);
+    saveProgress(completed, quizPassed, stageUnlocked, nextDrafts, nextTaskGrades, [
+      `progress.taskDrafts.${id}`,
+      `progress.taskGrades.${id}`,
+    ]);
   }
 
   function unlockedStage(id: number) {
@@ -1204,7 +1213,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   }
 
   async function submitTask(id: number) {
-    const answer = (taskDrafts[id] ?? "").trim();
+    const answer = (taskDraftsRef.current[id] ?? "").trim();
     if (answer.length < 30) {
       setGradingErrors((current) => ({ ...current, [id]: "请至少写 30 个字符，包含你的代码或实现思路。" }));
       return;
@@ -1248,7 +1257,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   }
 
   async function sendToTutor(level: Level, suggestedMessage?: string) {
-    const answer = (taskDrafts[level.id] ?? "").trim();
+    const answer = (taskDraftsRef.current[level.id] ?? "").trim();
     const message = (suggestedMessage ?? codexChatDrafts[level.id] ?? "").trim();
     if (answer.length < 30) {
       setCodexErrors((current) => ({ ...current, [level.id]: "请先在上面的答案框中写至少 30 个字符。" }));
@@ -1481,7 +1490,9 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             const stage = activeStage(level.id);
             const maxStage = unlockedStage(level.id);
             const gradeSubmission = gradeSubmissions[level.id];
-            const grade = taskGrades[level.id] ?? gradeSubmission?.grade ?? null;
+            const currentDraft = taskDrafts[level.id] ?? "";
+            const grade = taskGrades[level.id]
+              ?? (gradeSubmission?.answer.trim() === currentDraft.trim() ? gradeSubmission.grade : null);
             const gradeStatusIndex = gradeSubmission?.status === "completed" ? 3 : gradeSubmission?.status === "judging" ? 2 : gradeSubmission ? 1 : 0;
             const hostedTutor = cloudSyncStatus !== "local";
             const tutorAvailable = hostedTutor || localCodexStatus === "ready";

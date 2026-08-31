@@ -95,6 +95,7 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   const editor = await readFile(new URL("../app/courses/python-framework/PythonAnswerEditor.tsx", import.meta.url), "utf8");
   const courseStyles = await readFile(new URL("../app/courses/python-framework/course-flow.css", import.meta.url), "utf8");
   const route = await readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8");
+  const learningChatRoute = await readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8");
   const queue = await readFile(new URL("../app/grading-queue/GradingQueueClient.tsx", import.meta.url), "utf8");
   const bridge = await readFile(new URL("../local-companion/server.mjs", import.meta.url), "utf8");
   const launcher = await readFile(new URL("../启动本地Codex学习站.command", import.meta.url), "utf8");
@@ -120,6 +121,9 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(courseStyles, /\.course-workspace \.chapter-card[\s\S]*border-radius: 15px/);
   assert.match(source, /fetch\("\/api\/course-grade"/);
   assert.match(source, /action: "enqueue"/);
+  assert.match(source, /taskDraftsRef\.current\[id\]/);
+  assert.match(source, /taskDraftsRef\.current\[level\.id\]/);
+  assert.match(source, /gradeSubmission\?\.answer\.trim\(\) === currentDraft\.trim\(\)/);
   assert.match(source, /待评判/);
   assert.match(source, /评判中/);
   assert.match(source, /已完成/);
@@ -127,6 +131,12 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(route, /course_grading_submissions/);
   assert.match(route, /requestDeepSeekJson/);
   assert.match(route, /action === "grade"/);
+  assert.match(route, /<current_student_answer>/);
+  assert.match(learningChatRoute, /唯一最新版/);
+  assert.ok(
+    learningChatRoute.indexOf("<conversation_history>") < learningChatRoute.indexOf("<current_student_answer>"),
+    "当前答案必须放在旧对话历史之后，防止模型把历史答案当作最新版",
+  );
   assert.doesNotMatch(route, /action === "claim"|action === "complete"|api\.openai\.com/);
   assert.match(queue, /重新交给 DeepSeek 批改/);
   assert.match(queue, /课程里的即时对话和备用提交都由同一个 DeepSeek 服务评判/);
