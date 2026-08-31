@@ -310,6 +310,18 @@ test("质量工程与保障补齐白盒测试和质量门禁路线", async () =>
   assert.match(capabilityMap, /competency: "CI\/CD"[\s\S]*href: "\/courses\/quality-engineering"/);
 });
 
+test("AI 测试课程吸收智能体质量保障实践并保留通用边界", async () => {
+  const registry = await readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8");
+
+  for (const topic of ["E0/E1/E2 风险分级", "G/T 双层指标", "主路径 core、风险 risk、回归 regression", "trace_id", "绝对阈值、基线退化和一票否决", "TTFT 与 E2EL P95"]) {
+    assert.match(registry, new RegExp(topic));
+  }
+  assert.match(registry, /foundation\.opentelemetry/);
+  assert.match(registry, /project\.agent_testing_practice/);
+  assert.match(registry, /具体阈值只作模板/);
+  assert.doesNotMatch(registry, /sf-alidocs\.dingtalk\.com/);
+});
+
 test("面试能力分只由真实回答证据生成", async () => {
   const [client, api] = await Promise.all([
     readFile(new URL("../app/interview/InterviewCoachClient.tsx", import.meta.url), "utf8"),

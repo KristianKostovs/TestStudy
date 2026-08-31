@@ -19,14 +19,39 @@ export type LearningModule = {
   subtitle: string;
   status: ModuleStatus;
   sourceIds: string[];
-  roadmap: string[];
+  roadmap: LearningRoadmapItem[];
   updateRule: string;
+  gapReview?: LearningGapReview;
 };
+
+export type LearningRoadmapDetail = {
+  title: string;
+  question: string;
+  foundations: string[];
+  practice: string;
+  evidence: string;
+};
+
+export type LearningRoadmapItem = string | LearningRoadmapDetail;
+
+export type LearningGapReview = {
+  sourceTitle: string;
+  summary: string;
+  items: Array<{
+    kind: "added" | "retained" | "guardrail";
+    title: string;
+    description: string;
+  }>;
+};
+
+export function roadmapTitle(item: LearningRoadmapItem): string {
+  return typeof item === "string" ? item : item.title;
+}
 
 export const sourceKindMeta: Record<SourceKind, { label: string; short: string }> = {
   foundation: { label: "公认基础", short: "基础" },
   technology_radar: { label: "实时技术雷达", short: "新技术" },
-  local_project: { label: "本地项目实践", short: "实战" },
+  local_project: { label: "本地与内部实践", short: "实践" },
 };
 
 export const sourceAdapters: SourceAdapter[] = [
@@ -74,6 +99,15 @@ export const sourceAdapters: SourceAdapter[] = [
     description: "以 TEVV 和 AI RMF 建立可信、可测量、可追踪的 AI 测试基础。",
     href: "https://airc.nist.gov/",
     checkedAt: "2026-08-23",
+  },
+  {
+    id: "foundation.opentelemetry",
+    kind: "foundation",
+    title: "OpenTelemetry Trace 与上下文传播",
+    provider: "CNCF / OpenTelemetry",
+    description: "以 trace、span 和上下文传播保存智能体端到端执行证据，支撑工具调用、多智能体协作和失败归因。",
+    href: "https://opentelemetry.io/docs/concepts/signals/traces/",
+    checkedAt: "2026-08-31",
   },
   {
     id: "foundation.performance",
@@ -210,6 +244,15 @@ export const sourceAdapters: SourceAdapter[] = [
     location: "AI测试赋能 / EWMS、MOM / Data/接口自动化",
     checkedAt: "2026-08-23",
   },
+  {
+    id: "project.agent_testing_practice",
+    kind: "local_project",
+    title: "智能体测试与质量保障实践",
+    provider: "SF 内部实践资料",
+    description: "补充智能体分类、E-Level、G/T 双层指标、评测集分桶、质量门禁、可观测归因和跨团队协作方法。",
+    location: "内部授权资料（只沉淀脱敏后的可迁移知识，不公开原文入口）",
+    checkedAt: "2026-08-31",
+  },
 ];
 
 export const learningModules: LearningModule[] = [
@@ -249,9 +292,90 @@ export const learningModules: LearningModule[] = [
     title: "AI 测试",
     subtitle: "从评测数据集和 grader，走到幻觉、鲁棒性、安全与 Agent 评估。",
     status: "blueprint",
-    sourceIds: ["foundation.python", "foundation.ai_tevv", "radar.openai_evals", "radar.openai_agents", "radar.owasp_asvs"],
-    roadmap: ["AI 系统与测试对象", "评测数据集", "指标与 grader", "重复性与统计", "Grounding 与幻觉", "鲁棒性与对抗", "安全、隐私与偏差", "Agent 与工具调用评测", "线上监控", "完整 Evals 方案"],
-    updateRule: "没有本地项目也可完整学习；以 NIST、官方 Evals 和权威研究为来源。",
+    sourceIds: ["foundation.python", "foundation.ai_tevv", "foundation.opentelemetry", "radar.openai_evals", "radar.openai_agents", "radar.owasp_asvs", "project.agent_testing_practice"],
+    roadmap: [
+      {
+        title: "为什么智能体不能只按传统接口测",
+        question: "同一输入可能得到不同表达，怎样证明它仍持续交付可信结果？",
+        foundations: ["非确定性与采样", "开放答案与语义等价", "黑盒结果与过程证据", "Verification 与 Validation"],
+        practice: "把一个传统接口断言改写成智能体的结果、稳定性和过程三层测试声明。",
+        evidence: "能说明为什么单次 exact match 不足，并列出需要保存的结果与 trace 证据。",
+      },
+      {
+        title: "先认类型，再写能力声明",
+        question: "知识问答、数据问数、工具执行、多轮对话和多智能体，‘答对’是否相同？",
+        foundations: ["qa_rag / data_query / tool_action", "routing / multi_turn / hybrid", "单体、工作流与多智能体", "E0/E1/E2 风险分级"],
+        practice: "为一个真实智能体画出类型标签、能力边界、风险等级和不测范围。",
+        evidence: "一张可评审的能力声明表，能把能力、风险和测试规模对应起来。",
+      },
+      {
+        title: "构建可信评测集",
+        question: "评测集怎样既贴近真实业务，又能覆盖风险和历史失败？",
+        foundations: ["主路径 core、风险 risk、回归 regression", "生产日志、调研与历史 badcase", "黄金答案和来源标注", "难度、表达和边界变体"],
+        practice: "设计一个带唯一 ID、版本、来源、分桶和期望判定方式的小型评测集。",
+        evidence: "样本可追溯、分布有理由，且不存在用模型凭空生成答案再自证正确的问题。",
+      },
+      {
+        title: "从单例判断到 G/T 双层指标",
+        question: "结果好不好和问题出在哪里，为什么必须分开回答？",
+        foundations: ["G 层业务门禁", "T 层检索、工具、推理、编排、成本与上下文诊断", "L0-L3 判定层级", "LLM-as-Judge、规则和人审"],
+        practice: "为一种智能体定义 1 个头牌门禁指标、2 个诊断指标和判定责任人。",
+        evidence: "指标定义、样本、计算口径和裁判版本均可复现，G 层失败能沿 trace 回到 T 层。",
+      },
+      {
+        title: "重复、统计与基线漂移",
+        question: "一次通过不代表稳定，怎样量化模型或提示词更新后的退步？",
+        foundations: ["重复 N 次与波动率", "均值、分位数与置信区间", "相对基线 Δ", "Judge 偏差抽检"],
+        practice: "对同一组样本重复运行，比较两个版本的任务成功率和波动。",
+        evidence: "报告同时给出样本量、采样配置、中心趋势、波动和相对基线变化。",
+      },
+      {
+        title: "Grounding、RAG 与幻觉治理",
+        question: "回答听起来合理时，如何验证召回、引用和事实真的存在？",
+        foundations: ["召回命中与空召回", "引用可追溯", "事实可靠率与拒答", "知识新鲜度和权限隔离"],
+        practice: "设计正常召回、错误召回、无知识和越权知识四类样本及 grader。",
+        evidence: "能区分检索失败、生成失真和知识源问题，不只给一个笼统的‘幻觉’标签。",
+      },
+      {
+        title: "工具、路由、多轮与多智能体轨迹评测",
+        question: "最终结果失败时，怎样判断是选错工具、参数错、路由错还是上下文丢失？",
+        foundations: ["工具选择与参数合法性", "状态变化和高危拦截", "意图路由与多轮一致性", "子任务协作、降级与端到端归因"],
+        practice: "为一条多步任务设计 checkpoint，并把每步事件绑定同一个 trace_id。",
+        evidence: "既有端到端结果，也能定位到具体路由、工具、参数、上下文或子智能体。",
+      },
+      {
+        title: "安全、隐私、权限与对抗",
+        question: "哪些风险必须一票否决，不能被平均分掩盖？",
+        foundations: ["提示注入和越狱", "PII 与敏感信息泄露", "越权访问和越权调用", "高危误放、偏差和有害内容"],
+        practice: "建立安全对抗样本库，并为不可接受事件设计一票否决规则。",
+        evidence: "红线事件可复现、有明确拦截证据，并与普通质量分数分开判定。",
+      },
+      {
+        title: "性能、成本与线上可观测",
+        question: "效果合格之后，速度、成本和可恢复性怎样进入质量结论？",
+        foundations: ["TTFT 与 E2EL P95", "吞吐、成功率和并发", "Token 与单次交互成本", "超时、重试、降级与线上 badcase 回流"],
+        practice: "设计分阶段并发测试，关联效果、时延、成功率和成本四类数据。",
+        evidence: "报告能指出瓶颈所在组件，并说明阈值来自用户体验、容量或成本目标。",
+      },
+      {
+        title: "质量门禁与持续闭环",
+        question: "怎样把评测从一次报告变成可审计、可回归、可阻断的发布机制？",
+        foundations: ["准备、执行、判定、沉淀四阶段", "绝对阈值、基线退化和一票否决", "通过、条件通过、不通过", "版本化回归集、CI/CD 与跨团队契约"],
+        practice: "完成一份智能体测试方案：能力声明、评测集、指标、门禁、trace、失败归因和回流策略。",
+        evidence: "结论可复现、可追溯、能解释是否上线以及失败后如何修复和回归。",
+      },
+    ],
+    updateRule: "以 NIST、OpenAI、OWASP 与 OpenTelemetry 作为稳定知识骨架；内部实践补充企业落地方法，具体阈值只作模板，必须由业务风险、体验和基线验证。",
+    gapReview: {
+      sourceTitle: "《智能体测试与质量保障实践》课程差异复核",
+      summary: "保留原有 AI Evals 主线，并补齐从‘会做评测’到‘能做发布门禁和失败归因’之间的工程能力。",
+      items: [
+        { kind: "added", title: "新增工程分层", description: "补入智能体类型、E-Level、G/T 双层指标、L0-L3 判定和主路径/风险/回归分桶。" },
+        { kind: "added", title: "新增门禁与归因", description: "补入绝对阈值、相对基线、一票否决、trace_id 证据链、多智能体协作和 CI/CD 闭环。" },
+        { kind: "retained", title: "保留通用能力", description: "评测集、grader、重复性、Grounding、幻觉、鲁棒性、安全、隐私和偏差仍是主线能力。" },
+        { kind: "guardrail", title: "避免照搬材料", description: "内部平台只作为可选练习工具；资料中的比例和阈值是参考模板，不作为所有智能体的统一标准。" },
+      ],
+    },
   },
   {
     id: "performance-testing",

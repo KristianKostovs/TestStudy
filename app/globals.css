@@ -312,6 +312,27 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .standalone-roadmap div > span { color: var(--red); font-size: 9px; font-weight: 900; letter-spacing: .14em; }
 .standalone-roadmap h3 { margin: 8px 0 7px; font: 800 19px Georgia, "Songti SC", serif; }
 .standalone-roadmap p { margin: 0; color: #6c776f; font-size: 11px; line-height: 1.65; }
+.standalone-roadmap > li.detailed { min-height: 0; }
+.standalone-roadmap > li.detailed > div { display: flex; flex-direction: column; }
+.standalone-roadmap .level-question { min-height: 52px; color: #3f5448; font-size: 13px; }
+.level-foundations { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 18px; padding: 0; list-style: none; }
+.level-foundations li { padding: 5px 8px; color: #315b49; border: 1px solid #d3dfd6; background: #edf4ef; font-size: 10px; line-height: 1.35; }
+.level-deliverables { display: grid; gap: 9px; margin: auto 0 0; }
+.level-deliverables > div { display: grid; grid-template-columns: 58px 1fr; gap: 10px; padding: 10px 0 0; border-top: 1px dashed #d9cfbc; }
+.level-deliverables dt { color: #a33625; font-size: 10px; font-weight: 900; }
+.level-deliverables dd { margin: 0; color: #59665e; font-size: 11px; line-height: 1.6; }
+.course-gap-review { max-width: 1120px; margin: 0 auto; padding: 90px 28px 20px; }
+.course-gap-review .section-heading { margin-bottom: 34px; }
+.gap-review-head { display: flex; justify-content: space-between; gap: 24px; padding: 15px 18px; color: #f6efdc; background: var(--dark-green); }
+.gap-review-head b { color: #f2c45b; font-size: 11px; letter-spacing: .12em; }
+.gap-review-head span { color: #d5dfd8; font-size: 12px; text-align: right; }
+.gap-review-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 12px; }
+.gap-review-card { min-height: 150px; padding: 21px; border: 1px solid #d9cfbb; background: #fffdf7; }
+.gap-review-card > span { display: inline-block; padding: 4px 7px; color: #fff; background: var(--red); font-size: 9px; font-weight: 900; letter-spacing: .1em; }
+.gap-review-card.retained > span { background: var(--green); }
+.gap-review-card.guardrail > span { color: #3f3118; background: var(--gold); }
+.gap-review-card h3 { margin: 14px 0 8px; font: 800 18px Georgia, "Songti SC", serif; }
+.gap-review-card p { margin: 0; color: #617067; font-size: 12px; line-height: 1.75; }
 .course-source-section { padding-top: 55px; padding-bottom: 100px; }
 .footer-link { display: inline-block; margin-top: 12px; padding-bottom: 5px; color: #f0c459; border-bottom: 1px solid #657e72; font-size: 12px; font-weight: 800; }
 .course-back { display: inline-block; }
@@ -336,6 +357,7 @@ footer span { color: #9aafa3; font-size: 12px; }
   .blueprint-intro { grid-template-columns: 1fr; }
   .blueprint-intro article { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
   .standalone-roadmap { grid-template-columns: 1fr; }
+  .gap-review-grid { grid-template-columns: 1fr; }
   .lesson-grid { grid-template-columns: 1fr; }
   .learning-steps { grid-template-columns: repeat(3, 1fr); }
   .learning-steps li:nth-child(3) { border-right: 0; }
@@ -360,6 +382,10 @@ footer span { color: #9aafa3; font-size: 12px; }
   .module-card p { min-height: 0; }
   .blueprint-intro, .blueprint-roadmap { padding-left: 14px; padding-right: 14px; }
   .standalone-roadmap > li { grid-template-columns: 52px 1fr; }
+  .course-gap-review { padding-left: 14px; padding-right: 14px; }
+  .gap-review-head { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .gap-review-head span { text-align: left; }
+  .level-deliverables > div { grid-template-columns: 1fr; gap: 5px; }
   .module-detail { padding: 24px 18px; }
   .module-roadmap { grid-template-columns: 1fr; }
   .map-section { padding-left: 14px; padding-right: 14px; }

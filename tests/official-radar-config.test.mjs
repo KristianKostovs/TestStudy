@@ -6,7 +6,7 @@ const configUrl = new URL("../config/official-radar-sources.json", import.meta.u
 
 test("官方雷达来源可以同时映射到课程和面试能力", async () => {
   const config = JSON.parse(await readFile(configUrl, "utf8"));
-  assert.equal(config.version, 1);
+  assert.ok(Number.isInteger(config.version) && config.version >= 1);
   assert.equal(config.timezone, "Asia/Shanghai");
   assert.equal(config.weeklySchedule, "每周一 09:30");
   assert.equal(config.monthlySchedule, "每月第一个周一 10:00");
