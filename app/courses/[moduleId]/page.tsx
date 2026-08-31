@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 /* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
 import {
   learningModules,
+  roadmapTitle,
   sourceKindMeta,
   sourcesForModule,
   type LearningModule,
@@ -39,6 +40,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
   const course = findBlueprint(moduleId);
   if (!course) notFound();
   const sources = sourcesForModule(course);
+  const detailedRoadmap = course.roadmap.some((item) => typeof item !== "string");
 
   return (
     <main className="ready blueprint-course">
@@ -56,8 +58,8 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
           </section>
           <aside className="course-status-card">
             <span>当前建设状态</span>
-            <strong>路线已建立</strong>
-            <p>这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。</p>
+            <strong>{detailedRoadmap ? "十关内容已补强" : "路线已建立"}</strong>
+            <p>{detailedRoadmap ? "每关已经明确学习问题、基础知识、动手任务和验收证据；完整交互课将按关卡逐步开放。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
           </aside>
         </div>
       </header>
@@ -68,6 +70,29 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
         <article><b>关卡准入标准</b><p>只有出现新的可迁移能力或必要前置知识，才新增主关卡；新增案例只更新练习。</p></article>
       </section>
 
+      {course.gapReview ? (
+        <section className="course-gap-review" aria-labelledby="gap-review-title">
+          <div className="section-heading">
+            <p>KNOWLEDGE GAP REVIEW</p>
+            <h2 id="gap-review-title">这次查漏补缺改了什么</h2>
+            <span>{course.gapReview.summary}</span>
+          </div>
+          <div className="gap-review-head">
+            <b>本次补充来源</b>
+            <span>{course.gapReview.sourceTitle}</span>
+          </div>
+          <div className="gap-review-grid">
+            {course.gapReview.items.map((item) => (
+              <article className={`gap-review-card ${item.kind}`} key={item.title}>
+                <span>{item.kind === "added" ? "补入" : item.kind === "retained" ? "保留" : "边界"}</span>
+                <h3>{item.title}</h3>
+                <p>{item.description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <section className="blueprint-roadmap" id="roadmap">
         <div className="section-heading">
           <p>THE ROADMAP</p>
@@ -76,9 +101,26 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
         </div>
         <ol className="standalone-roadmap">
           {course.roadmap.map((item, index) => (
-            <li key={item}>
+            <li className={typeof item === "string" ? undefined : "detailed"} key={roadmapTitle(item)}>
               <b>{String(index + 1).padStart(2, "0")}</b>
-              <div><span>LEVEL {String(index + 1).padStart(2, "0")}</span><h3>{item}</h3><p>将补齐：基础解释 → 最小例子 → 项目练习 → 自动验收。</p></div>
+              <div>
+                <span>LEVEL {String(index + 1).padStart(2, "0")}</span>
+                <h3>{roadmapTitle(item)}</h3>
+                {typeof item === "string" ? (
+                  <p>将补齐：基础解释 → 最小例子 → 项目练习 → 自动验收。</p>
+                ) : (
+                  <>
+                    <p className="level-question">{item.question}</p>
+                    <ul className="level-foundations">
+                      {item.foundations.map((foundation) => <li key={foundation}>{foundation}</li>)}
+                    </ul>
+                    <dl className="level-deliverables">
+                      <div><dt>动手任务</dt><dd>{item.practice}</dd></div>
+                      <div><dt>验收证据</dt><dd>{item.evidence}</dd></div>
+                    </dl>
+                  </>
+                )}
+              </div>
             </li>
           ))}
         </ol>
@@ -103,7 +145,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
                     {source.href ? <a href={source.href} target="_blank" rel="noreferrer">查看官方来源 ↗</a> : <span>{source.location}</span>}
                     <time>最近核对 {source.checkedAt}</time>
                   </article>
-                )) : <div className="source-empty">当前没有本地项目来源，不影响这门课程继续建设。</div>}
+                )) : <div className="source-empty">当前没有本地或内部实践来源，不影响这门课程继续建设。</div>}
               </section>
             );
           })}
