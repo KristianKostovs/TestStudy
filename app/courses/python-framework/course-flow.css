@@ -297,6 +297,49 @@
 .course-workspace .stage-tabs button.finished b { background: #25765f; }
 .course-workspace .stage-tabs button.active { color: #fff; background: #25765f; }
 .course-workspace .stage-tabs button.active b { color: #25765f; background: #fff; }
+.course-workspace .level-note-panel { margin: 13px 0 18px; overflow: hidden; border: 1px solid #dfe5e1; border-radius: 11px; background: #fbfcfb; }
+.course-workspace .level-note-panel > summary { min-height: 54px; padding: 12px 15px; display: flex; align-items: center; justify-content: space-between; gap: 16px; cursor: pointer; list-style: none; }
+.course-workspace .level-note-panel > summary::-webkit-details-marker { display: none; }
+.course-workspace .level-note-panel > summary:hover, .course-workspace .level-note-panel[open] > summary { background: #f2f7f4; }
+.course-workspace .level-note-panel > summary > span { min-width: 0; display: grid; grid-template-columns: 28px auto; align-items: center; column-gap: 9px; }
+.course-workspace .level-note-panel > summary i { grid-row: 1 / 3; width: 28px; height: 28px; display: grid; place-items: center; color: #fff; border-radius: 8px; background: #25765f; font-size: 10px; font-style: normal; font-weight: 800; }
+.course-workspace .level-note-panel > summary b { color: #20352d; font-size: 11px; }
+.course-workspace .level-note-panel > summary small { color: #89918c; font-size: 8px; }
+.course-workspace .level-note-panel > summary em { color: #25765f; font-size: 8px; font-style: normal; font-weight: 700; white-space: nowrap; }
+.course-workspace .level-note-editor { padding: 17px; border-top: 1px solid #dfe5e1; background: #fff; }
+.course-workspace .level-note-editor > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; margin-bottom: 14px; }
+.course-workspace .level-note-editor > header > div { display: grid; gap: 3px; }
+.course-workspace .level-note-editor > header b { color: #20352d; font-size: 9px; }
+.course-workspace .level-note-editor > header span { color: #878f8a; font-size: 8px; }
+.course-workspace .note-save-state { display: flex; align-items: center; gap: 6px; margin: 0; color: #6e7772; font-size: 8px; }
+.course-workspace .note-save-state > i { width: 7px; height: 7px; border-radius: 50%; background: #aab3ad; }
+.course-workspace .note-save-state.saved > i { background: #0f8a6a; }
+.course-workspace .note-save-state.saving > i, .course-workspace .note-save-state.loading > i { background: #d8a43a; animation: sync-pulse 1.2s ease-in-out infinite; }
+.course-workspace .note-save-state.error { color: #9a3e31; }
+.course-workspace .note-save-state.error > i { background: #bd4a39; }
+.course-workspace .note-local-warning { margin-bottom: 14px; padding: 12px 14px; border-left: 4px solid #d8a43a; border-radius: 8px; background: #fff8e8; }
+.course-workspace .note-local-warning span { color: #76551a; font-size: 9px; font-weight: 800; }
+.course-workspace .note-local-warning p { margin: 5px 0; color: #75664a; font-size: 9px; line-height: 1.6; }
+.course-workspace .note-local-warning a { color: #25765f; font-size: 9px; font-weight: 800; }
+.course-workspace .note-title-field, .course-workspace .note-content-field { display: grid; gap: 7px; }
+.course-workspace .note-title-field span, .course-workspace .note-content-field span { color: #315447; font-size: 9px; font-weight: 800; }
+.course-workspace .note-title-field input { width: 100%; padding: 10px 12px; color: #24332d; border: 1px solid #cfd9d3; border-radius: 8px; outline: 0; background: #fbfcfb; font: 600 11px/1.5 var(--font-geist-sans), sans-serif; }
+.course-workspace .note-content-field { margin-top: 12px; }
+.course-workspace .note-content-field textarea { width: 100%; min-height: 150px; padding: 13px; resize: vertical; color: #24332d; border: 1px solid #cfd9d3; border-radius: 8px; outline: 0; background: #fbfcfb; font: 11px/1.75 var(--font-geist-sans), sans-serif; }
+.course-workspace .note-title-field input:focus, .course-workspace .note-content-field textarea:focus { border-color: #62a08b; box-shadow: 0 0 0 3px rgba(37, 118, 95, .1); background: #fff; }
+.course-workspace .note-toolbar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 10px; margin-top: 10px; }
+.course-workspace .note-toolbar input[type="file"] { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.course-workspace .note-toolbar button { padding: 8px 11px; border: 1px solid #afc5bc; border-radius: 8px; color: #25765f; background: #f3f8f5; font: inherit; font-size: 9px; font-weight: 800; cursor: pointer; }
+.course-workspace .note-toolbar button:disabled { opacity: .5; cursor: not-allowed; }
+.course-workspace .note-toolbar span { color: #89918c; font-size: 8px; line-height: 1.5; }
+.course-workspace .note-toolbar .note-save-button { color: #fff; border-color: #25765f; background: #25765f; }
+.course-workspace .note-image-grid { margin-top: 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; }
+.course-workspace .note-image-grid figure { min-width: 0; margin: 0; overflow: hidden; border: 1px solid #dfe5e1; border-radius: 9px; background: #f7f8f6; }
+.course-workspace .note-image-grid figure > a { display: block; aspect-ratio: 4 / 3; overflow: hidden; background: #edf1ee; }
+.course-workspace .note-image-grid img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.course-workspace .note-image-grid figcaption { min-width: 0; padding: 8px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.course-workspace .note-image-grid figcaption span { overflow: hidden; color: #727a75; font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.course-workspace .note-image-grid figcaption button { flex: 0 0 auto; padding: 0; border: 0; color: #9a3e31; background: transparent; font-size: 8px; cursor: pointer; }
 .course-workspace .beginner-note, .course-workspace .objective, .course-workspace .model-setup-notice { border: 1px solid #dfe5e1; border-left: 4px solid #0f8a6a; border-radius: 10px; background: #f7faf8; }
 .course-workspace .beginner-note > b, .course-workspace .objective b { color: #25765f; }
 .course-workspace .glossary-card, .course-workspace .compact-disclosure, .course-workspace .help-panel, .course-workspace .verify-card { border-color: #e1e4e1; border-radius: 10px; background: #fff; }
@@ -339,6 +382,10 @@
   .grading-steps li { border-right: 0; border-bottom: 1px solid var(--line); }
   .grading-steps li:last-child { border-bottom: 0; }
   .codex-chat-messages article { max-width: 94%; }
+  .course-workspace .level-note-editor > header { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .course-workspace .note-toolbar { grid-template-columns: 1fr auto; }
+  .course-workspace .note-toolbar span { grid-column: 1 / -1; }
+  .course-workspace .note-image-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .codex-chat-composer { grid-template-columns: 1fr; }
   .codex-chat-composer small, .codex-chat-composer button { grid-column: 1; }
   .grade-card { grid-template-columns: 1fr; }

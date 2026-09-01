@@ -2,6 +2,7 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./course-flow.css";
+import CourseNotePanel from "./CourseNotePanel";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
 import { referenceAnswers } from "./reference-answers";
 import {
@@ -1575,6 +1576,13 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                             </li>;
                           })}
                         </ol>
+                        <CourseNotePanel
+                          courseId={courseId}
+                          chapterId={currentChapter.id}
+                          levelId={level.id}
+                          levelTitle={level.title}
+                          online={cloudSyncStatus !== "local"}
+                        />
                         {stage === 1 && <section className="stage-panel">
                           <div className="beginner-note"><b>小白先看这里</b><p>{support.beforeYouStart}</p></div>
                           <div className="glossary-grid">

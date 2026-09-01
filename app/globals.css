@@ -835,7 +835,7 @@ footer span { color: #9aafa3; font-size: 12px; }
 .radar-decision-rule li b { color: #0f8a6a; font: 720 11px var(--font-geist-mono), monospace; }
 .radar-decision-rule li span { color: #777a77; font-size: 9px; line-height: 1.6; }
 .radar-decision-rule li strong { display: block; color: #234738; font-size: 12px; }
-.archive-summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 11px; }
+.archive-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 11px; }
 .archive-summary-grid article { min-height: 230px; padding: 20px; display: flex; flex-direction: column; border: 1px solid #e3e4e1; border-radius: 14px; background: #fff; }
 .archive-summary-grid article > span { color: #858885; font-size: 9px; font-weight: 650; }
 .archive-summary-grid strong { margin: 20px 0 9px; color: #202321; font-size: 38px; font-weight: 720; }
@@ -845,6 +845,34 @@ footer span { color: #9aafa3; font-size: 12px; }
 .archive-next-step { display: grid; grid-template-columns: 1fr auto; gap: 30px; align-items: center; }
 .archive-next-step span { display: block; margin-top: 10px; color: #707970; font-size: 11px; line-height: 1.7; }
 .archive-next-step > a { padding: 11px 15px; color: #fff; border-radius: 9px; background: #202321; font-size: 10px; font-weight: 650; }
+.archive-note-library { width: min(1080px, calc(100% - 56px)); margin: 0 auto; padding: 68px 0 0; }
+.note-directory-root { margin-top: 28px; overflow: hidden; border: 1px solid #e1e5e2; border-radius: 16px; background: #fafbf9; }
+.note-directory-course { min-height: 72px; padding: 16px 19px; display: flex; align-items: center; gap: 12px; color: #fff; background: #1d3d31; }
+.note-directory-course > i { width: 40px; height: 40px; display: grid; place-items: center; color: #f0c65a; border: 1px solid #6b8b7e; border-radius: 10px; font: 750 10px var(--font-geist-mono), monospace; font-style: normal; }
+.note-directory-course > span { display: grid; gap: 3px; }
+.note-directory-course b { font-size: 13px; }
+.note-directory-course small { color: #aac0b7; font-size: 8px; }
+.note-chapter-list { display: grid; gap: 1px; background: #e1e5e2; }
+.note-chapter-group { padding: 22px; background: #fff; }
+.note-chapter-group > header { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 10px; margin-bottom: 15px; }
+.note-chapter-group > header span { color: #0f8a6a; font: 700 8px var(--font-geist-mono), monospace; letter-spacing: .08em; }
+.note-chapter-group > header h3 { margin: 0; color: #202321; font-size: 14px; }
+.note-chapter-group > header small { color: #929792; font-size: 8px; }
+.archive-note-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px; }
+.archive-note-card { min-width: 0; padding: 16px; display: flex; flex-direction: column; border: 1px solid #e1e5e2; border-radius: 12px; background: #fafbf9; }
+.archive-note-path { display: flex; justify-content: space-between; gap: 10px; color: #8b928d; font-size: 8px; }
+.archive-note-path span { color: #0f8a6a; font-weight: 800; }
+.archive-note-card h4 { margin: 12px 0 7px; color: #24352e; font-size: 12px; }
+.archive-note-card > p { max-height: 75px; margin: 0 0 13px; overflow: hidden; color: #6f7772; font-size: 9px; line-height: 1.7; white-space: pre-wrap; }
+.archive-note-images { height: 66px; display: flex; gap: 6px; margin-bottom: 13px; }
+.archive-note-images a { width: 66px; height: 66px; overflow: hidden; border-radius: 8px; background: #e8eeea; }
+.archive-note-images img { width: 100%; height: 100%; display: block; object-fit: cover; }
+.archive-note-images > span { width: 66px; height: 66px; display: grid; place-items: center; color: #25765f; border-radius: 8px; background: #e8f2ee; font-size: 10px; font-weight: 800; }
+.archive-note-open { margin-top: auto; padding-top: 11px; color: #25765f; border-top: 1px solid #e7ebe8; font-size: 9px; font-weight: 700; }
+.archive-note-empty { padding: 54px 24px; text-align: center; }
+.archive-note-empty b { color: #26362f; font-size: 15px; }
+.archive-note-empty p { margin: 8px 0 16px; color: #7c847f; font-size: 10px; }
+.archive-note-empty a { color: #25765f; font-size: 10px; font-weight: 750; }
 .plan-actions { display: grid; justify-items: stretch; gap: 6px; min-width: 116px; }
 .plan-actions a { padding: 8px 10px; border-radius: 8px; color: #fff; background: #257a62; text-align: center; font-size: 9px; font-weight: 750; }
 
@@ -856,7 +884,8 @@ footer span { color: #9aafa3; font-size: 12px; }
   .dashboard-hero { grid-template-columns: 1fr; gap: 35px; }
   .platform-home .hero-grid { grid-template-columns: 1fr; gap: 30px; }
   .platform-home .module-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .dashboard-metrics, .radar-cadence, .archive-summary-grid { grid-template-columns: 1fr; }
+  .dashboard-metrics, .radar-cadence { grid-template-columns: 1fr; }
+  .archive-summary-grid { grid-template-columns: repeat(2, 1fr); }
   .dashboard-metrics article, .radar-cadence article { min-height: 0; border-right: 0; border-bottom: 1px solid #ded4c0; }
   .dashboard-workspaces > div { grid-template-columns: 1fr; }
   .dashboard-workspaces > div > a { min-height: 210px; }
@@ -878,7 +907,7 @@ footer span { color: #9aafa3; font-size: 12px; }
   .platform-stage .answer-composer { left: 14px; right: 14px; bottom: 76px; }
   .dashboard-hero, .workspace-page-hero { padding-left: 22px; padding-right: 22px; }
   .dashboard-hero h1, .workspace-page-hero h1 { font-size: 42px; }
-  .dashboard-metrics, .dashboard-workspaces, .dashboard-loop, .radar-cadence, .radar-source-board, .radar-decision-rule, .archive-summary-grid, .archive-next-step { padding-left: 14px; padding-right: 14px; }
+  .dashboard-metrics, .dashboard-workspaces, .dashboard-loop, .radar-cadence, .radar-source-board, .radar-decision-rule, .archive-summary-grid, .archive-next-step, .archive-note-library { padding-left: 14px; padding-right: 14px; }
   .dashboard-workspaces, .dashboard-loop, .radar-source-board, .radar-decision-rule, .archive-summary-grid, .archive-next-step { padding-top: 64px; }
   .dashboard-loop ol, .radar-decision-rule ol { grid-template-columns: 1fr; }
   .dashboard-loop li { border-right: 0; border-bottom: 1px solid #d9cfb9 !important; }
@@ -887,5 +916,9 @@ footer span { color: #9aafa3; font-size: 12px; }
   .platform-home .module-grid { grid-template-columns: 1fr; }
   .archive-next-step { grid-template-columns: 1fr; }
   .archive-next-step > a { justify-self: start; }
+  .archive-summary-grid { grid-template-columns: 1fr; }
+  .archive-note-grid { grid-template-columns: 1fr; }
+  .note-chapter-group { padding: 16px; }
+  .note-chapter-group > header { grid-template-columns: 1fr; gap: 4px; }
   .plan-actions { grid-column: 2; justify-items: start; }
 }

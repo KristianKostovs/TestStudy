@@ -36,6 +36,13 @@
       "when": 1787816826621,
       "tag": "0004_curious_james_howlett",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1788249122304,
+      "tag": "0005_lean_stranger",
+      "breakpoints": true
     }
   ]
 }

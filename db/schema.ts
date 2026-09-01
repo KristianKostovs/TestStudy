@@ -100,3 +100,32 @@ export const courseLearningStates = sqliteTable("course_learning_states", {
 }, (table) => [
   primaryKey({ columns: [table.ownerId, table.courseId] }),
 ]);
+
+export const courseNotes = sqliteTable("course_notes", {
+  ownerId: text("owner_id").notNull(),
+  courseId: text("course_id").notNull(),
+  chapterId: integer("chapter_id").notNull(),
+  levelId: integer("level_id").notNull(),
+  title: text("title").notNull(),
+  content: text("content").notNull().default(""),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  primaryKey({ columns: [table.ownerId, table.courseId, table.levelId] }),
+  index("idx_course_notes_owner_course_chapter").on(table.ownerId, table.courseId, table.chapterId, table.levelId),
+]);
+
+export const courseNoteImages = sqliteTable("course_note_images", {
+  id: text("id").primaryKey(),
+  ownerId: text("owner_id").notNull(),
+  courseId: text("course_id").notNull(),
+  chapterId: integer("chapter_id").notNull(),
+  levelId: integer("level_id").notNull(),
+  objectKey: text("object_key").notNull().unique(),
+  fileName: text("file_name").notNull(),
+  contentType: text("content_type").notNull(),
+  byteSize: integer("byte_size").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_course_note_images_owner_course_level").on(table.ownerId, table.courseId, table.levelId, table.createdAt),
+]);

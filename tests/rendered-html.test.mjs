@@ -285,6 +285,39 @@ test("Python 学习进度按 ChatGPT 账户同步且保留本机缓存", async (
   assert.match(migration, /PRIMARY KEY\(`owner_id`, `course_id`\)/);
 });
 
+test("每关学习笔记支持账号目录、图片存储并汇总到成长档案", async () => {
+  const [course, panel, noteRoute, imageUpload, imageRead, schema, migration, hosting, growth] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/CourseNotePanel.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/course-notes/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/course-note-images/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/course-note-image/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../drizzle/0005_lean_stranger.sql", import.meta.url), "utf8"),
+    readFile(new URL("../.openai/hosting.json", import.meta.url), "utf8"),
+    readFile(new URL("../app/growth/GrowthArchiveClient.tsx", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(course, /<CourseNotePanel/);
+  assert.match(panel, /本关学习笔记/);
+  assert.match(panel, /onPaste/);
+  assert.match(panel, /accept="image\/jpeg,image\/png,image\/webp,image\/gif"/);
+  assert.match(panel, /已保存到账号 · 成长档案同步更新/);
+  assert.match(noteRoute, /getChatGPTUser/);
+  assert.match(noteRoute, /owner_id = \? AND course_id = \?/);
+  assert.match(imageUpload, /noteImageBucket\(\)\.put/);
+  assert.match(imageUpload, /每关最多保存/);
+  assert.match(imageRead, /owner_id = \?/);
+  assert.match(imageRead, /Cache-Control/);
+  assert.match(schema, /courseNotes/);
+  assert.match(schema, /courseNoteImages/);
+  assert.match(migration, /CREATE TABLE `course_notes`/);
+  assert.match(migration, /CREATE TABLE `course_note_images`/);
+  assert.match(hosting, /"r2": "NOTE_IMAGES"/);
+  assert.match(growth, /LEARNING NOTE DIRECTORY/);
+  assert.match(growth, /按“课程 \/ 章节 \/ 关卡”归档/);
+});
+
 test("面试陪练是独立入口并且不使用课程分享图", async () => {
   const homeHtml = await (await render("/")).text();
   assert.match(homeHtml, /href=["']\/interview["']/);
@@ -328,7 +361,7 @@ test("面试回答真实调用 DeepSeek，并把诊断转成成长计划", async
   assert.match(api, /analysis\.plan/);
   assert.match(api, /durationMinutes/);
   assert.doesNotMatch(api, /function analyzeAnswer|lengthScore|hasStructure|hasEvidence/);
-  assert.match(growth, /真实学习行为 \+ DeepSeek 诊断/);
+  assert.match(growth, /真实学习行为 \+ 笔记证据 \+ DeepSeek 诊断/);
   assert.match(growth, /诊断后的任务会进入同一份成长计划/);
 });
 
