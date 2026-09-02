@@ -129,3 +129,16 @@ export const courseNoteImages = sqliteTable("course_note_images", {
 }, (table) => [
   index("idx_course_note_images_owner_course_level").on(table.ownerId, table.courseId, table.levelId, table.createdAt),
 ]);
+
+export const courseContentOverrides = sqliteTable("course_content_overrides", {
+  contentKey: text("content_key").primaryKey(),
+  courseId: text("course_id").notNull(),
+  levelId: integer("level_id").notNull(),
+  section: text("section").notNull(),
+  contentJson: text("content_json").notNull(),
+  updatedBy: text("updated_by").notNull(),
+  createdAt: text("created_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+  updatedAt: text("updated_at").notNull().default(sql`CURRENT_TIMESTAMP`),
+}, (table) => [
+  index("idx_course_content_course_level_section").on(table.courseId, table.levelId, table.section),
+]);

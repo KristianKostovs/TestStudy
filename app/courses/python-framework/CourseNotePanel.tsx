@@ -19,6 +19,11 @@ type Note = {
   images: NoteImage[];
 };
 
+type NoteSyncInfo = {
+  accountFingerprint: string;
+  lastUpdatedAt: string | null;
+};
+
 type SaveStatus = "idle" | "loading" | "saving" | "saved" | "error" | "local";
 
 const onlineSiteOrigin = "https://python-framework-quest.leafy-slug-3142.chatgpt.site";
@@ -44,6 +49,7 @@ export default function CourseNotePanel({
   const [status, setStatus] = useState<SaveStatus>("loading");
   const [message, setMessage] = useState("正在读取账号笔记…");
   const [uploading, setUploading] = useState(false);
+  const [syncInfo, setSyncInfo] = useState<NoteSyncInfo | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const hydratedRef = useRef(false);
   const saveTimerRef = useRef<number | null>(null);
@@ -70,12 +76,13 @@ export default function CourseNotePanel({
     setMessage("正在读取账号笔记…");
     try {
       const response = await fetch(`/api/course-notes?courseId=${encodeURIComponent(courseId)}&levelId=${levelId}`, { cache: "no-store" });
-      const result = await response.json() as { notes?: Note[]; error?: string };
+      const result = await response.json() as { notes?: Note[]; sync?: NoteSyncInfo; error?: string };
       if (!response.ok) throw new Error(result.error ?? "读取失败");
       const note = result.notes?.[0];
       setTitle(note?.title || defaultTitle);
       setContent(note?.content || "");
       setImages(note?.images || []);
+      setSyncInfo(result.sync ?? null);
       setStatus("saved");
       setMessage(note ? "已从账号加载" : "还没有笔记，开始记录吧");
     } catch (error) {
@@ -110,8 +117,9 @@ export default function CourseNotePanel({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ courseId, chapterId, levelId, title: nextTitle, content: nextContent }),
       });
-      const result = await response.json() as { note?: Note; error?: string };
+      const result = await response.json() as { note?: Note; sync?: NoteSyncInfo; error?: string };
       if (!response.ok) throw new Error(result.error ?? "保存失败");
+      setSyncInfo(result.sync ?? null);
       setStatus("saved");
       setMessage("已保存到账号 · 成长档案同步更新");
     } catch (error) {
@@ -180,6 +188,24 @@ export default function CourseNotePanel({
     }
   }
 
+  function formatCloudTime(value: string | null) {
+    if (!value) return "尚无云端记录";
+    const normalized = /^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/.test(value)
+      ? `${value.replace(" ", "T")}Z`
+      : value;
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) return value;
+    return new Intl.DateTimeFormat("zh-CN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hour12: false,
+    }).format(date);
+  }
+
   return (
     <details className="level-note-panel">
       <summary>
@@ -191,6 +217,11 @@ export default function CourseNotePanel({
           <div><b>保存目录</b><span>Python 框架基础 / 第 {chapterId} 章 / 第 {levelId} 关</span></div>
           <p className={`note-save-state ${status}`}><i />{message}</p>
         </header>
+        {online && syncInfo && <aside className="note-sync-identity" aria-label="云端同步身份">
+          <div><span>同步账号编号</span><strong>{syncInfo.accountFingerprint}</strong></div>
+          <div><span>本关云端更新时间</span><time dateTime={syncInfo.lastUpdatedAt ?? undefined}>{formatCloudTime(syncInfo.lastUpdatedAt)}</time></div>
+          <p>在另一台电脑打开同一网站后核对这个编号；编号一致，才表示正在读取同一个云端账号。</p>
+        </aside>}
         {!online && <aside className="note-local-warning">
           <span>当前是本机页面</span>
           <p>文字可以暂存在本机，但不会出现在另一台电脑和成长档案中。请使用线上页面记录正式笔记。</p>

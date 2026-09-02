@@ -311,7 +311,11 @@ test("每关学习笔记支持账号目录、图片存储并汇总到成长档�
   assert.match(panel, /onPaste/);
   assert.match(panel, /accept="image\/jpeg,image\/png,image\/webp,image\/gif"/);
   assert.match(panel, /已保存到账号 · 成长档案同步更新/);
+  assert.match(panel, /同步账号编号/);
+  assert.match(panel, /本关云端更新时间/);
   assert.match(noteRoute, /getChatGPTUser/);
+  assert.match(noteRoute, /chatGPTUserFingerprint/);
+  assert.match(noteRoute, /accountFingerprint/);
   assert.match(noteRoute, /owner_id = \? AND course_id = \?/);
   assert.match(imageUpload, /noteImageBucket\(\)\.put/);
   assert.match(imageUpload, /每关最多保存/);
@@ -324,6 +328,28 @@ test("每关学习笔记支持账号目录、图片存储并汇总到成长档�
   assert.match(hosting, /"r2": "NOTE_IMAGES"/);
   assert.match(growth, /LEARNING NOTE DIRECTORY/);
   assert.match(growth, /按“课程 \/ 章节 \/ 关卡”归档/);
+});
+
+test("课程说明支持有权限账号在网页内编辑并恢复源码默认值", async () => {
+  const [course, editor, route, content, schema, envExample] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/CourseContentEditButton.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/course-content/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/course-content.ts", import.meta.url), "utf8"),
+    readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
+    readFile(new URL("../.env.example", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(course, /课程编辑权限已启用/);
+  assert.match(course, /所有允许的查找机制都失败后必须明确报错/);
+  assert.match(editor, /保存到云端/);
+  assert.match(editor, /恢复源码内容/);
+  assert.match(route, /当前账号没有课程编辑权限/);
+  assert.match(route, /ON CONFLICT\(content_key\)/);
+  assert.match(content, /COURSE_CONTENT_ADMIN_EMAIL_HASHES/);
+  assert.match(content, /SHA-256/);
+  assert.match(schema, /courseContentOverrides/);
+  assert.match(envExample, /COURSE_CONTENT_ADMIN_EMAIL_HASHES=/);
 });
 
 test("面试陪练是独立入口并且不使用课程分享图", async () => {
