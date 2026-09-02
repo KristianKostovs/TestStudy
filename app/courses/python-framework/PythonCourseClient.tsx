@@ -87,7 +87,15 @@ const levels: Level[] = [
 
 flow_no = get_by_path(response, "data.flowNo")`,
     task: "写一个 get_by_path() 函数，从售后接口响应中取出 data.flowNo，并处理 data 缺失的情况。",
-    acceptance: ["正常响应能返回 flowNo", "缺少 data 时抛出明确错误", "不修改原始 response"],
+    taskContext: "背景：售后接口的响应已经被 JSON 解析成 Python dict。Runner 需要按点分隔路径读取嵌套字段，并在路径无效时给出可定位的错误。",
+    taskContract: [
+      "固定函数：get_by_path(data: dict, path: str)",
+      "正常输入：{\"success\": true, \"data\": {\"flowNo\": \"FLOW-710\"}}，路径为 data.flowNo",
+      "正常返回：字符串 FLOW-710",
+      "data 或 flowNo 缺失时：抛出 KeyError(\"找不到字段: data.flowNo\")",
+      "函数只读取数据，不得修改传入的 response",
+    ],
+    acceptance: ["正常响应返回 FLOW-710", "任一路径节点缺失时抛出约定的 KeyError", "不修改原始 response"],
     reward: "获得「数据感知」",
   },
   {
@@ -113,6 +121,13 @@ try:
 finally:
     client.close()`,
     task: "构造两条共用嵌套 fixture 的用例，证明直接修改会污染数据，再用 deepcopy 修复。",
+    taskContext: "背景：两条测试用例从同一份嵌套 fixture 创建请求。浅拷贝只复制外层 dict，内层 request 仍是同一个对象，因此一条用例可能改坏另一条。",
+    taskContract: [
+      "固定 fixture：{\"request\": {\"businessStatus\": 710}}",
+      "污染复现：case_a = dict(fixture)、case_b = dict(fixture)，把 case_a.request.businessStatus 改为 720 后，case_b 也读到 720",
+      "隔离修复：改用 deepcopy 分别创建 case_a、case_b；修改 A 后 B 仍为 710",
+      "清理证明：在 try 中模拟调用失败，在 finally 中执行可观察的 close/cleanup",
+    ],
     acceptance: ["能复现污染", "修复后两条用例相互隔离", "即使调用失败也会执行清理"],
     reward: "获得「状态护盾」",
   },
@@ -140,7 +155,15 @@ def resolve_callable(ref: str):
         raise TypeError(f"{ref} 不可调用")
     return handler`,
     task: "实现 resolve_callable()，成功加载一个真实 adapter，再用不存在的模块和函数各测一次失败分支。",
-    acceptance: ["可导入并调用真实函数", "模块不存在时诊断清楚", "属性不可调用时主动拒绝"],
+    taskContext: "背景：声明式 YAML 只保存类似 module:function 的字符串；Runner 必须在执行前把它解析成真正可调用的 Python 对象。",
+    taskContract: [
+      "固定函数：resolve_callable(ref: str)，ref 格式为 module:function",
+      "成功样例：math:sqrt，解析后 callable(result) 为 True，result(9) 等于 3",
+      "失败样例一：missing_package:run，应保留清楚的 ModuleNotFoundError",
+      "失败样例二：math:missing，应给出找不到属性的诊断",
+      "非函数样例：math:pi，属性存在但不可调用时主动抛出 TypeError",
+    ],
+    acceptance: ["math:sqrt 可导入并调用", "模块和函数不存在时诊断清楚", "math:pi 这类不可调用属性被主动拒绝"],
     reward: "获得「寻路符」",
   },
   {
@@ -169,6 +192,14 @@ class QueryRequest:
 class DatabaseProvider(Protocol):
     def query(self, request: QueryRequest) -> Sequence[Mapping[str, Any]]: ...`,
     task: "定义 ActionResult dataclass，包含 success、request、response、outputs 和 side_effects，再写一个构造它的 action。",
+    taskContext: "背景：框架中的 action 需要返回统一结果，Runner 才能保存请求、响应、输出和副作用证据。本关使用 dataclass 建立这个边界。",
+    taskContract: [
+      "ActionResult.success: bool，无默认值",
+      "request 与 response: dict[str, Any] | None = None",
+      "outputs: dict[str, Any] = field(default_factory=dict)",
+      "side_effects: list[str] = field(default_factory=list)",
+      "实现 adjust_stock_action(sku_id: str, adjust_amount: int) -> ActionResult，并证明两个实例不会共享 outputs/side_effects",
+    ],
     acceptance: ["核心字段有明确类型", "可选字段有合理默认值且不会共享可变对象", "action 明确返回并构造 ActionResult"],
     reward: "获得「契约印」",
   },
@@ -199,7 +230,15 @@ def api_client():
 def test_status(api_client, status):
     assert status in (710, 720)`,
     task: "为 HTTP Client 写 yield fixture，再用参数化生成 710/720 两条用例，最后运行 collect-only。",
-    acceptance: ["收集出两条独立用例", "Client 始终关闭", "collect-only 期间没有真实 HTTP 请求"],
+    taskContext: "背景：测试需要一个可关闭的 HTTP Client，但练习和收集阶段都不能访问真实网络。fixture 负责资源生命周期，parametrize 负责生成两条测试节点。",
+    taskContract: [
+      "提供 FakeHttpClient 或完全 mock 的 HttpClient；构造和方法都不得访问真实网络",
+      "@pytest.fixture 的 yield 前创建 client，yield 后调用 client.close()",
+      "@pytest.mark.parametrize(\"status\", [710, 720]) 必须收集为两条独立用例",
+      "测试执行时断言 client.closed is False，并在 teardown 后证明 closed is True",
+      "pytest --collect-only 只导入并收集测试，不执行普通 fixture 的 setup、yield 或 teardown",
+    ],
+    acceptance: ["collect-only 收集出两条独立用例", "正常或失败执行后 Client 始终关闭", "收集和测试均无真实 HTTP 请求"],
     reward: "获得「生命周期钟」",
   },
   {
@@ -229,7 +268,15 @@ class FlowEntry(BaseModel):
             raise ValueError("必须声明 action 或 request")
         return self`,
     task: "用 Pydantic 定义 FlowEntry，禁止同时缺少 action 和 request，并为错误 YAML 写三个校验测试。",
-    acceptance: ["正常 action 能通过", "正常 request 能通过", "空步骤在执行前就失败"],
+    taskContext: "背景：YAML 已经由 safe_load 变成 dict，但字段类型和字段间规则尚未验证。Pydantic v2 在 Runner 执行前把不可信 dict 转成可信 FlowEntry。",
+    taskContract: [
+      "FlowEntry 继承 pydantic.BaseModel",
+      "字段：action: str | None = None、request: dict | None = None、save_as: str | None = None",
+      "使用 @model_validator(mode=\"after\")：action 和 request 至少有一个非空",
+      "分别测试仅 action、仅 request 两个合法对象",
+      "FlowEntry() 必须抛出 ValidationError，错误文本匹配 必须声明 action 或 request",
+    ],
+    acceptance: ["正常 action 能通过", "正常 request 能通过", "空步骤在执行前以约定信息失败"],
     reward: "获得「门禁石」",
   },
   {
@@ -259,7 +306,15 @@ def call_handler(handler, entry, runtime):
         kwargs["runtime"] = runtime
     return handler(**kwargs)`,
     task: "实现一个最小 Runner：执行两个 action，用 save_as 存结果，第二步消费第一步输出。",
-    acceptance: ["未绑定 action 立即失败", "save_as 结果可被后续步骤读取", "两次 run 的 context 不串数据"],
+    taskContext: "背景：Runner 不直接写死业务函数，而是从 adapters 注册表按 action 名找到 handler；每条用例使用自己的 context 串联步骤结果。",
+    taskContract: [
+      "固定入口：run_entry(entry, adapters, context)",
+      "adapters 至少绑定 fixture.resolve -> resolve_fixture 与 request.build -> build_request",
+      "第一步 save_as=resolved_fixture，返回 {\"skuId\": \"SKU-001\", \"available\": 100}",
+      "第二步从 context.resolved_fixture 构造 {\"skuId\": \"SKU-001\", \"adjustAmount\": -10}，并 save_as=request",
+      "未知 action 抛出包含 action 名的 KeyError；两次 run 使用两个独立 context",
+    ],
+    acceptance: ["未绑定 action 立即失败", "第二步能读取第一步的 save_as 结果", "两次 run 的 context 不串数据"],
     reward: "获得「调度令」",
   },
   {
@@ -321,8 +376,16 @@ class DatabaseProvider(Protocol):
 def resolve_after_sale_fixture(database, constraints):
     rows = database.query(build_inventory_query(constraints))
     return select_safe_inventory(rows)`,
-    task: "将一个混合了 HTTP、数据库、差值断言和清理的 100 行 adapter，拆分为 Provider、页面共享 Action 和需求特有逻辑。",
-    acceptance: ["Provider 不知道售后业务规则", "resolve 仍留在场景层", "三层可分别单元测试"],
+    task: "把库存查询与售后选数规则拆成 Provider、页面共享 Action 和需求特有逻辑，并写测试证明依赖方向。",
+    taskContext: "背景：原流程既查询数据库，又生成库存快照，还决定哪条库存满足售后规则。为了让不同需求复用基础能力，需要把访问方式、共享动作和需求规则分层。",
+    taskContract: [
+      "Provider：query_rows(connection, sql, params)，只负责执行查询并返回 rows，不知道售后规则",
+      "页面共享 Action：capture_inventory_snapshot(provider, sku_id)，只组织库存快照",
+      "需求逻辑：select_legal_after_sale_sku(rows, constraints)，筛选 available >= minimum_available 且 locked is False",
+      "依赖方向固定为 Requirement -> Shared Action -> Provider，底层不得反向导入需求层",
+      "分别为三层写最小单元测试，并用 fake provider 隔离数据库",
+    ],
+    acceptance: ["Provider 不知道售后业务规则", "筛选规则留在需求层且依赖方向正确", "三层可分别单元测试"],
     reward: "获得「分层剑」",
   },
   {
@@ -357,7 +420,15 @@ def resolve_after_sale_fixture(database, constraints):
     always:
       - action: fixture.restore`,
     task: "选择一个实际需求，实现从 requirement_cases.yaml 到 MockTransport 全链路，并输出标准化 evidence JSON。",
-    acceptance: ["YAML 静态校验通过", "adapter 可导入且 collect-only 通过", "Mock 完整跑通 setup→assertions→teardown", "失败用例也留存请求、响应和主异常"],
+    taskContext: "背景：Boss 战把前九关组合成一条可审计的售后链路。提交物同时包含 YAML 声明、Python adapters/tests 和 evidence JSON；网页编辑器用于集中提交这些文本，不会直接运行 YAML。",
+    taskContract: [
+      "固定场景 ID：boss_01_after_sale；YAML 文件名 requirement_cases.yaml",
+      "common_flow 必须包含 setup、steps、assertions、teardown.always，action 名都能在 adapters.py 中解析",
+      "tests/test_boss_mock.py 使用 MockTransport 跑通成功分支和至少一个失败分支，不访问真实网络",
+      "collect-only 必须能导入 adapters 并收集用例；静态校验在执行前拒绝缺字段和未绑定 action",
+      "evidence JSON 至少包含 case_id、success、request、response、outputs、side_effects、error、teardown；失败时保留主异常且仍记录清理结果",
+    ],
+    acceptance: ["YAML 静态校验通过", "adapter 可导入且 collect-only 通过", "Mock 完整跑通 setup→assertions→teardown.always", "成功与失败 evidence 均包含约定字段"],
     reward: "获得「框架判断力」，正式出师",
   },
 ];

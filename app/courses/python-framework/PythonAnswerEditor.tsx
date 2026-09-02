@@ -52,6 +52,53 @@ const completionOptions: Completion[] = [
   { label: "try", type: "keyword", apply: "try:\n    pass\nexcept Exception as error:\n    raise", detail: "异常处理模板" },
 ];
 
+const levelCompletionOptions: Readonly<Record<number, Completion[]>> = {
+  1: [
+    { label: "get_by_path", type: "function", apply: "get_by_path(data, \"data.flowNo\")", detail: "本关固定函数" },
+    { label: "path.split", type: "method", apply: "path.split(\".\")", detail: "把点路径逐段拆开" },
+  ],
+  2: [
+    { label: "deepcopy", type: "function", apply: "deepcopy(fixture)", detail: "递归复制嵌套可变对象" },
+    { label: "try-finally", type: "keyword", apply: "try:\n    pass\nfinally:\n    cleanup()", detail: "无论成功失败都清理" },
+  ],
+  3: [
+    { label: "import_module", type: "function", apply: "import_module(module_name)", detail: "按字符串导入模块" },
+    { label: "resolve_callable", type: "function", apply: "resolve_callable(\"math:sqrt\")", detail: "本关固定函数" },
+  ],
+  4: [
+    { label: "@dataclass", type: "keyword", apply: "@dataclass\nclass ActionResult:\n    success: bool", detail: "数据类模板" },
+    { label: "field", type: "function", apply: "field(default_factory=dict)", detail: "为每个实例创建独立默认值" },
+    { label: "Protocol", type: "class", detail: "结构化接口协议" },
+    { label: "Any", type: "class", detail: "任意类型标注" },
+  ],
+  5: [
+    { label: "@pytest.fixture", type: "keyword", apply: "@pytest.fixture\ndef api_client():\n    client = FakeHttpClient()\n    yield client\n    client.close()", detail: "yield fixture 模板" },
+    { label: "@pytest.mark.parametrize", type: "keyword", apply: "@pytest.mark.parametrize(\"status\", [710, 720])", detail: "生成两条测试节点" },
+  ],
+  6: [
+    { label: "BaseModel", type: "class", detail: "Pydantic v2 数据模型" },
+    { label: "@model_validator", type: "keyword", apply: "@model_validator(mode=\"after\")", detail: "字段间规则校验" },
+    { label: "ValidationError", type: "class", detail: "模型校验失败异常" },
+  ],
+  7: [
+    { label: "signature", type: "function", apply: "signature(handler)", detail: "读取 callable 参数签名" },
+    { label: "run_entry", type: "function", apply: "run_entry(entry, adapters, context)", detail: "本关固定 Runner 入口" },
+  ],
+  8: [
+    { label: "MockTransport", type: "class", apply: "httpx.MockTransport(handler)", detail: "把请求交给本地 handler" },
+    { label: "json.loads", type: "function", apply: "json.loads(request.content)", detail: "解析 HTTPX 请求体" },
+  ],
+  9: [
+    { label: "query_rows", type: "function", apply: "query_rows(connection, sql, params)", detail: "Provider 层入口" },
+    { label: "capture_inventory_snapshot", type: "function", apply: "capture_inventory_snapshot(provider, sku_id)", detail: "共享 Action 入口" },
+    { label: "select_legal_after_sale_sku", type: "function", apply: "select_legal_after_sale_sku(rows, constraints)", detail: "需求层筛选规则" },
+  ],
+  10: [
+    { label: "common_flow", type: "property", apply: "common_flow:\n  setup: []\n  steps: []\n  assertions: []\n  teardown:\n    always: []", detail: "Boss 战 YAML 骨架" },
+    { label: "evidence", type: "variable", apply: "{\"case_id\": \"boss_01_after_sale\", \"success\": true, \"request\": {}, \"response\": {}, \"outputs\": {}, \"side_effects\": [], \"error\": null, \"teardown\": []}", detail: "标准 evidence JSON 字段" },
+  ],
+};
+
 const memberCompletionOptions: Record<string, Completion[]> = {
   request: [
     { label: "method", type: "property", detail: "str · HTTP 请求方法，例如 POST" },
@@ -92,6 +139,30 @@ const memberCompletionOptions: Record<string, Completion[]> = {
   json: [
     { label: "loads()", type: "method", apply: "loads()", detail: "把 str/bytes 解析成 Python 对象" },
     { label: "dumps()", type: "method", apply: "dumps()", detail: "把 Python 对象编码成 JSON 字符串" },
+  ],
+  pytest: [
+    { label: "fixture", type: "function", detail: "声明 fixture" },
+    { label: "mark", type: "property", detail: "pytest marker 命名空间" },
+    { label: "raises()", type: "function", apply: "raises()", detail: "断言代码块抛出异常" },
+    { label: "param", type: "function", detail: "参数化用例参数" },
+  ],
+  "pytest.mark": [
+    { label: "parametrize()", type: "method", apply: "parametrize()", detail: "按参数集合生成测试节点" },
+  ],
+  dataclasses: [
+    { label: "dataclass", type: "function", detail: "生成数据类能力" },
+    { label: "field()", type: "function", apply: "field(default_factory=dict)", detail: "配置字段与默认工厂" },
+  ],
+  copy: [
+    { label: "deepcopy()", type: "function", apply: "deepcopy()", detail: "递归复制嵌套对象" },
+  ],
+  pydantic: [
+    { label: "BaseModel", type: "class", detail: "Pydantic 数据模型" },
+    { label: "model_validator", type: "function", detail: "模型级字段间校验" },
+    { label: "ValidationError", type: "class", detail: "模型校验失败" },
+  ],
+  inspect: [
+    { label: "signature()", type: "function", apply: "signature()", detail: "读取函数参数签名" },
   ],
 };
 
@@ -162,9 +233,10 @@ function closestDeclaredName(name: string, declared: Set<string>) {
   return closest;
 }
 
-function collectPythonDiagnostics(state: EditorState): Diagnostic[] {
+function collectPythonDiagnostics(state: EditorState, levelId: number): Diagnostic[] {
   const source = state.doc.toString();
   if (!source.trim()) return [];
+  if (levelId === 10) return [];
   const diagnostics: Diagnostic[] = [];
   const seenRanges = new Set<string>();
 
@@ -225,6 +297,11 @@ function collectPythonDiagnostics(state: EditorState): Diagnostic[] {
   const importChecks = [
     { module: "httpx", usage: /\bhttpx\./, imported: /^\s*import\s+httpx(?:\s|$)/m },
     { module: "json", usage: /\bjson\./, imported: /^\s*import\s+json(?:\s|$)/m },
+    { module: "pytest", usage: /\bpytest\./, imported: /^\s*import\s+pytest(?:\s|$)/m },
+    { module: "dataclasses", usage: /\bdataclasses\./, imported: /^\s*import\s+dataclasses(?:\s|$)/m },
+    { module: "copy", usage: /\bcopy\./, imported: /^\s*import\s+copy(?:\s|$)/m },
+    { module: "pydantic", usage: /\bpydantic\./, imported: /^\s*import\s+pydantic(?:\s|$)/m },
+    { module: "inspect", usage: /\binspect\./, imported: /^\s*import\s+inspect(?:\s|$)/m },
   ];
   for (const check of importChecks) {
     const match = check.usage.exec(source);
@@ -237,24 +314,47 @@ function collectPythonDiagnostics(state: EditorState): Diagnostic[] {
       message: `代码使用了 ${check.module}，但还没有写 import ${check.module}。编辑器补全不会自动导入第三方库。`,
     });
   }
+  const symbolImportChecks = [
+    { name: "import_module", usage: /\bimport_module\s*\(/, imported: /^\s*from\s+importlib\s+import\s+[^\n]*\bimport_module\b/m, hint: "from importlib import import_module" },
+    { name: "deepcopy", usage: /\bdeepcopy\s*\(/, imported: /^\s*from\s+copy\s+import\s+[^\n]*\bdeepcopy\b/m, hint: "from copy import deepcopy" },
+    { name: "dataclass", usage: /@dataclass\b/, imported: /^\s*from\s+dataclasses\s+import\s+[^\n]*\bdataclass\b/m, hint: "from dataclasses import dataclass" },
+    { name: "field", usage: /\bfield\s*\(/, imported: /^\s*from\s+dataclasses\s+import\s+[^\n]*\bfield\b/m, hint: "from dataclasses import field" },
+    { name: "BaseModel", usage: /\bBaseModel\b/, imported: /^\s*from\s+pydantic\s+import\s+[^\n]*\bBaseModel\b/m, hint: "from pydantic import BaseModel" },
+    { name: "model_validator", usage: /@model_validator\b/, imported: /^\s*from\s+pydantic\s+import\s+[^\n]*\bmodel_validator\b/m, hint: "from pydantic import model_validator" },
+    { name: "ValidationError", usage: /\bValidationError\b/, imported: /^\s*from\s+pydantic\s+import\s+[^\n]*\bValidationError\b/m, hint: "from pydantic import ValidationError" },
+    { name: "signature", usage: /\bsignature\s*\(/, imported: /^\s*from\s+inspect\s+import\s+[^\n]*\bsignature\b/m, hint: "from inspect import signature" },
+  ];
+  for (const check of symbolImportChecks) {
+    const match = check.usage.exec(source);
+    if (!match || check.imported.test(source)) continue;
+    diagnostics.push({
+      from: match.index,
+      to: match.index + check.name.length,
+      severity: "error",
+      source: "导入检查",
+      message: `补全只展示名称，不会自动导入。请先写 ${check.hint}。`,
+    });
+  }
   return diagnostics;
 }
 
-function pythonCompletions(context: CompletionContext) {
-  const member = context.matchBefore(/(?:request\.url|request|response|httpx|client|json)\.(?:[A-Za-z_]\w*)?/);
-  if (member) {
-    const separator = member.text.lastIndexOf(".");
-    const receiver = member.text.slice(0, separator);
-    const options = memberCompletionOptions[receiver];
-    if (options) return { from: member.from + separator + 1, options };
-  }
-  const word = context.matchBefore(/[A-Za-z_]\w*/);
-  if (!word || (word.from === word.to && !context.explicit)) return null;
-  const declared = collectDeclaredNames(context.state.doc.toString());
-  const dynamicOptions = Array.from(declared)
-    .filter((label) => !pythonBuiltins.has(label) && !courseProvidedNames.has(label))
-    .map((label) => ({ label, type: "variable" }));
-  return { from: word.from, options: [...dynamicOptions, ...completionOptions] };
+function courseCompletions(levelId: number) {
+  return (context: CompletionContext) => {
+    const member = context.matchBefore(/(?:request\.url|pytest\.mark|request|response|httpx|client|json|pytest|dataclasses|copy|pydantic|inspect)\.(?:[A-Za-z_]\w*)?/);
+    if (member) {
+      const separator = member.text.lastIndexOf(".");
+      const receiver = member.text.slice(0, separator);
+      const options = memberCompletionOptions[receiver];
+      if (options) return { from: member.from + separator + 1, options };
+    }
+    const word = context.matchBefore(/[A-Za-z_]\w*/);
+    if (!word || (word.from === word.to && !context.explicit)) return null;
+    const declared = collectDeclaredNames(context.state.doc.toString());
+    const dynamicOptions = Array.from(declared)
+      .filter((label) => !pythonBuiltins.has(label) && !courseProvidedNames.has(label))
+      .map((label) => ({ label, type: "variable" }));
+    return { from: word.from, options: [...dynamicOptions, ...(levelCompletionOptions[levelId] ?? []), ...completionOptions] };
+  };
 }
 
 export default function PythonAnswerEditor({ levelId, value, starter, onChange }: PythonAnswerEditorProps) {
@@ -272,7 +372,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
     if (!hostRef.current) return;
     let mounted = true;
     const inspection = linter((view) => {
-      const diagnostics = collectPythonDiagnostics(view.state);
+      const diagnostics = collectPythonDiagnostics(view.state, levelId);
       const nextProblems = diagnostics.slice(0, 6).map((diagnostic) => ({
         line: view.state.doc.lineAt(diagnostic.from).number,
         message: diagnostic.message,
@@ -287,11 +387,11 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
       doc: valueRef.current,
       extensions: [
         basicSetup,
-        python(),
+        levelId === 10 ? [] : python(),
         oneDark,
         indentUnit.of("    "),
         keymap.of([indentWithTab]),
-        autocompletion({ override: [pythonCompletions], activateOnTyping: true }),
+        autocompletion({ override: [courseCompletions(levelId)], activateOnTyping: true }),
         inspection,
         lintGutter(),
         placeholder(starter),
@@ -357,7 +457,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
         <div className="codemirror-host" ref={hostRef} />
         <footer className="code-editor-statusbar">
           <span>Ln {cursor.line}, Col {cursor.column}</span>
-          <span>Spaces: 4</span><span>UTF-8</span><span>Python</span>
+          <span>Spaces: 4</span><span>UTF-8</span><span>{levelId === 10 ? "Python / YAML / JSON" : "Python"}</span>
           <strong className={problems.length ? "has-problems" : ""}>{problems.length ? `${problems.length} 个问题` : "检查通过"}</strong>
         </footer>
       </div>
@@ -367,9 +467,9 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
           <li className={problem.severity} key={`${problem.line}-${problem.message}-${index}`}><i>{problem.severity === "error" ? "×" : "!"}</i><span><b>第 {problem.line} 行</b>{problem.message}</span></li>
         ))}</ul>}
       </section>
-      <small>{levelId === 8
-        ? "输入 request.、request.url.、response. 或 httpx. 可查看本关对象补全。补全来自课程契约，不代表 Python 已安装或导入 httpx；可执行文件仍必须写 import httpx。"
-        : "按 Ctrl/⌘ + Space 主动唤起补全；按 F8 跳到下一个问题；这里先做语法和初级名称检查，业务正确性仍由学习助教对照验收标准判定。"}</small>
+      <small>{levelId === 10
+        ? "本关允许集中提交 Python、YAML 和 evidence JSON，因此关闭 Python 专属语法诊断以避免误报；网页不会执行 YAML，仍需在项目中运行静态校验与 pytest。"
+        : `按 Ctrl/⌘ + Space 可查看第 ${levelId} 关模板和常见对象补全；补全来自课程契约，不代表依赖已经安装或导入。这里做语法和初级名称检查，业务正确性仍由助教按验收标准判定。`}</small>
     </section>
   );
 }

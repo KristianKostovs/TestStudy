@@ -315,12 +315,15 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .standalone-roadmap > li.detailed { min-height: 0; }
 .standalone-roadmap > li.detailed > div { display: flex; flex-direction: column; }
 .standalone-roadmap .level-question { min-height: 52px; color: #3f5448; font-size: 13px; }
+.standalone-roadmap .level-question b { display: block; margin-bottom: 5px; color: #a33625; font-size: 10px; letter-spacing: .08em; }
+.level-section-label { margin-top: 13px; color: #a33625; font-size: 10px; letter-spacing: .08em; }
 .level-foundations { display: flex; flex-wrap: wrap; gap: 6px; margin: 16px 0 18px; padding: 0; list-style: none; }
 .level-foundations li { padding: 5px 8px; color: #315b49; border: 1px solid #d3dfd6; background: #edf4ef; font-size: 10px; line-height: 1.35; }
 .level-deliverables { display: grid; gap: 9px; margin: auto 0 0; }
 .level-deliverables > div { display: grid; grid-template-columns: 58px 1fr; gap: 10px; padding: 10px 0 0; border-top: 1px dashed #d9cfbc; }
 .level-deliverables dt { color: #a33625; font-size: 10px; font-weight: 900; }
 .level-deliverables dd { margin: 0; color: #59665e; font-size: 11px; line-height: 1.6; }
+.level-deliverables dd ul { display: grid; gap: 4px; margin: 0; padding-left: 16px; }
 .course-gap-review { max-width: 1120px; margin: 0 auto; padding: 90px 28px 20px; }
 .course-gap-review .section-heading { margin-bottom: 34px; }
 .gap-review-head { display: flex; justify-content: space-between; gap: 24px; padding: 15px 18px; color: #f6efdc; background: var(--dark-green); }

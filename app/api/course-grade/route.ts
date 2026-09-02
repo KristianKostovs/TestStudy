@@ -91,6 +91,7 @@ function gradingPrompt(row: Row) {
     "",
     `关卡：Level ${levelId} · ${rubric.title}`,
     `任务：${rubric.task}`,
+    `固定契约：\n${rubric.taskContract.map((item, index) => `${index + 1}. ${item}`).join("\n")}`,
     `验收标准：\n${rubric.acceptance.map((item, index) => `${index + 1}. ${item}`).join("\n")}`,
     rubric.authoritativeNotes?.length
       ? `权威判定说明（优先于模型猜测）：\n${rubric.authoritativeNotes.map((item, index) => `${index + 1}. ${item}`).join("\n")}`

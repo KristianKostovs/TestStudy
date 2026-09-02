@@ -114,7 +114,14 @@ def adjust_stock_action(sku_id: str, adjust_amount: int) -> ActionResult:
 
 result = adjust_stock_action("SKU-001", -10)
 assert result.success is True
-assert result.outputs["flow_no"] == "FLOW-001"`,
+assert result.outputs["flow_no"] == "FLOW-001"
+
+first = ActionResult(success=True)
+second = ActionResult(success=True)
+first.outputs["flow_no"] = "ONLY-FIRST"
+first.side_effects.append("ONLY-FIRST")
+assert second.outputs == {}
+assert second.side_effects == []`,
   5: `import pytest
 
 
@@ -132,6 +139,7 @@ def api_client():
     client = FakeHttpClient(base_url="https://example.test")
     yield client
     client.close()
+    assert client.closed is True
 
 
 @pytest.mark.parametrize("status", [710, 720])
@@ -287,7 +295,22 @@ def select_legal_after_sale_sku(rows, constraints):
 
 # 依赖方向：Requirement -> Shared Action -> Provider
 # Provider 不应导入或调用 select_legal_after_sale_sku，
-# 因为“选哪个 SKU”是会随需求变化的业务决策。`,
+# 因为“选哪个 SKU”是会随需求变化的业务决策。
+
+
+class FakeProvider:
+    def query_inventory(self, sku_id):
+        assert sku_id == "SKU-001"
+        return [
+            {"skuId": sku_id, "available": 80, "locked": False},
+            {"skuId": sku_id, "available": 120, "locked": False},
+        ]
+
+
+rows = capture_inventory_snapshot(FakeProvider(), "SKU-001")
+selected = select_legal_after_sale_sku(rows, {"minimum_available": 100})
+assert selected["available"] == 120
+assert selected["locked"] is False`,
   10: `# requirement_cases.yaml
 name: boss_01_after_sale
 common_flow:
@@ -326,5 +349,17 @@ common_flow:
 # 3. pytest --collect-only 不访问网络；
 # 4. MockTransport 成功路径保存 flowNo；
 # 5. MockTransport 失败路径保留主异常和已完成步骤；
-# 6. 成功和失败两条路径都执行 fixture.restore。`,
+# 6. 成功和失败两条路径都执行 fixture.restore。
+
+# evidence.json（成功和失败都使用同一结构）
+{
+  "case_id": "boss_01_after_sale",
+  "success": true,
+  "request": {"skuId": "SKU-001", "adjustAmount": -10},
+  "response": {"success": true, "data": {"flowNo": "FLOW-001"}},
+  "outputs": {"flowNo": "FLOW-001"},
+  "side_effects": ["inventory adjusted"],
+  "error": null,
+  "teardown": [{"action": "fixture.restore", "success": true}]
+}`,
 };

@@ -184,6 +184,8 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   ]);
 
   assert.equal((source.match(/\n {4}answerPrerequisites:/g) ?? []).length, 10);
+  assert.equal((source.match(/\n {4}taskContext:/g) ?? []).length, 10);
+  assert.equal((source.match(/\n {4}taskContract:/g) ?? []).length, 10);
   assert.match(source, /写答案前必须会/);
   assert.match(source, /field[\s\S]*default_factory[\s\S]*可变默认值/);
   assert.match(answers, /from dataclasses import dataclass, field[\s\S]*def adjust_stock_action[\s\S]*-> ActionResult/);
@@ -195,9 +197,42 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.match(source, /请求 JSON：[\s\S]*skuId[\s\S]*adjustAmount=10[\s\S]*SYSTEM_ERROR[\s\S]*A4500/);
   assert.match(answers, /request\.method == "POST"[\s\S]*payload\["skuId"\] == "SKU-001"/);
   assert.match(editor, /request\.url[\s\S]*status_code[\s\S]*MockTransport[\s\S]*补全不会自动导入第三方库/);
+  for (const completion of ["@pytest.fixture", "@pytest.mark.parametrize", "@dataclass", "model_validator", "signature", "common_flow"]) {
+    assert.match(editor, new RegExp(completion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(editor, /levelId === 10 \? \[\] : python\(\)/);
+  assert.match(editor, /补全只展示名称，不会自动导入/);
+  assert.equal((rubric.match(/taskContract:/g) ?? []).length, 11);
   assert.match(rubric, /请求结构由题目明确给定，不得要求学习者猜测未声明字段/);
   assert.match(answers, /requirement_cases\.yaml[\s\S]*teardown:[\s\S]*always:/);
   assert.match(rubric, /action 明确返回并构造 ActionResult/);
+});
+
+test("所有学习模块都展示课题背景、固定练习契约和验收标准", async () => {
+  const [roadmaps, registry, page, chatRoute, gradeRoute] = await Promise.all([
+    readFile(new URL("../app/blueprint-roadmaps.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/[moduleId]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(registry, /缺少背景、任务、契约或验收标准/);
+  assert.match(page, /课题背景/);
+  assert.match(page, /固定契约/);
+  assert.match(page, /验收标准/);
+  assert.match(chatRoute, /rubric\.taskContract/);
+  assert.match(gradeRoute, /rubric\.taskContract/);
+  for (const topic of ["Locator 基础", "接口链字段绑定", "P50/P95/P99", "覆盖率与覆盖率误区"]) {
+    assert.match(roadmaps, new RegExp(topic));
+  }
+
+  for (const moduleId of ["ui-automation", "api-automation", "ai-testing", "performance-testing", "quality-engineering"]) {
+    const html = await (await render(`/courses/${moduleId}`)).text();
+    assert.equal((html.match(/<dt>固定契约<\/dt>/g) ?? []).length, 10, moduleId);
+    assert.equal((html.match(/<dt>验收标准<\/dt>/g) ?? []).length, 10, moduleId);
+    assert.doesNotMatch(html, /将补齐：基础解释/);
+  }
 });
 
 test("Level 5 批改遵循 collect-only 的真实生命周期而不是模型猜测", async () => {
@@ -432,14 +467,15 @@ test("成长平台入口统一沿用面试系统视觉语言", async () => {
 });
 
 test("质量工程与保障补齐白盒测试和质量门禁路线", async () => {
-  const [registry, capabilityMap] = await Promise.all([
+  const [registry, roadmaps, capabilityMap] = await Promise.all([
     readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/blueprint-roadmaps.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/capability-registry.ts", import.meta.url), "utf8"),
   ]);
 
   assert.match(registry, /id: "quality-engineering"/);
   for (const topic of ["黑盒、白盒与灰盒测试", "代码分支与白盒用例", "覆盖率与覆盖率误区", "CI/CD 质量门禁"]) {
-    assert.match(registry, new RegExp(topic));
+    assert.match(roadmaps, new RegExp(topic));
   }
   assert.match(registry, /foundation\.quality_engineering/);
   assert.match(registry, /radar\.quality_devops/);

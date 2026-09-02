@@ -59,7 +59,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
           <aside className="course-status-card">
             <span>当前建设状态</span>
             <strong>{detailedRoadmap ? "十关内容已补强" : "路线已建立"}</strong>
-            <p>{detailedRoadmap ? "每关已经明确学习问题、基础知识、动手任务和验收证据；完整交互课将按关卡逐步开放。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
+            <p>{detailedRoadmap ? "每关已经明确课题背景、基础知识、固定练习契约、验收标准和验收证据；完整交互课将按关卡逐步开放。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
           </aside>
         </div>
       </header>
@@ -110,12 +110,15 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
                   <p>将补齐：基础解释 → 最小例子 → 项目练习 → 自动验收。</p>
                 ) : (
                   <>
-                    <p className="level-question">{item.question}</p>
+                    <p className="level-question"><b>课题背景</b>{item.question}</p>
+                    <strong className="level-section-label">必备知识</strong>
                     <ul className="level-foundations">
                       {item.foundations.map((foundation) => <li key={foundation}>{foundation}</li>)}
                     </ul>
                     <dl className="level-deliverables">
                       <div><dt>动手任务</dt><dd>{item.practice}</dd></div>
+                      <div><dt>固定契约</dt><dd><ul>{item.contract.map((contract) => <li key={contract}>{contract}</li>)}</ul></dd></div>
+                      <div><dt>验收标准</dt><dd><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></dd></div>
                       <div><dt>验收证据</dt><dd>{item.evidence}</dd></div>
                     </dl>
                   </>

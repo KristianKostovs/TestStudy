@@ -1,3 +1,10 @@
+import {
+  apiAutomationRoadmap,
+  performanceTestingRoadmap,
+  qualityEngineeringRoadmap,
+  uiAutomationRoadmap,
+} from "./blueprint-roadmaps";
+
 export type SourceKind = "foundation" | "technology_radar" | "local_project";
 export type ModuleStatus = "active" | "blueprint";
 
@@ -30,9 +37,21 @@ export type LearningRoadmapDetail = {
   foundations: string[];
   practice: string;
   evidence: string;
+  contract: string[];
+  acceptance: string[];
 };
 
 export type LearningRoadmapItem = string | LearningRoadmapDetail;
+
+type LearningRoadmapDraft = Omit<LearningRoadmapDetail, "contract" | "acceptance"> & Partial<Pick<LearningRoadmapDetail, "contract" | "acceptance">>;
+
+function standardizeRoadmap(items: LearningRoadmapDraft[]): LearningRoadmapDetail[] {
+  return items.map((item) => ({
+    ...item,
+    contract: item.contract ?? [item.practice],
+    acceptance: item.acceptance ?? [item.evidence],
+  }));
+}
 
 export type LearningGapReview = {
   sourceTitle: string;
@@ -273,7 +292,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从 DOM 和 Locator，走到状态、Portal、Page Object 与稳定证据。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.pytest", "foundation.playwright", "radar.playwright_releases", "project.ui_automation"],
-    roadmap: ["浏览器、页面与 DOM", "Locator 基础", "组件作用域", "页面状态", "Portal 与弹窗", "动态表格与业务行", "Page Object 分层", "等待与 Web-First 断言", "登录与副作用控制", "可复现执行证据"],
+    roadmap: uiAutomationRoadmap,
     updateRule: "EWMS/MOM 提供真实案例；Playwright 官方基础和发布变化决定课程补充。",
   },
   {
@@ -283,7 +302,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从 HTTP 契约，走到声明式接口链、造数、清理与证据治理。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.pytest", "foundation.http", "radar.pytest_changelog", "project.api_automation"],
-    roadmap: ["HTTP 与 JSON", "Endpoint 与 DTO 契约", "Client 与 fixture", "请求封装与结果对象", "声明式 YAML", "Adapter 与反射执行", "Provider 与测试数据", "接口链字段绑定", "断言、证据与 teardown", "完整需求链路"],
+    roadmap: apiAutomationRoadmap,
     updateRule: "EWMS/MOM 和生成 Skill 提供实战；HTTP、契约和 pytest 官方知识保持通用性。",
   },
   {
@@ -293,7 +312,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从评测数据集和 grader，走到幻觉、鲁棒性、安全与 Agent 评估。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.ai_tevv", "foundation.opentelemetry", "radar.openai_evals", "radar.openai_agents", "radar.owasp_asvs", "project.agent_testing_practice"],
-    roadmap: [
+    roadmap: standardizeRoadmap([
       {
         title: "为什么智能体不能只按传统接口测",
         question: "同一输入可能得到不同表达，怎样证明它仍持续交付可信结果？",
@@ -364,7 +383,7 @@ export const learningModules: LearningModule[] = [
         practice: "完成一份智能体测试方案：能力声明、评测集、指标、门禁、trace、失败归因和回流策略。",
         evidence: "结论可复现、可追溯、能解释是否上线以及失败后如何修复和回归。",
       },
-    ],
+    ]),
     updateRule: "以 NIST、OpenAI、OWASP 与 OpenTelemetry 作为稳定知识骨架；内部实践补充企业落地方法，具体阈值只作模板，必须由业务风险、体验和基线验证。",
     gapReview: {
       sourceTitle: "《智能体测试与质量保障实践》课程差异复核",
@@ -384,7 +403,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从响应时间和吞吐量，走到负载模型、观测、瓶颈与容量结论。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.performance", "radar.locust_releases"],
-    roadmap: ["响应时间、并发与吞吐", "P50/P95/P99", "负载模型", "Locust 用户与任务", "参数化和数据隔离", "阶梯加压与稳定性", "分布式负载", "监控与链路关联", "瓶颈与容量", "完整性能报告"],
+    roadmap: performanceTestingRoadmap,
     updateRule: "以性能工程基础和官方工具变化建立课程，未来再接入真实系统案例。",
   },
   {
@@ -394,7 +413,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从测试策略与白盒测试，走到代码质量、CI/CD 门禁、发布准入与线上质量闭环。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.pytest", "foundation.quality_engineering", "radar.quality_devops", "radar.coverage_py", "radar.owasp_asvs", "project.python_framework", "project.api_automation"],
-    roadmap: ["质量、测试与质量保障", "测试策略与风险分析", "黑盒、白盒与灰盒测试", "代码分支与白盒用例", "单元测试与依赖隔离", "覆盖率与覆盖率误区", "变异测试", "静态分析与代码评审", "CI/CD 质量门禁", "完整质量保障方案"],
+    roadmap: qualityEngineeringRoadmap,
     updateRule: "ISTQB 基础与 Quality in DevOps 提供通用体系，coverage.py 和本地质量门禁资产提供工程实践。",
   },
 ];
@@ -412,4 +431,13 @@ for (const learningModule of learningModules) {
   if (moduleIds.has(learningModule.id)) throw new Error(`重复的学习模块 ID: ${learningModule.id}`);
   moduleIds.add(learningModule.id);
   sourcesForModule(learningModule);
+  if (learningModule.status === "blueprint") {
+    if (learningModule.roadmap.length !== 10) throw new Error(`模块 ${learningModule.id} 必须恰好包含十关`);
+    for (const [index, item] of learningModule.roadmap.entries()) {
+      if (typeof item === "string") throw new Error(`模块 ${learningModule.id} 第 ${index + 1} 关缺少完整课程契约`);
+      if (!item.question || !item.practice || !item.evidence || !item.contract.length || !item.acceptance.length) {
+        throw new Error(`模块 ${learningModule.id} 第 ${index + 1} 关缺少背景、任务、契约或验收标准`);
+      }
+    }
+  }
 }
