@@ -212,12 +212,19 @@ import httpx
 
 
 def handler(request: httpx.Request):
+    assert request.method == "POST"
     assert request.url.path == "/stock/adjust"
+    assert request.headers["content-type"].startswith("application/json")
     payload = json.loads(request.content)
+    assert payload["skuId"] == "SKU-001"
     amount = payload["adjustAmount"]
 
     if amount == 500:
-        return httpx.Response(500, json={"message": "server error"})
+        return httpx.Response(500, json={
+            "success": False,
+            "code": "SYSTEM_ERROR",
+            "message": "server error",
+        })
     if amount > 100:
         return httpx.Response(200, json={
             "success": False,
@@ -234,22 +241,25 @@ transport = httpx.MockTransport(handler)
 with httpx.Client(transport=transport, timeout=2.0) as client:
     success = client.post(
         "https://example.test/stock/adjust",
-        json={"adjustAmount": 10},
+        json={"skuId": "SKU-001", "adjustAmount": 10},
     )
     http_error = client.post(
         "https://example.test/stock/adjust",
-        json={"adjustAmount": 500},
+        json={"skuId": "SKU-001", "adjustAmount": 500},
     )
     business_error = client.post(
         "https://example.test/stock/adjust",
-        json={"adjustAmount": 101},
+        json={"skuId": "SKU-001", "adjustAmount": 101},
     )
 
 assert success.status_code == 200
 assert success.json()["success"] is True
+assert success.json()["data"]["flowNo"] == "FLOW-001"
 assert http_error.status_code == 500
+assert http_error.json()["code"] == "SYSTEM_ERROR"
 assert business_error.status_code == 200
-assert business_error.json()["success"] is False`,
+assert business_error.json()["success"] is False
+assert business_error.json()["code"] == "A4500"`,
   9: `# [Provider]
 def query_rows(connection, sql, params):
     """只负责连接、参数化 SQL 和返回结果；不理解售后规则。"""

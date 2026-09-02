@@ -176,11 +176,14 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
 });
 
 test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完整任务", async () => {
-  const source = await readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
-  const answers = await readFile(new URL("../app/courses/python-framework/reference-answers.ts", import.meta.url), "utf8");
-  const rubric = await readFile(new URL("../app/courses/python-framework/grading-rubrics.ts", import.meta.url), "utf8");
+  const [source, answers, rubric, editor] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/reference-answers.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/grading-rubrics.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/PythonAnswerEditor.tsx", import.meta.url), "utf8"),
+  ]);
 
-  assert.equal((source.match(/\n    answerPrerequisites:/g) ?? []).length, 10);
+  assert.equal((source.match(/\n {4}answerPrerequisites:/g) ?? []).length, 10);
   assert.match(source, /写答案前必须会/);
   assert.match(source, /field[\s\S]*default_factory[\s\S]*可变默认值/);
   assert.match(answers, /from dataclasses import dataclass, field[\s\S]*def adjust_stock_action[\s\S]*-> ActionResult/);
@@ -188,6 +191,11 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.match(answers, /class FlowEntry\(BaseModel\)[\s\S]*test_empty_entry_is_rejected/);
   assert.match(answers, /def run_entry\(entry, adapters, context\)[\s\S]*context\["resolved_fixture"\]/);
   assert.match(answers, /httpx\.MockTransport\(handler\)[\s\S]*business_error/);
+  assert.match(source, /taskContext: "背景：生产代码会用 HTTPX 调用库存调整接口/);
+  assert.match(source, /请求 JSON：[\s\S]*skuId[\s\S]*adjustAmount=10[\s\S]*SYSTEM_ERROR[\s\S]*A4500/);
+  assert.match(answers, /request\.method == "POST"[\s\S]*payload\["skuId"\] == "SKU-001"/);
+  assert.match(editor, /request\.url[\s\S]*status_code[\s\S]*MockTransport[\s\S]*补全不会自动导入第三方库/);
+  assert.match(rubric, /请求结构由题目明确给定，不得要求学习者猜测未声明字段/);
   assert.match(answers, /requirement_cases\.yaml[\s\S]*teardown:[\s\S]*always:/);
   assert.match(rubric, /action 明确返回并构造 ActionResult/);
 });
@@ -215,7 +223,7 @@ test("DeepSeek 明确索要答案时给完整正确答案并在两条批改路�
   ]);
 
   assert.equal((source.match(/referenceAnswer: referenceAnswers\[/g) ?? []).length, 10);
-  assert.equal((answers.match(/^  \d+: `/gm) ?? []).length, 10);
+  assert.equal((answers.match(/^ {2}\d+: `/gm) ?? []).length, 10);
   assert.match(rubric, /referenceAnswer: referenceAnswers\[rubric\.levelId\]/);
   assert.match(chatRoute, /response_mode=full_answer/);
   assert.match(chatRoute, /不得以助教引导为由拒绝、拖延或只给提示/);

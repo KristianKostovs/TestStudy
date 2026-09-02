@@ -30,7 +30,17 @@ const gradingRubricDefinitions: GradingRubricDefinition[] = [
   },
   { levelId: 6, title: "YAML 与 Pydantic 校验", task: "用 Pydantic 定义 FlowEntry，禁止同时缺少 action 和 request，并为错误 YAML 写三个校验测试。", acceptance: ["正常 action 能通过", "正常 request 能通过", "空步骤在执行前就失败"] },
   { levelId: 7, title: "反射与 Runner 调度", task: "实现一个最小 Runner：执行两个 action，用 save_as 存结果，第二步消费第一步输出。", acceptance: ["未绑定 action 立即失败", "save_as 结果可被后续步骤读取", "两次 run 的 context 不串数据"] },
-  { levelId: 8, title: "HTTPX 与 MockTransport", task: "用 MockTransport 模拟售后调整接口，同时覆盖业务成功、HTTP 500 和 HTTP 200 但 success=false。", acceptance: ["三种分支都有独立断言", "能检查真实请求体", "测试不依赖网络"] },
+  {
+    levelId: 8,
+    title: "HTTPX 与 MockTransport",
+    task: "按题目固定契约，用 MockTransport 模拟 POST /stock/adjust：请求体包含 skuId=SKU-001 与 adjustAmount，并覆盖 10=成功、500=HTTP 500、101=HTTP 200 但 success=false。",
+    acceptance: ["三种分支都有独立断言", "handler 检查 method、path、skuId 和 adjustAmount", "HTTP 500 断言 SYSTEM_ERROR，业务失败断言 A4500", "测试完全使用 MockTransport，不依赖网络"],
+    authoritativeNotes: [
+      "本关请求结构由题目明确给定，不得要求学习者猜测未声明字段。",
+      "handler 的 request 是 httpx.Request；request.method、request.url、request.content 和 request.headers 由 HTTPX Client 构造。",
+      "可执行答案必须 import httpx 和 json；网页编辑器的课程补全不等于 Python 已经导入或安装第三方库。",
+    ],
+  },
   { levelId: 9, title: "架构边界与副作用", task: "将一个混合了 HTTP、数据库、差值断言和清理的 100 行 adapter，拆分为 Provider、页面共享 Action 和需求特有逻辑。", acceptance: ["Provider 不知道售后业务规则", "resolve 仍留在场景层", "三层可分别单元测试"] },
   { levelId: 10, title: "Boss 战：完整声明式链路", task: "选择一个实际需求，实现从 requirement_cases.yaml 到 MockTransport 全链路，并输出标准化 evidence JSON。", acceptance: ["YAML 静态校验通过", "adapter 可导入且 collect-only 通过", "Mock 完整跑通 setup→assertions→teardown", "失败用例也留存请求、响应和主异常"] },
 ];

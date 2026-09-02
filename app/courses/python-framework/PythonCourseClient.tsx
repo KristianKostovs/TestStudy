@@ -32,6 +32,8 @@ type Level = {
   aiLens: string;
   code: string;
   task: string;
+  taskContext?: string;
+  taskContract?: string[];
   acceptance: string[];
   reward: string;
 };
@@ -283,8 +285,16 @@ def handler(request: httpx.Request):
 
 transport = httpx.MockTransport(handler)
 client = httpx.Client(transport=transport)`,
-    task: "用 MockTransport 模拟售后调整接口，同时覆盖业务成功、HTTP 500 和 HTTP 200 但 success=false。",
-    acceptance: ["三种分支都有独立断言", "能检查真实请求体", "测试不依赖网络"],
+    task: "为给定的库存调整接口编写离线契约测试：用 MockTransport 截获三次 POST 请求，并分别验证业务成功、HTTP 500、HTTP 200 但 success=false。",
+    taskContext: "背景：生产代码会用 HTTPX 调用库存调整接口。本关不要求访问真实服务，而是用本地 handler 模拟服务端。题目已经固定请求结构和三种返回规则，你只需要按契约实现与断言，不需要猜字段。",
+    taskContract: [
+      "固定地址：POST https://example.test/stock/adjust",
+      "请求 JSON：{\"skuId\": \"SKU-001\", \"adjustAmount\": 整数}",
+      "adjustAmount=10：HTTP 200，success=true，data.flowNo=FLOW-001",
+      "adjustAmount=500：HTTP 500，code=SYSTEM_ERROR",
+      "adjustAmount=101：HTTP 200，success=false，code=A4500（库存不足）",
+    ],
+    acceptance: ["三种分支都有独立断言", "handler 断言 method、path、skuId 和 adjustAmount", "测试完全使用 MockTransport，不依赖真实网络"],
     reward: "获得「虚境镜」",
   },
   {
@@ -613,28 +623,35 @@ context["processing_result"] = handler_result`,
       { term: "timeout", meaning: "请求最多等待多久，避免无限卡住。" },
     ],
     answerPrerequisites: [
-      { title: "导入 httpx 与 json", explanation: "MockTransport 来自 httpx；请求体 bytes 可用 json.loads 解析。", example: "import json\nimport httpx" },
+      { title: "导入 httpx 与 json", explanation: "要让这份 Python 文件真正运行，必须安装并 import httpx；网页编辑器的补全只是学习辅助，不会替你导入或执行第三方库。请求体 bytes 可用 json.loads 解析。", example: "import json\nimport httpx" },
+      { title: "Request 的结构由 HTTPX 定义", explanation: "handler 收到的不是题目随意假设的 dict，而是 Client 创建的 httpx.Request；常用属性包括 method、url、content 和 headers。", example: "def handler(request: httpx.Request):\n    assert request.method == \"POST\"" },
       { title: "MockTransport 回调", explanation: "Client 发请求时不会联网，而是把 request 交给 handler。", example: "transport = httpx.MockTransport(handler)" },
       { title: "三条独立分支", explanation: "业务成功、HTTP 500、HTTP 200 但业务失败必须分别构造和断言。", example: "if amount == 500: return httpx.Response(500)" },
       { title: "请求也要断言", explanation: "测试不仅检查响应，还要确认路径和请求体确实正确。", example: "assert request.url.path == \"/stock/adjust\"" },
     ],
-    exampleTitle: "HTTP 200 也可能是业务失败",
-    example: `HTTP 200
-{
-  "success": false,
-  "code": "A4500",
-  "msg": "库存不足"
-}`,
-    walkthrough: ["200 说明服务器正常返回了 HTTP 响应。", "success=false 说明库存调整没有办成。", "异常用例应保留这份响应用于断言，不能提前吞掉。"],
+    exampleTitle: "先看清固定的请求与三种响应契约",
+    example: `POST https://example.test/stock/adjust
+
+请求 JSON：
+{"skuId": "SKU-001", "adjustAmount": 10}
+
+分支规则：
+10  -> HTTP 200, {"success": true, "data": {"flowNo": "FLOW-001"}}
+500 -> HTTP 500, {"success": false, "code": "SYSTEM_ERROR"}
+101 -> HTTP 200, {"success": false, "code": "A4500", "msg": "库存不足"}`,
+    walkthrough: ["Client 根据 post() 的 URL 和 json 参数创建 httpx.Request。", "MockTransport 不访问网络，而是把这个 Request 交给 handler。", "handler 用 method、url.path 和 content 检查真实请求，再按 adjustAmount 返回题目规定的响应。", "HTTP 200 只说明服务器返回成功；仍要检查 JSON 中的 success。"],
     starter: `import json
 import httpx
 
 
 def handler(request: httpx.Request):
-    # 根据路径和请求体返回不同响应`,
+    # request 是 HTTPX 创建的对象，可读取：
+    # request.method / request.url.path / request.content / request.headers
+    payload = json.loads(request.content)
+    # 按题目给定的 10 / 500 / 101 三种规则返回 httpx.Response`,
     verifyCommand: "pytest -q test_http_modes.py",
     expected: "3 passed（成功、HTTP 500、HTTP 200 + success=false）",
-    hint: "在 handler 里用 json.loads(request.content) 读请求体，根据 adjustAmount 返回不同结果。",
+    hint: "可先输入 request. 查看本关提供的 HTTPX Request 属性补全；运行代码仍需要 import httpx。然后用 json.loads(request.content) 读取题目给定的请求体。",
     referenceAnswer: referenceAnswers[8],
     quiz: { question: "HTTP 200 且 response.success=false 代表什么？", options: ["传输层和业务都成功", "传输层成功，业务失败", "网络超时", "Python 语法错误"], correct: 1, explanation: "HTTP status 和业务 success 是两层不同的判定。" },
   },
@@ -747,6 +764,8 @@ const knowledgeByLevel: Record<number, KnowledgePoint[]> = {
   ],
   8: [
     { term: "回调 handler", plain: "回调是先交给另一个对象，等事件发生时再被调用的函数。", role: "MockTransport 收到请求后调用 handler，由它返回模拟响应。", example: `httpx.MockTransport(handler)` },
+    { term: "httpx.Request", plain: "HTTPX 根据 client.post() 的参数构造出的请求对象，不是普通 dict。", role: "handler 通过它读取 HTTP 方法、地址、请求头和请求体。", example: `def handler(request: httpx.Request): ...` },
+    { term: "request.method / content / headers", plain: "method 是请求方法；content 是 bytes 请求体；headers 是请求头集合。", role: "这些属性用于证明客户端真的发出了题目规定的请求。", example: `assert request.method == "POST"` },
     { term: "request.url.path", plain: "点号逐层读取对象属性，最终得到 URL 的路径部分。", role: "确认代码请求的是正确接口，而不是只检查响应。", example: `assert request.url.path == "/app/stock/..."` },
     { term: "json={...}", plain: "这里把 Python dict 作为 JSON 响应体交给 HTTPX。", role: "模拟真实后端返回 success 和 flowNo。", example: `httpx.Response(200, json={"success": True})` },
     { term: "Client / Transport", plain: "Client 负责发请求，Transport 决定请求真正送到哪里。", role: "换成 MockTransport 后，测试不会访问外部系统。", example: `httpx.Client(transport=transport)` },
@@ -798,6 +817,8 @@ const inlineTokensByTerm: Record<string, string[]> = {
   "kwargs 字典": ["kwargs"],
   "**kwargs": ["**kwargs"],
   "回调 handler": ["handler"],
+  "httpx.Request": ["httpx.Request"],
+  "request.method / content / headers": ["request.method", "request.content", "request.headers"],
   "request.url.path": ["request.url.path"],
   "json={...}": ["json="],
   "Client / Transport": ["Client", "Transport"],
@@ -1654,6 +1675,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                         {stage === 4 && <section className="stage-panel"><div className="task task-with-input">
                           <div className="task-title"><span>通关任务</span><b>{level.reward}</b></div>
                           <p>{level.task}</p>
+                          {level.taskContext && <aside className="task-contract" aria-label="题目背景与固定契约">
+                            <b>题目背景与固定契约</b>
+                            <p>{level.taskContext}</p>
+                            {level.taskContract && <ul>{level.taskContract.map((item) => <li key={item}>{item}</li>)}</ul>}
+                          </aside>}
                           {hostedTutor ? <aside className="model-setup-notice local-codex-notice" role="status">
                             <b><i /> DeepSeek 在线助教已启用</b>
                             <p>无需连接本机服务。可以直接即时批改、追问“为什么错”或只要一点提示；答案、结果和对话会随账号同步。</p>

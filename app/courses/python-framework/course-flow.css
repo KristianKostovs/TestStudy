@@ -85,6 +85,12 @@
 .stage-continue:hover { background: var(--green); }
 
 .task-with-input { margin-top: 0; }
+.task-contract { margin: 0 0 20px; padding: 16px 18px; border: 1px solid #c9ddd4; border-left: 4px solid #25765f; border-radius: 10px; background: #f0f7f4; }
+.task-contract > b { color: #1f5f4c; font-size: 12px; }
+.task-contract > p { margin: 8px 0 11px; color: #53645d; font-size: 12px; line-height: 1.7; }
+.task-contract ul { display: grid; gap: 6px; margin: 0; padding: 0; list-style: none; }
+.task-contract li { position: relative; padding-left: 18px; color: #2e443b; font: 11px/1.6 var(--font-geist-mono), ui-monospace, monospace; }
+.task-contract li::before { content: "→"; position: absolute; left: 0; color: #25765f; font-weight: 900; }
 .compact-task-help { margin-top: 20px; }
 .task-answer-editor { display: block; margin-top: 20px; }
 .editor-heading { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; color: #245f4d; font-weight: 720; }

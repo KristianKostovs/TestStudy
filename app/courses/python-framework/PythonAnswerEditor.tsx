@@ -52,6 +52,49 @@ const completionOptions: Completion[] = [
   { label: "try", type: "keyword", apply: "try:\n    pass\nexcept Exception as error:\n    raise", detail: "异常处理模板" },
 ];
 
+const memberCompletionOptions: Record<string, Completion[]> = {
+  request: [
+    { label: "method", type: "property", detail: "str · HTTP 请求方法，例如 POST" },
+    { label: "url", type: "property", detail: "httpx.URL · 完整请求地址" },
+    { label: "content", type: "property", detail: "bytes · 原始请求体，可交给 json.loads" },
+    { label: "headers", type: "property", detail: "Headers · 请求头集合" },
+    { label: "read()", type: "method", apply: "read()", detail: "读取请求体 bytes" },
+  ],
+  "request.url": [
+    { label: "path", type: "property", detail: "str · URL 路径，例如 /stock/adjust" },
+    { label: "scheme", type: "property", detail: "str · http 或 https" },
+    { label: "host", type: "property", detail: "str · 主机名" },
+    { label: "port", type: "property", detail: "int | None · 端口" },
+    { label: "query", type: "property", detail: "bytes · 查询字符串" },
+  ],
+  response: [
+    { label: "status_code", type: "property", detail: "int · HTTP 状态码" },
+    { label: "json()", type: "method", apply: "json()", detail: "把 JSON 响应体解析成 Python 对象" },
+    { label: "headers", type: "property", detail: "Headers · 响应头集合" },
+    { label: "text", type: "property", detail: "str · 文本响应体" },
+    { label: "content", type: "property", detail: "bytes · 原始响应体" },
+    { label: "raise_for_status()", type: "method", apply: "raise_for_status()", detail: "为 4xx/5xx 抛出 HTTPStatusError" },
+  ],
+  httpx: [
+    { label: "Request", type: "class", detail: "HTTPX 请求对象类型" },
+    { label: "Response", type: "class", detail: "构造模拟响应" },
+    { label: "Client", type: "class", detail: "同步 HTTP 客户端" },
+    { label: "MockTransport", type: "class", detail: "把请求交给本地 handler" },
+    { label: "Timeout", type: "class", detail: "HTTPX 超时配置" },
+  ],
+  client: [
+    { label: "post()", type: "method", apply: "post()", detail: "发送 POST 请求" },
+    { label: "get()", type: "method", apply: "get()", detail: "发送 GET 请求" },
+    { label: "put()", type: "method", apply: "put()", detail: "发送 PUT 请求" },
+    { label: "delete()", type: "method", apply: "delete()", detail: "发送 DELETE 请求" },
+    { label: "request()", type: "method", apply: "request()", detail: "按指定 method 发送请求" },
+  ],
+  json: [
+    { label: "loads()", type: "method", apply: "loads()", detail: "把 str/bytes 解析成 Python 对象" },
+    { label: "dumps()", type: "method", apply: "dumps()", detail: "把 Python 对象编码成 JSON 字符串" },
+  ],
+};
+
 function stripStringsAndComments(line: string) {
   return line
     .replace(/(?:[rubf]{0,2})(["'])(?:\\.|(?!\1).)*\1/gi, (match) => " ".repeat(match.length))
@@ -178,10 +221,33 @@ function collectPythonDiagnostics(state: EditorState): Diagnostic[] {
       });
     }
   }
+
+  const importChecks = [
+    { module: "httpx", usage: /\bhttpx\./, imported: /^\s*import\s+httpx(?:\s|$)/m },
+    { module: "json", usage: /\bjson\./, imported: /^\s*import\s+json(?:\s|$)/m },
+  ];
+  for (const check of importChecks) {
+    const match = check.usage.exec(source);
+    if (!match || check.imported.test(source)) continue;
+    diagnostics.push({
+      from: match.index,
+      to: match.index + check.module.length,
+      severity: "error",
+      source: "导入检查",
+      message: `代码使用了 ${check.module}，但还没有写 import ${check.module}。编辑器补全不会自动导入第三方库。`,
+    });
+  }
   return diagnostics;
 }
 
 function pythonCompletions(context: CompletionContext) {
+  const member = context.matchBefore(/(?:request\.url|request|response|httpx|client|json)\.(?:[A-Za-z_]\w*)?/);
+  if (member) {
+    const separator = member.text.lastIndexOf(".");
+    const receiver = member.text.slice(0, separator);
+    const options = memberCompletionOptions[receiver];
+    if (options) return { from: member.from + separator + 1, options };
+  }
   const word = context.matchBefore(/[A-Za-z_]\w*/);
   if (!word || (word.from === word.to && !context.explicit)) return null;
   const declared = collectDeclaredNames(context.state.doc.toString());
@@ -301,7 +367,9 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
           <li className={problem.severity} key={`${problem.line}-${problem.message}-${index}`}><i>{problem.severity === "error" ? "×" : "!"}</i><span><b>第 {problem.line} 行</b>{problem.message}</span></li>
         ))}</ul>}
       </section>
-      <small>按 Ctrl/⌘ + Space 主动唤起补全；按 F8 跳到下一个问题；这里先做语法和初级名称检查，业务正确性仍由 Codex 对照验收标准判定。</small>
+      <small>{levelId === 8
+        ? "输入 request.、request.url.、response. 或 httpx. 可查看本关对象补全。补全来自课程契约，不代表 Python 已安装或导入 httpx；可执行文件仍必须写 import httpx。"
+        : "按 Ctrl/⌘ + Space 主动唤起补全；按 F8 跳到下一个问题；这里先做语法和初级名称检查，业务正确性仍由学习助教对照验收标准判定。"}</small>
     </section>
   );
 }
