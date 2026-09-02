@@ -2,7 +2,9 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./course-flow.css";
+import CourseContentEditButton from "./CourseContentEditButton";
 import CourseNotePanel from "./CourseNotePanel";
+import type { CourseContentOverride, CourseContentValue } from "../../course-content";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
 import { referenceAnswers } from "./reference-answers";
 import {
@@ -584,7 +586,7 @@ class FlowEntry(BaseModel):
     ],
     answerPrerequisites: [
       { title: "函数也是值", explanation: "adapter 字典可以把 action 名称映射到真正的 handler 函数。", example: "adapters = {\"fixture.resolve\": resolve_fixture}" },
-      { title: "字典查找与明确错误", explanation: "未知 action 应立即报错，不能悄悄跳过。", example: "if action_name not in adapters: raise KeyError(...)" },
+      { title: "多级查找与明确错误", explanation: "先查显式注册表；若执行器允许插件或受限反射，再继续解析。所有允许的查找机制都失败后必须明确报错，不能悄悄跳过。", example: "handler = adapters.get(action_name) or resolve_allowed_ref(action_name)\nif handler is None: raise KeyError(...)" },
       { title: "save_as", explanation: "save_as 是结果写入 context 时使用的键名。", example: "context[entry[\"save_as\"]] = result" },
       { title: "后一步读取前一步", explanation: "第二个 handler 从同一条用例的 context 读取第一个结果。", example: "previous = context[\"resolved_fixture\"]" },
     ],
@@ -935,10 +937,62 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [ready, setReady] = useState(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>("loading");
   const [cloudSyncMessage, setCloudSyncMessage] = useState("正在读取账号学习记录…");
+  const [courseContentOverrides, setCourseContentOverrides] = useState<Record<string, CourseContentOverride>>({});
+  const [canEditCourseContent, setCanEditCourseContent] = useState(false);
   const snapshotRef = useRef<LearningSyncState>(emptyLearningState());
   const taskDraftsRef = useRef<Record<number, string>>({});
   const syncRevisionRef = useRef(0);
   const syncTimerRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!chapterId || window.location.origin === localLearningOrigin) {
+      setCanEditCourseContent(false);
+      return;
+    }
+    let active = true;
+    fetch(`/api/course-content?courseId=${encodeURIComponent(courseId)}`, { cache: "no-store" })
+      .then(async (response) => {
+        const result = await response.json() as { overrides?: CourseContentOverride[]; canEdit?: boolean; error?: string };
+        if (!response.ok) throw new Error(result.error ?? "课程内容读取失败");
+        return result;
+      })
+      .then((result) => {
+        if (!active) return;
+        setCourseContentOverrides(Object.fromEntries((result.overrides ?? []).map((item) => [item.contentKey, item])));
+        setCanEditCourseContent(result.canEdit === true);
+      })
+      .catch(() => {
+        if (active) setCanEditCourseContent(false);
+      });
+    return () => { active = false; };
+  }, [chapterId]);
+
+  function editableContent<T extends CourseContentValue>(contentKey: string, source: T): T {
+    return { ...source, ...(courseContentOverrides[contentKey]?.content ?? {}) } as T;
+  }
+
+  function contentEditor(
+    levelId: number,
+    section: string,
+    contentKey: string,
+    fields: Array<{ name: string; label: string; value: string; multiline?: boolean; code?: boolean }>,
+  ) {
+    return <CourseContentEditButton
+      courseId={courseId}
+      levelId={levelId}
+      section={section}
+      contentKey={contentKey}
+      fields={fields}
+      overridden={Boolean(courseContentOverrides[contentKey])}
+      canEdit={canEditCourseContent}
+      onSaved={(record) => setCourseContentOverrides((current) => ({ ...current, [record.contentKey]: record }))}
+      onReset={(key) => setCourseContentOverrides((current) => {
+        const next = { ...current };
+        delete next[key];
+        return next;
+      })}
+    />;
+  }
 
   const writeLocalSnapshot = useCallback((snapshot: LearningSyncState) => {
     window.localStorage.setItem(storageKey, JSON.stringify(snapshot.progress));
@@ -1470,6 +1524,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
           <div className="nav-actions">
             <a className="text-button course-back" href={currentChapter ? "/courses/python-framework" : "/learn"}>{currentChapter ? "← 返回章节选择" : "← 返回学习中心"}</a>
             <a className="text-button" href="/grading-queue">在线批改记录</a>
+            {canEditCourseContent && <span className="course-editor-permission"><i />课程编辑权限已启用</span>}
             <span className="rank">Python 段位 <b>{rank}</b></span>
             <button className="text-button" onClick={() => void resetProgress()}>重置进度</button>
           </div>
@@ -1548,6 +1603,12 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             const hostedTutor = cloudSyncStatus !== "local";
             const tutorAvailable = hostedTutor || localCodexStatus === "ready";
             const tutorName = hostedTutor ? "DeepSeek" : "Codex";
+            const beginnerKey = `${courseId}.level-${level.id}.before-you-start`;
+            const beginnerContent = editableContent(beginnerKey, { text: support.beforeYouStart });
+            const objectiveKey = `${courseId}.level-${level.id}.objective`;
+            const objectiveContent = editableContent(objectiveKey, { text: level.objective });
+            const aiLensKey = `${courseId}.level-${level.id}.ai-lens`;
+            const aiLensContent = editableContent(aiLensKey, { text: level.aiLens });
             return (
               <div key={level.id}>
                 <article id={`level-${level.id}`} className={`level ${done ? "done" : ""} ${!unlocked ? "locked" : ""} ${open ? "open" : ""}`}>
@@ -1584,23 +1645,30 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           online={cloudSyncStatus !== "local"}
                         />
                         {stage === 1 && <section className="stage-panel">
-                          <div className="beginner-note"><b>小白先看这里</b><p>{support.beforeYouStart}</p></div>
+                          <div className="beginner-note editable-course-content"><b>小白先看这里</b><p>{beginnerContent.text}</p>{contentEditor(level.id, "before-you-start", beginnerKey, [{ name: "text", label: "入门说明", value: beginnerContent.text, multiline: true }])}</div>
                           <div className="glossary-grid">
-                            {support.glossary.map((item) => (
-                              <button
-                                className="glossary-card"
-                                type="button"
-                                key={item.term}
-                                onClick={() => setActiveKnowledge({
-                                  term: item.term,
-                                  plain: item.meaning,
-                                  role: `这是第 ${level.id} 关会反复遇到的术语。先理解它的含义，再回到例子中找它出现的位置。`,
-                                })}
-                              >
-                                <span><b>{item.term}</b><i>点开解释</i></span>
-                                <p>{item.meaning}</p>
-                              </button>
-                            ))}
+                            {support.glossary.map((sourceItem, index) => {
+                              const contentKey = `${courseId}.level-${level.id}.glossary-${index + 1}`;
+                              const item = editableContent(contentKey, sourceItem);
+                              return <article className="editable-glossary-card" key={`${level.id}-glossary-${index}`}>
+                                <button
+                                  className="glossary-card"
+                                  type="button"
+                                  onClick={() => setActiveKnowledge({
+                                    term: item.term,
+                                    plain: item.meaning,
+                                    role: `这是第 ${level.id} 关会反复遇到的术语。先理解它的含义，再回到例子中找它出现的位置。`,
+                                  })}
+                                >
+                                  <span><b>{item.term}</b><i>点开解释</i></span>
+                                  <p>{item.meaning}</p>
+                                </button>
+                                {contentEditor(level.id, "glossary", contentKey, [
+                                  { name: "term", label: "术语", value: item.term },
+                                  { name: "meaning", label: "小白解释", value: item.meaning, multiline: true },
+                                ])}
+                              </article>;
+                            })}
                           </div>
                           <button className="stage-continue" type="button" onClick={() => advanceStage(level.id, 1)}>概念看懂了，进入“看数据” →</button>
                         </section>}
@@ -1608,26 +1676,43 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           <section className="example-panel">
                             <div className="stage-intro"><span>先看它长什么样</span><h4>{support.exampleTitle}</h4></div>
                             <pre><code>{support.example}</code></pre>
-                            <ol className="walkthrough">{support.walkthrough.map((step) => <li key={step}>{step}</li>)}</ol>
+                            <ol className="walkthrough">{support.walkthrough.map((sourceStep, index) => {
+                              const contentKey = `${courseId}.level-${level.id}.walkthrough-${index + 1}`;
+                              const step = editableContent(contentKey, { text: sourceStep });
+                              return <li className="editable-course-content" key={`${level.id}-walkthrough-${index}`}>{step.text}{contentEditor(level.id, "walkthrough", contentKey, [{ name: "text", label: `第 ${index + 1} 步说明`, value: step.text, multiline: true }])}</li>;
+                            })}</ol>
                           </section>
                           <button className="stage-continue" type="button" onClick={() => advanceStage(level.id, 2)}>数据结构看懂了，进入“逐行理解” →</button>
                         </section>}
                         {stage === 3 && <section className="stage-panel">
                           <div className="chips">{level.skills.map((skill) => <span key={skill}>{skill}</span>)}</div>
-                          <div className="objective"><b>本关目标</b><p>{level.objective}</p></div>
+                          <div className="objective editable-course-content"><b>本关目标</b><p>{objectiveContent.text}</p>{contentEditor(level.id, "objective", objectiveKey, [{ name: "text", label: "本关目标", value: objectiveContent.text, multiline: true }])}</div>
                           <div className="lesson-grid">
                           <section>
                             <h4>理解例子以后，再掌握这些</h4>
-                            <ul>{level.lessons.map((lesson) => <li key={lesson}>{lesson}</li>)}</ul>
+                            <ul>{level.lessons.map((sourceLesson, index) => {
+                              const contentKey = `${courseId}.level-${level.id}.lesson-${index + 1}`;
+                              const lesson = editableContent(contentKey, { text: sourceLesson });
+                              return <li className="editable-course-content" key={`${level.id}-lesson-${index}`}>{lesson.text}{contentEditor(level.id, "lesson", contentKey, [{ name: "text", label: `知识说明 ${index + 1}`, value: lesson.text, multiline: true }])}</li>;
+                            })}</ul>
                           </section>
-                          <aside className="ai-lens"><span>AI 审查镜</span><p>{level.aiLens}</p></aside>
+                          <aside className="ai-lens editable-course-content"><span>AI 审查镜</span><p>{aiLensContent.text}</p>{contentEditor(level.id, "ai-lens", aiLensKey, [{ name: "text", label: "AI 审查提示", value: aiLensContent.text, multiline: true }])}</aside>
                           </div>
                           <section className="answer-prerequisites">
                             <div className="stage-intro"><span>写答案前必须会</span><h4>参考答案不会再突然出现没讲过的语法</h4></div>
                             <div>
-                              {support.answerPrerequisites.map((item) => <article key={item.title}>
-                                <b>{item.title}</b><p>{item.explanation}</p><code>{item.example}</code>
-                              </article>)}
+                              {support.answerPrerequisites.map((sourceItem, index) => {
+                                const contentKey = `${courseId}.level-${level.id}.prerequisite-${index + 1}`;
+                                const item = editableContent(contentKey, sourceItem);
+                                return <article className="editable-course-content" key={`${level.id}-prerequisite-${index}`}>
+                                  <b>{item.title}</b><p>{item.explanation}</p><code>{item.example}</code>
+                                  {contentEditor(level.id, "prerequisite", contentKey, [
+                                    { name: "title", label: "标题", value: item.title },
+                                    { name: "explanation", label: "完整说明", value: item.explanation, multiline: true },
+                                    { name: "example", label: "代码或简短示例", value: item.example, code: true },
+                                  ])}
+                                </article>;
+                              })}
                             </div>
                           </section>
                           <div className="code-wrap interactive-code-wrap">

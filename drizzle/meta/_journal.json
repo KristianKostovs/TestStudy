@@ -43,6 +43,13 @@
       "when": 1788249122304,
       "tag": "0005_lean_stranger",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1788337729797,
+      "tag": "0006_sparkling_adam_warlock",
+      "breakpoints": true
     }
   ]
 }
