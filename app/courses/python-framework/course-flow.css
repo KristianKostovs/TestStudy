@@ -317,6 +317,11 @@
 .course-workspace .note-save-state.saving > i, .course-workspace .note-save-state.loading > i { background: #d8a43a; animation: sync-pulse 1.2s ease-in-out infinite; }
 .course-workspace .note-save-state.error { color: #9a3e31; }
 .course-workspace .note-save-state.error > i { background: #bd4a39; }
+.course-workspace .note-sync-identity { margin-bottom: 14px; padding: 11px 13px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 14px; border: 1px solid #d5e4de; border-radius: 9px; background: #f3f8f5; }
+.course-workspace .note-sync-identity > div { min-width: 0; display: grid; gap: 3px; }
+.course-workspace .note-sync-identity span { color: #718078; font-size: 8px; }
+.course-workspace .note-sync-identity strong, .course-workspace .note-sync-identity time { color: #1f5544; font: 750 9px/1.5 var(--font-geist-mono), monospace; }
+.course-workspace .note-sync-identity p { grid-column: 1 / -1; margin: 1px 0 0; color: #68756e; font-size: 8px; line-height: 1.55; }
 .course-workspace .note-local-warning { margin-bottom: 14px; padding: 12px 14px; border-left: 4px solid #d8a43a; border-radius: 8px; background: #fff8e8; }
 .course-workspace .note-local-warning span { color: #76551a; font-size: 9px; font-weight: 800; }
 .course-workspace .note-local-warning p { margin: 5px 0; color: #75664a; font-size: 9px; line-height: 1.6; }
@@ -383,6 +388,8 @@
   .grading-steps li:last-child { border-bottom: 0; }
   .codex-chat-messages article { max-width: 94%; }
   .course-workspace .level-note-editor > header { align-items: flex-start; flex-direction: column; gap: 7px; }
+  .course-workspace .note-sync-identity { grid-template-columns: 1fr; }
+  .course-workspace .note-sync-identity p { grid-column: 1; }
   .course-workspace .note-toolbar { grid-template-columns: 1fr auto; }
   .course-workspace .note-toolbar span { grid-column: 1 / -1; }
   .course-workspace .note-image-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }

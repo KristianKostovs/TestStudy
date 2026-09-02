@@ -303,7 +303,11 @@ test("每关学习笔记支持账号目录、图片存储并汇总到成长档�
   assert.match(panel, /onPaste/);
   assert.match(panel, /accept="image\/jpeg,image\/png,image\/webp,image\/gif"/);
   assert.match(panel, /已保存到账号 · 成长档案同步更新/);
+  assert.match(panel, /同步账号编号/);
+  assert.match(panel, /本关云端更新时间/);
   assert.match(noteRoute, /getChatGPTUser/);
+  assert.match(noteRoute, /chatGPTUserFingerprint/);
+  assert.match(noteRoute, /accountFingerprint/);
   assert.match(noteRoute, /owner_id = \? AND course_id = \?/);
   assert.match(imageUpload, /noteImageBucket\(\)\.put/);
   assert.match(imageUpload, /每关最多保存/);

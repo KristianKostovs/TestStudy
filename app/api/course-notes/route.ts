@@ -1,5 +1,5 @@
 import { env } from "cloudflare:workers";
-import { getChatGPTUser } from "../../chatgpt-auth";
+import { chatGPTUserFingerprint, getChatGPTUser } from "../../chatgpt-auth";
 import {
   ensureCourseNotesSchema,
   imageResponseUrl,
@@ -54,7 +54,15 @@ export async function GET(request: Request) {
       : env.DB.prepare("SELECT id, course_id, level_id, file_name, content_type, byte_size, created_at FROM course_note_images WHERE owner_id = ? AND course_id = ? AND level_id = ? ORDER BY created_at").bind(user.userId, courseId, levelId);
     const [notesResult, imagesResult] = await env.DB.batch([noteQuery, imageQuery]);
     const notes = (notesResult.results as Row[]).map((row) => noteFromRow(row, imagesResult.results as Row[]));
-    return Response.json({ courseId, notes });
+    return Response.json({
+      courseId,
+      notes,
+      sync: {
+        accountFingerprint: await chatGPTUserFingerprint(user.userId),
+        lastUpdatedAt: notes.reduce<string | null>((latest, note) =>
+          !latest || note.updatedAt > latest ? note.updatedAt : latest, null),
+      },
+    });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "读取学习笔记失败" }, { status: 500 });
   }
@@ -77,7 +85,14 @@ export async function PUT(request: Request) {
       .bind(user.userId, payload.courseId, payload.chapterId, payload.levelId, title, content).run();
     const saved = await env.DB.prepare("SELECT course_id, chapter_id, level_id, title, content, created_at, updated_at FROM course_notes WHERE owner_id = ? AND course_id = ? AND level_id = ? LIMIT 1")
       .bind(user.userId, payload.courseId, payload.levelId).first<Row>();
-    return Response.json({ note: saved ? noteFromRow(saved, []) : null });
+    const note = saved ? noteFromRow(saved, []) : null;
+    return Response.json({
+      note,
+      sync: {
+        accountFingerprint: await chatGPTUserFingerprint(user.userId),
+        lastUpdatedAt: note?.updatedAt ?? null,
+      },
+    });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "保存学习笔记失败" }, { status: 500 });
   }

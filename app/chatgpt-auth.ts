@@ -39,6 +39,17 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
   };
 }
 
+export async function chatGPTUserFingerprint(userId: string): Promise<string> {
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`python-framework-quest:${userId}`),
+  );
+  const shortHash = Array.from(new Uint8Array(digest).slice(0, 6), (byte) =>
+    byte.toString(16).padStart(2, "0"),
+  ).join("").toUpperCase();
+  return shortHash.match(/.{1,4}/g)?.join("-") ?? shortHash;
+}
+
 export async function requireChatGPTUser(
   returnTo: string,
 ): Promise<ChatGPTUser> {
