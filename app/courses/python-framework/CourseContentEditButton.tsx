@@ -11,6 +11,22 @@ export type CourseContentField = {
   code?: boolean;
 };
 
+async function readApiResult<T>(response: Response, action: string): Promise<T> {
+  const contentType = response.headers.get("content-type") ?? "";
+  const text = await response.text();
+  if (contentType.includes("application/json")) {
+    try {
+      return JSON.parse(text) as T;
+    } catch {
+      throw new Error(`${action}接口返回了损坏的 JSON，请刷新页面后重试`);
+    }
+  }
+  if (response.status === 401 || response.status === 403) {
+    throw new Error(`${action}请求被登录保护拦截，请刷新页面确认登录状态后重试`);
+  }
+  throw new Error(`${action}接口返回了网页而不是数据（HTTP ${response.status}），请刷新后重试`);
+}
+
 export default function CourseContentEditButton({
   courseId,
   levelId,
@@ -53,11 +69,12 @@ export default function CourseContentEditButton({
     setMessage("正在保存…");
     try {
       const response = await fetch("/api/course-content", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, levelId, section, contentKey, content: draft }),
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "save", courseId, levelId, section, contentKey, content: draft }),
       });
-      const result = await response.json() as { override?: CourseContentOverride; error?: string };
+      const result = await readApiResult<{ override?: CourseContentOverride; error?: string }>(response, "保存");
       if (!response.ok || !result.override) throw new Error(result.error ?? "保存失败");
       onSaved(result.override);
       setMessage("已保存到云端，其他设备刷新后即可看到");
@@ -75,11 +92,12 @@ export default function CourseContentEditButton({
     setMessage("正在恢复…");
     try {
       const response = await fetch("/api/course-content", {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ courseId, contentKey }),
+        method: "POST",
+        credentials: "same-origin",
+        headers: { "Accept": "application/json", "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "reset", courseId, contentKey }),
       });
-      const result = await response.json() as { deleted?: boolean; error?: string };
+      const result = await readApiResult<{ deleted?: boolean; error?: string }>(response, "恢复");
       if (!response.ok || !result.deleted) throw new Error(result.error ?? "恢复失败");
       onReset(contentKey);
       setOpen(false);

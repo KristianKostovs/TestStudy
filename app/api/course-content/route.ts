@@ -36,7 +36,7 @@ export async function GET(request: Request) {
   }
 }
 
-export async function PUT(request: Request) {
+async function saveCourseContent(request: Request) {
   try {
     const user = await getChatGPTUser();
     if (!user) return Response.json({ error: "请先使用 ChatGPT 账户登录" }, { status: 401 });
@@ -59,7 +59,7 @@ export async function PUT(request: Request) {
   }
 }
 
-export async function DELETE(request: Request) {
+async function resetCourseContent(request: Request) {
   try {
     const user = await getChatGPTUser();
     if (!user) return Response.json({ error: "请先使用 ChatGPT 账户登录" }, { status: 401 });
@@ -76,3 +76,18 @@ export async function DELETE(request: Request) {
     return Response.json({ error: error instanceof Error ? error.message : "恢复源码内容失败" }, { status: 500 });
   }
 }
+
+export async function POST(request: Request) {
+  try {
+    const payload = await request.clone().json() as Record<string, unknown>;
+    if (payload.action === "save") return saveCourseContent(request);
+    if (payload.action === "reset") return resetCourseContent(request);
+    return Response.json({ error: "不支持的课程内容操作" }, { status: 400 });
+  } catch {
+    return Response.json({ error: "课程内容请求不是有效 JSON" }, { status: 400 });
+  }
+}
+
+// 保留旧客户端兼容；新版网页统一使用 POST，避免边缘层拦截 PUT/DELETE。
+export const PUT = saveCourseContent;
+export const DELETE = resetCourseContent;

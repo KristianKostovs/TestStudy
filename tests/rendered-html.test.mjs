@@ -379,7 +379,14 @@ test("课程说明支持有权限账号在网页内编辑并恢复源码默认�
   assert.match(course, /所有允许的查找机制都失败后必须明确报错/);
   assert.match(editor, /保存到云端/);
   assert.match(editor, /恢复源码内容/);
+  assert.match(editor, /method: "POST"/);
+  assert.match(editor, /action: "save"/);
+  assert.match(editor, /action: "reset"/);
+  assert.match(editor, /返回了网页而不是数据/);
   assert.match(route, /当前账号没有课程编辑权限/);
+  assert.match(route, /export async function POST/);
+  assert.match(route, /payload\.action === "save"/);
+  assert.match(route, /payload\.action === "reset"/);
   assert.match(route, /ON CONFLICT\(content_key\)/);
   assert.match(content, /COURSE_CONTENT_ADMIN_EMAIL_HASHES/);
   assert.match(content, /SHA-256/);
