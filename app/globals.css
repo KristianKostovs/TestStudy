@@ -299,7 +299,7 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .course-status-card { padding: 27px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); }
 .course-status-card strong { display: block; margin: 14px 0; color: #ffd15b; font: 800 30px Georgia, "Songti SC", serif; }
 .course-status-card p { margin: 0; color: #cfdbd2; font-size: 13px; line-height: 1.8; }
-.blueprint-intro { display: grid; grid-template-columns: repeat(3, 1fr); max-width: 1120px; margin: -42px auto 0; padding: 0 28px; position: relative; z-index: 2; }
+.blueprint-intro { display: grid; grid-template-columns: repeat(4, 1fr); max-width: 1120px; margin: -42px auto 0; padding: 0 28px; position: relative; z-index: 2; }
 .blueprint-intro article { min-height: 160px; padding: 27px; border-right: 1px solid var(--line); background: #fffdf7; box-shadow: 0 20px 50px rgba(35,49,40,.09); }
 .blueprint-intro article:last-child { border-right: 0; }
 .blueprint-intro b { color: var(--red); font-size: 12px; letter-spacing: .12em; }

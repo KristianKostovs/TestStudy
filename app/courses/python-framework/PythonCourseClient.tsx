@@ -465,10 +465,20 @@ const supportByLevel: Record<number, LearningSupport> = {
       "get_by_path(response, \"data.flowNo\") 只是把上面两次取值变成通用循环。",
     ],
     starter: `def get_by_path(data: dict, path: str):
-    # 1. current 从整个 data 开始
-    # 2. 把 "data.flowNo" 拆成 ["data", "flowNo"]
-    # 3. 逐层取值，找不到就报错
-    pass`,
+    current = data
+    for part in path.split("."):
+        # TODO（你来完成）：检查 current 类型和 part 是否存在；失败时抛约定的 KeyError
+        ...
+        current = current[part]
+    return current
+
+
+response = {
+    "success": True,
+    "data": {"flowNo": "FLOW-710"},
+}
+
+# TODO（你来完成）：补充正常路径、缺失路径和“不修改输入”的断言`,
     verifyCommand: "python level_01.py",
     expected: `FLOW-710
 KeyError: '找不到字段: data.flowNo'
@@ -504,13 +514,32 @@ case_b = dict(fixture)
 case_a["request"]["businessStatus"] = 720
 print(case_b["request"]["businessStatus"])  # 720！`,
     walkthrough: ["dict(fixture) 只复制了外层。", "case_a 和 case_b 的 request 仍是同一个对象。", "deepcopy 会把内层 request 也复制。"],
-    starter: `from copy import deepcopy
+    starter: `import pytest
+from copy import deepcopy
+
 
 fixture = {"request": {"businessStatus": 710}}
 
-case_a = deepcopy(fixture)
-case_b = deepcopy(fixture)
-# 修改 case_a，然后断言 case_b 未变`,
+
+def test_shallow_copy_reproduces_pollution():
+    case_a = dict(fixture)
+    case_b = dict(fixture)
+    # TODO（你来完成）：修改 case_a，并断言 case_b 也被污染
+
+
+def test_deepcopy_isolates_and_cleanup_always_runs():
+    case_a = deepcopy(fixture)
+    case_b = deepcopy(fixture)
+    cleanup_log = []
+
+    with pytest.raises(RuntimeError):
+        try:
+            # TODO（你来完成）：修改 case_a 并模拟调用失败
+            ...
+        finally:
+            cleanup_log.append("client.close")
+
+    # TODO（你来完成）：断言 case_b 未污染，并检查 cleanup_log`,
     verifyCommand: "pytest -q test_level_02.py",
     expected: "2 passed",
     hint: "先写一条故意失败的测试复现污染，再把 dict(fixture) 改为 deepcopy(fixture)。",
@@ -542,8 +571,22 @@ resolve_fixture      -> 模块里的函数`,
 
 def resolve_callable(ref: str):
     module_name, function_name = ref.split(":", 1)
-    # 导入 module，取出 function，检查 callable
-    pass`,
+    # TODO（你来完成）：导入 module，并按名称取出 handler
+    module = ...
+    handler = ...
+    # TODO（你来完成）：拒绝不可调用属性
+    return handler
+
+
+# 验证框架已经给出；只需要补齐上面的解析逻辑
+def test_real_function():
+    assert resolve_callable("math:sqrt")(9) == 3
+
+
+def test_missing_module():
+    import pytest
+    with pytest.raises(ModuleNotFoundError):
+        resolve_callable("missing_package:run")`,
     verifyCommand: "pytest -q test_level_03.py",
     expected: "3 passed（成功导入、模块不存在、函数不存在）",
     hint: "需要 import_module、getattr 和 callable 三步。",
@@ -578,8 +621,22 @@ from typing import Any
 
 @dataclass
 class ActionResult:
-    # 定义 success、request、response、outputs、side_effects
-    pass`,
+    success: bool
+    request: dict[str, Any] | None = None
+    response: dict[str, Any] | None = None
+    # TODO（你来完成）：用 field(default_factory=...) 定义 outputs 和 side_effects
+
+
+def adjust_stock_action(sku_id: str, adjust_amount: int) -> ActionResult:
+    request = {"skuId": sku_id, "adjustAmount": adjust_amount}
+    response = {"success": True, "data": {"flowNo": "FLOW-001"}}
+    # TODO（你来完成）：构造并返回 ActionResult
+
+
+# 验证框架：两个实例的可变字段必须互不共享
+first = ActionResult(success=True)
+second = ActionResult(success=True)
+# TODO（你来完成）：修改 first.outputs/side_effects，再断言 second 仍为空`,
     verifyCommand: "python -m mypy action_result.py && pytest -q test_action_result.py",
     expected: "Success: no issues found\n2 passed",
     hint: "request/response 可能为 None，outputs 和 side_effects 用 default_factory 避免共享默认值。",
@@ -613,11 +670,28 @@ client.close()            # 清理`,
     starter: `import pytest
 
 
+class FakeHttpClient:
+    def __init__(self, base_url: str):
+        self.base_url = base_url
+        self.closed = False
+
+    def close(self):
+        self.closed = True
+
+
 @pytest.fixture
 def api_client():
-    # 创建 client
-    # yield client
-    # 关闭 client`,
+    client = FakeHttpClient(base_url="https://example.test")
+    # TODO（你来完成）：用 yield 把 client 交给测试
+    ...
+    client.close()
+    assert client.closed is True
+
+
+# TODO（你来完成）：添加 status=[710, 720] 的参数化装饰器
+def test_status(api_client, status):
+    assert api_client.closed is False
+    assert status in (710, 720)`,
     verifyCommand: "pytest --collect-only -q && pytest -q test_level_05.py",
     expected: "2 tests collected\n2 passed",
     hint: "先不写参数化，确保 fixture 可用；再加 @pytest.mark.parametrize。collect-only 不执行普通 fixture，判断网络风险时要检查模块顶层代码和收集钩子。",
@@ -644,13 +718,32 @@ def api_client():
     save_as: result
 # 语法正确，但既没有 action 也没有 request`,
     walkthrough: ["safe_load 会成功返回 dict。", "Runner 真正执行时才发现不知道要做什么。", "Pydantic 应在执行前拒绝这个步骤。"],
-    starter: `from pydantic import BaseModel, model_validator
+    starter: `import pytest
+from pydantic import BaseModel, ValidationError, model_validator
 
 
 class FlowEntry(BaseModel):
     action: str | None = None
     request: dict | None = None
-    # 增加组合校验`,
+    save_as: str | None = None
+
+    # TODO（你来完成）：添加 mode="after" 的模型校验器
+    def has_executor(self):
+        # TODO（你来完成）：action 和 request 同时为空时抛 ValueError
+        return self
+
+
+def test_action_entry_is_valid():
+    assert FlowEntry(action="fixture.resolve").action == "fixture.resolve"
+
+
+def test_request_entry_is_valid():
+    assert FlowEntry(request={"method": "GET"}).request == {"method": "GET"}
+
+
+def test_empty_entry_is_rejected():
+    with pytest.raises(ValidationError, match="必须声明 action 或 request"):
+        FlowEntry()`,
     verifyCommand: "pytest -q test_flow_entry_schema.py",
     expected: "3 passed",
     hint: "使用 model_validator(mode=\"after\")，在 action 和 request 都为空时 raise ValueError。",
@@ -678,9 +771,34 @@ save_as: processing_result
 context["processing_result"] = handler_result`,
     walkthrough: ["Runner 先用 action name 找 handler。", "handler 返回的结果用 save_as 作为 key 存入 context。", "后续步骤可用 processing_result.response 访问它。"],
     starter: `def run_entry(entry, adapters, context):
-    # 找 handler
-    # 执行 handler
-    # 根据 save_as 保存结果`,
+    action_name = entry["action"]
+    if action_name not in adapters:
+        raise KeyError(f"未绑定 action: {action_name}")
+
+    # TODO（你来完成）：取出并执行 action，统一传入 entry、context
+    result = ...
+    if entry.get("save_as"):
+        # TODO（你来完成）：以 save_as 为 key 保存 result
+        ...
+    return result
+
+
+def resolve_fixture(entry, context):
+    return {"skuId": "SKU-001", "available": 100}
+
+
+def build_request(entry, context):
+    fixture = context["resolved_fixture"]
+    return {"skuId": fixture["skuId"], "adjustAmount": -10}
+
+
+adapters = {
+    "fixture.resolve": resolve_fixture,
+    "request.build": build_request,
+}
+context = {}
+
+# TODO（你来完成）：依次执行 fixture.resolve 和 request.build，并断言 context 中的结果`,
     verifyCommand: "pytest -q test_mini_runner.py",
     expected: "4 passed",
     hint: "先不做模板渲染，只实现 action 查找和 save_as；然后再增加第二步读取 context。",
@@ -718,10 +836,31 @@ import httpx
 
 
 def handler(request: httpx.Request):
-    # request 是 HTTPX 创建的对象，可读取：
-    # request.method / request.url.path / request.content / request.headers
+    assert request.method == "POST"
+    assert request.url.path == "/stock/adjust"
     payload = json.loads(request.content)
-    # 按题目给定的 10 / 500 / 101 三种规则返回 httpx.Response`,
+    assert payload["skuId"] == "SKU-001"
+    amount = payload["adjustAmount"]
+
+    # TODO（你来完成）：分别返回 500、业务失败和成功响应
+
+
+transport = httpx.MockTransport(handler)
+with httpx.Client(transport=transport, timeout=2.0) as client:
+    success = client.post(
+        "https://example.test/stock/adjust",
+        json={"skuId": "SKU-001", "adjustAmount": 10},
+    )
+    http_error = client.post(
+        "https://example.test/stock/adjust",
+        json={"skuId": "SKU-001", "adjustAmount": 500},
+    )
+    business_error = client.post(
+        "https://example.test/stock/adjust",
+        json={"skuId": "SKU-001", "adjustAmount": 101},
+    )
+
+# TODO（你来完成）：对三条响应分别断言 HTTP 状态和业务字段`,
     verifyCommand: "pytest -q test_http_modes.py",
     expected: "3 passed（成功、HTTP 500、HTTP 200 + success=false）",
     hint: "可先输入 request. 查看本关提供的 HTTPX Request 属性补全；运行代码仍需要 import httpx。然后用 json.loads(request.content) 读取题目给定的请求体。",
@@ -746,10 +885,38 @@ def handler(request: httpx.Request):
     example: `Provider: 我怎么安全执行参数化 SQL？
 resolve:  这个售后用例需要哪个仓库和 SKU？`,
     walkthrough: ["Provider 可被不同页面复用。", "resolve 包含库存、占用、状态等售后规则，应留在场景层。", "如果把 resolve 放进 Provider，Provider 就被某个业务绑死。"],
-    starter: `# 从一个混合 adapter 中标注：
-# [Provider] 基础访问
-# [Shared Action] 页面稳定动作
-# [Requirement] 需求特有规则`,
+    starter: `# [Provider] 基础访问：函数签名和数据库调用已经给出
+def query_rows(connection, sql, params):
+    return connection.execute(sql, params).fetchall()
+
+
+# [Shared Action] 页面稳定动作：组织 Provider 能力
+def capture_inventory_snapshot(provider, sku_id):
+    return provider.query_inventory(sku_id)
+
+
+# [Requirement] 需求特有规则：只完成这里的筛选条件
+def select_legal_after_sale_sku(rows, constraints):
+    candidates = [
+        row for row in rows
+        # TODO（你来完成）：available 达标且 locked is False
+    ]
+    if not candidates:
+        raise LookupError("没有满足本售后场景约束的 SKU")
+    return candidates[0]
+
+
+class FakeProvider:
+    def query_inventory(self, sku_id):
+        return [
+            {"skuId": sku_id, "available": 80, "locked": False},
+            {"skuId": sku_id, "available": 120, "locked": False},
+        ]
+
+
+rows = capture_inventory_snapshot(FakeProvider(), "SKU-001")
+selected = select_legal_after_sale_sku(rows, {"minimum_available": 100})
+# TODO（你来完成）：断言最终选择 120 且未锁定`,
     verifyCommand: "pytest -q tests/provider tests/shared_actions tests/requirements",
     expected: "三组测试独立通过",
     hint: "先不移动代码，只给每个函数标注它应属于哪层以及理由。",
@@ -777,11 +944,81 @@ resolve:  这个售后用例需要哪个仓库和 SKU？`,
 4. Mock 全链路通过
 5. 成功和失败都生成 evidence`,
     walkthrough: ["先选一条只有 2–3 个动作的短链路。", "先做静态门禁，再做 Mock，最后才讨论真实环境。", "任何一步失败都要保留主异常和已经产生的证据。"],
-    starter: `requirements/BOSS_01/
-├── constraint_spec.yaml
-├── requirement_cases.yaml
-├── adapters.py
-└── source_queries.py`,
+    starter: `# ===== requirements/BOSS_01/requirement_cases.yaml =====
+name: boss_01_after_sale
+common_flow:
+  setup:
+    - action: fixture.resolve
+      save_as: resolved_fixture
+  steps:
+    - action: request.build
+      save_as: request
+    # TODO（你来完成）：增加调用库存调整接口的 action，并保存 result
+  assertions:
+    # TODO（你来完成）：声明 success 和 flowNo 断言
+  teardown:
+    always:
+      - action: client.close
+
+# ===== requirements/BOSS_01/adapters.py =====
+from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass
+class ActionResult:
+    success: bool
+    request: dict[str, Any] | None = None
+    response: dict[str, Any] | None = None
+    outputs: dict[str, Any] = field(default_factory=dict)
+    side_effects: list[str] = field(default_factory=list)
+    error: str | None = None
+
+
+def resolve_fixture(entry, context):
+    return {"skuId": "SKU-001", "available": 100}
+
+
+def build_request(entry, context):
+    fixture = context["resolved_fixture"]
+    return {"skuId": fixture["skuId"], "adjustAmount": -10}
+
+
+ADAPTERS = {
+    "fixture.resolve": resolve_fixture,
+    "request.build": build_request,
+    # TODO（你来完成）：绑定 stock.adjust 和 client.close
+}
+
+# ===== tests/test_boss_mock.py =====
+import httpx
+
+
+def handler(request: httpx.Request):
+    # TODO（你来完成）：检查固定请求，并返回成功或失败响应
+    ...
+
+
+def test_boss_flow_success_and_failure():
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, timeout=2.0) as client:
+        # TODO（你来完成）：通过 Runner 跑成功与失败链路
+        ...
+    # TODO（你来完成）：断言 teardown.always 已执行
+
+# ===== evidence/boss_01_after_sale.json =====
+{
+  "case_id": "boss_01_after_sale",
+  "success": null,
+  "request": {},
+  "response": {},
+  "outputs": {},
+  "side_effects": [],
+  "error": null,
+  "teardown": []
+}
+
+# 只修改 TODO 区域；目录、字段名、函数签名和生命周期结构已经固定。`,
     verifyCommand: "python verify_declarative_delivery.py ... && pytest -q tests/test_boss_mock.py",
     expected: "三级静态门禁通过\nMock 全链路通过\nevidence JSON 包含 request/response",
     hint: "可以直接复用第 5、6、7、8 关产物，不要重写 Client、Provider 或 Runner。",
@@ -1409,8 +1646,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     setActiveStages((current) => ({ ...current, [id]: stage }));
   }
 
+  function answerForLevel(id: number, drafts: Record<number, string>) {
+    return Object.prototype.hasOwnProperty.call(drafts, id)
+      ? drafts[id]
+      : supportByLevel[id].starter;
+  }
+
   async function submitTask(id: number) {
-    const answer = (taskDraftsRef.current[id] ?? "").trim();
+    const answer = answerForLevel(id, taskDraftsRef.current).trim();
     if (answer.length < 30) {
       setGradingErrors((current) => ({ ...current, [id]: "请至少写 30 个字符，包含你的代码或实现思路。" }));
       return;
@@ -1454,7 +1697,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   }
 
   async function sendToTutor(level: Level, suggestedMessage?: string, includeHistory = true) {
-    const answer = (taskDraftsRef.current[level.id] ?? "").trim();
+    const answer = answerForLevel(level.id, taskDraftsRef.current).trim();
     const message = (suggestedMessage ?? codexChatDrafts[level.id] ?? "").trim();
     if (answer.length < 30) {
       setCodexErrors((current) => ({ ...current, [level.id]: "请先在上面的答案框中写至少 30 个字符。" }));
@@ -1688,7 +1931,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             const stage = activeStage(level.id);
             const maxStage = unlockedStage(level.id);
             const gradeSubmission = gradeSubmissions[level.id];
-            const currentDraft = taskDrafts[level.id] ?? "";
+            const currentDraft = answerForLevel(level.id, taskDrafts);
             const grade = taskGrades[level.id]
               ?? (gradeSubmission?.answer.trim() === currentDraft.trim() ? gradeSubmission.grade : null);
             const gradeStatusIndex = gradeSubmission?.status === "completed" ? 3 : gradeSubmission?.status === "judging" ? 2 : gradeSubmission ? 1 : 0;
@@ -1864,9 +2107,13 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                               </ol>
                             </details>
                           </aside>}
+                          <aside className="starter-policy" aria-label="项目练习填写说明">
+                            <b>框架代码已经放进编辑器</b>
+                            <p>目录、字段、函数签名、测试入口和固定样例由课程提供。你只需要完成标有 <code>TODO（你来完成）</code> 的关键逻辑；已有个人草稿不会被覆盖。</p>
+                          </aside>
                           <details className="help-panel compact-task-help">
-                            <summary>查看起步代码、验证方法与验收标准</summary>
-                            <div className="starter-wrap"><h4>从这里开始写</h4><pre><code>{support.starter}</code></pre></div>
+                            <summary>查看框架代码说明、验证方法与验收标准</summary>
+                            <div className="starter-wrap"><h4>编辑器默认框架（只修改 TODO）</h4><pre><code>{support.starter}</code></pre></div>
                             <div className="verification-grid">
                               <article className="verify-card"><span>怎么验证</span><code>{support.verifyCommand}</code></article>
                               <article className="verify-card"><span>你应该看到</span><pre><code>{support.expected}</code></pre></article>
@@ -1876,7 +2123,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           <Suspense fallback={<div className="editor-loading" role="status">正在启动 Python IDE 检查器…</div>}>
                             <PythonAnswerEditor
                               levelId={level.id}
-                              value={taskDrafts[level.id] ?? ""}
+                              value={currentDraft}
                               starter={support.starter}
                               onChange={(value) => updateTaskDraft(level.id, value)}
                             />

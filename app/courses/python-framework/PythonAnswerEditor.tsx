@@ -364,6 +364,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
   const [cursor, setCursor] = useState({ line: 1, column: 1 });
   const [problems, setProblems] = useState<Problem[]>([]);
   const valueRef = useRef(value);
+  const isStarter = value === starter;
 
   useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
   useEffect(() => { valueRef.current = value; }, [value]);
@@ -452,7 +453,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
         <header className="code-editor-toolbar">
           <div className="editor-window-dots" aria-hidden="true"><i /><i /><i /></div>
           <div className="editor-file-tab"><b>PY</b><span>{`level_${String(levelId).padStart(2, "0")}.py`}</span></div>
-          <button type="button" disabled={Boolean(value.trim())} onClick={loadStarter}>{value.trim() ? "草稿已自动保存" : "载入起步代码"}</button>
+          <button type="button" disabled={Boolean(value.trim())} onClick={loadStarter}>{value.trim() ? (isStarter ? "框架代码已载入" : "草稿已自动保存") : "恢复框架代码"}</button>
         </header>
         <div className="codemirror-host" ref={hostRef} />
         <footer className="code-editor-statusbar">
@@ -462,7 +463,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
         </footer>
       </div>
       <section className={`editor-problems ${problems.length ? "has-problems" : "clean"}`} aria-live="polite">
-        <header><b>问题</b><span>{value.trim() ? (problems.length ? `发现 ${problems.length} 处需要注意` : "未发现明显的语法、缩进或名称问题") : "开始输入后会自动检查"}</span></header>
+        <header><b>问题</b><span>{value.trim() ? (problems.length ? `发现 ${problems.length} 处需要注意` : "未发现明显的语法、缩进或名称问题") : "恢复框架代码后会自动检查"}</span></header>
         {problems.length > 0 && <ul>{problems.map((problem, index) => (
           <li className={problem.severity} key={`${problem.line}-${problem.message}-${index}`}><i>{problem.severity === "error" ? "×" : "!"}</i><span><b>第 {problem.line} 行</b>{problem.message}</span></li>
         ))}</ul>}

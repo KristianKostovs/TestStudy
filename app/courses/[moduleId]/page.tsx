@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-/* eslint-disable @next/next/no-html-link-for-pages -- vinext Link prefetch crashes in production; full-page navigation is intentional */
 import {
   learningModules,
   roadmapTitle,
@@ -68,6 +67,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
         <article><b>学习目标</b><p>{course.subtitle}</p></article>
         <article><b>内容更新规则</b><p>{course.updateRule}</p></article>
         <article><b>关卡准入标准</b><p>只有出现新的可迁移能力或必要前置知识，才新增主关卡；新增案例只更新练习。</p></article>
+        <article><b>项目练习默认方式</b><p>交互关卡开放后，项目型任务会预先提供目录、字段、函数签名、固定样例和测试入口，只要求完成明确标记的关键逻辑。</p></article>
       </section>
 
       {course.gapReview ? (

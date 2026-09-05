@@ -38,7 +38,7 @@ export default function LearningHome() {
       <section className="principles" aria-label="学习平台原则">
         <article><b>01</b><div><h2>课程各自独立</h2><p>每个方向有专属地址、关卡路线和内容空间。</p></div></article>
         <article><b>02</b><div><h2>知识持续更新</h2><p>基础、官方新技术与项目实战共同驱动课程成长。</p></div></article>
-        <article><b>03</b><div><h2>进步可以验证</h2><p>主关卡必须包含解释、任务和客观验收方式。</p></div></article>
+        <article><b>03</b><div><h2>进步可以验证</h2><p>主关卡必须包含解释、框架代码和客观验收方式；项目练习只留关键逻辑待完成。</p></div></article>
       </section>
 
       <section className="module-section home-module-section" id="modules">

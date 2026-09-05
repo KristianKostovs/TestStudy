@@ -112,7 +112,8 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(editor, /collectPythonDiagnostics/);
   assert.match(editor, /上一行以冒号结尾/);
   assert.match(editor, /你是不是想写/);
-  assert.match(editor, /载入起步代码/);
+  assert.match(editor, /框架代码已载入/);
+  assert.match(editor, /恢复框架代码/);
   assert.match(source, /course-workspace/);
   assert.match(source, /suite-topbar course-suite-topbar/);
   assert.match(courseStyles, /\.code-editor-statusbar/);
@@ -121,8 +122,8 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(courseStyles, /\.course-workspace \.chapter-card[\s\S]*border-radius: 15px/);
   assert.match(source, /fetch\("\/api\/course-grade"/);
   assert.match(source, /action: "enqueue"/);
-  assert.match(source, /taskDraftsRef\.current\[id\]/);
-  assert.match(source, /taskDraftsRef\.current\[level\.id\]/);
+  assert.match(source, /answerForLevel\(id, taskDraftsRef\.current\)/);
+  assert.match(source, /answerForLevel\(level\.id, taskDraftsRef\.current\)/);
   assert.match(source, /history: includeHistory \? previous : \[\]/);
   assert.match(source, /sendToTutor\(level, "请批改我当前的答案[^\n]+", false\)/);
   assert.match(source, /gradeSubmission\?\.answer\.trim\(\) === currentDraft\.trim\(\)/);
@@ -194,6 +195,11 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.match(answers, /def run_entry\(entry, adapters, context\)[\s\S]*context\["resolved_fixture"\]/);
   assert.match(answers, /httpx\.MockTransport\(handler\)[\s\S]*business_error/);
   assert.match(source, /taskContext: "背景：生产代码会用 HTTPX 调用库存调整接口/);
+  assert.equal((source.match(/TODO（你来完成）/g) ?? []).length >= 10, true);
+  assert.match(source, /function answerForLevel[\s\S]*hasOwnProperty[\s\S]*supportByLevel\[id\]\.starter/);
+  assert.match(source, /value=\{currentDraft\}/);
+  assert.match(source, /框架代码已经放进编辑器/);
+  assert.match(source, /requirements\/BOSS_01\/requirement_cases\.yaml[\s\S]*requirements\/BOSS_01\/adapters\.py[\s\S]*tests\/test_boss_mock\.py[\s\S]*evidence\/boss_01_after_sale\.json/);
   assert.match(source, /请求 JSON：[\s\S]*skuId[\s\S]*adjustAmount=10[\s\S]*SYSTEM_ERROR[\s\S]*A4500/);
   assert.match(answers, /request\.method == "POST"[\s\S]*payload\["skuId"\] == "SKU-001"/);
   assert.match(editor, /request\.url[\s\S]*status_code[\s\S]*MockTransport[\s\S]*补全不会自动导入第三方库/);
@@ -221,6 +227,8 @@ test("所有学习模块都展示课题背景、固定练习契约和验收标�
   assert.match(page, /课题背景/);
   assert.match(page, /固定契约/);
   assert.match(page, /验收标准/);
+  assert.match(page, /项目练习默认方式/);
+  assert.match(page, /目录、字段、函数签名、固定样例和测试入口/);
   assert.match(chatRoute, /rubric\.taskContract/);
   assert.match(gradeRoute, /rubric\.taskContract/);
   for (const topic of ["Locator 基础", "接口链字段绑定", "P50/P95/P99", "覆盖率与覆盖率误区"]) {
