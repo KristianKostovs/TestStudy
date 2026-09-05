@@ -8,6 +8,8 @@ import {
   type LearningModule,
   type SourceKind,
 } from "../../learning-registry";
+import { blueprintStarterFor } from "../../blueprint-starters";
+import BlueprintPracticeEditor from "../BlueprintPracticeEditor";
 
 const sourceKinds: SourceKind[] = ["foundation", "technology_radar", "local_project"];
 
@@ -57,8 +59,8 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
           </section>
           <aside className="course-status-card">
             <span>当前建设状态</span>
-            <strong>{detailedRoadmap ? "十关内容已补强" : "路线已建立"}</strong>
-            <p>{detailedRoadmap ? "每关已经明确课题背景、基础知识、固定练习契约、验收标准和验收证据；完整交互课将按关卡逐步开放。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
+            <strong>{detailedRoadmap ? "十关框架练习已备" : "路线已建立"}</strong>
+            <p>{detailedRoadmap ? "每关都已给出背景、必备知识、固定契约和可直接修改的 IDE 项目骨架；你只需完成标出的关键 TODO。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
           </aside>
         </div>
       </header>
@@ -67,7 +69,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
         <article><b>学习目标</b><p>{course.subtitle}</p></article>
         <article><b>内容更新规则</b><p>{course.updateRule}</p></article>
         <article><b>关卡准入标准</b><p>只有出现新的可迁移能力或必要前置知识，才新增主关卡；新增案例只更新练习。</p></article>
-        <article><b>项目练习默认方式</b><p>交互关卡开放后，项目型任务会预先提供目录、字段、函数签名、固定样例和测试入口，只要求完成明确标记的关键逻辑。</p></article>
+        <article><b>项目练习默认方式</b><p>目录、字段、函数签名、固定样例和测试入口已直接放入每关 IDE，只要求完成明确标记的关键逻辑。</p></article>
       </section>
 
       {course.gapReview ? (
@@ -100,7 +102,9 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
           <span>每一关是一个能力台阶，而不是某个页面或某条需求的临时教程。</span>
         </div>
         <ol className="standalone-roadmap">
-          {course.roadmap.map((item, index) => (
+          {course.roadmap.map((item, index) => {
+            const starter = typeof item === "string" ? null : blueprintStarterFor(moduleId, index, item);
+            return (
             <li className={typeof item === "string" ? undefined : "detailed"} key={roadmapTitle(item)}>
               <b>{String(index + 1).padStart(2, "0")}</b>
               <div>
@@ -121,11 +125,34 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
                       <div><dt>验收标准</dt><dd><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></dd></div>
                       <div><dt>验收证据</dt><dd>{item.evidence}</dd></div>
                     </dl>
+                    {starter ? (
+                      <section className="blueprint-practice" aria-label={`第 ${index + 1} 关默认项目框架`}>
+                        <header>
+                          <div>
+                            <span>DEFAULT PROJECT SCAFFOLD</span>
+                            <h4>默认项目框架已放入 IDE</h4>
+                            <p>不需要从说明区复制代码；先阅读固定契约，再只完成带有 TODO 的关键位置。</p>
+                          </div>
+                          <small>{starter.files.length} 个项目文件</small>
+                        </header>
+                        <div className="blueprint-focus">
+                          <b>本关只需完成</b>
+                          <ul>{starter.focus.map((focus) => <li key={focus}>{focus}</li>)}</ul>
+                        </div>
+                        <BlueprintPracticeEditor
+                          courseId={moduleId}
+                          levelId={index + 1}
+                          starter={starter.code}
+                          files={starter.files}
+                        />
+                      </section>
+                    ) : null}
                   </>
                 )}
               </div>
             </li>
-          ))}
+            );
+          })}
         </ol>
       </section>
 

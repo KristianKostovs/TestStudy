@@ -217,10 +217,12 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
 });
 
 test("所有学习模块都展示课题背景、固定练习契约和验收标准", async () => {
-  const [roadmaps, registry, page, chatRoute, gradeRoute] = await Promise.all([
+  const [roadmaps, registry, page, starters, editor, chatRoute, gradeRoute] = await Promise.all([
     readFile(new URL("../app/blueprint-roadmaps.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/[moduleId]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/blueprint-starters.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/BlueprintPracticeEditor.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/api/course-grade/route.ts", import.meta.url), "utf8"),
   ]);
@@ -231,6 +233,15 @@ test("所有学习模块都展示课题背景、固定练习契约和验收标�
   assert.match(page, /验收标准/);
   assert.match(page, /项目练习默认方式/);
   assert.match(page, /目录、字段、函数签名、固定样例和测试入口/);
+  assert.match(page, /默认项目框架已放入 IDE/);
+  assert.match(page, /<BlueprintPracticeEditor/);
+  assert.match(editor, /learning-blueprint-draft-v1/);
+  assert.match(editor, /window\.localStorage\.setItem/);
+  assert.match(editor, /恢复默认框架/);
+  assert.match(editor, /只需完成 TODO（你来完成）/);
+  for (const seedGroup of ["uiSeeds", "apiSeeds", "aiSeeds", "performanceSeeds", "qualitySeeds"]) {
+    assert.match(starters, new RegExp(`const ${seedGroup}: StarterSeed\\[\\] = \\[`));
+  }
   assert.match(chatRoute, /rubric\.taskContract/);
   assert.match(gradeRoute, /rubric\.taskContract/);
   for (const topic of ["Locator 基础", "接口链字段绑定", "P50/P95/P99", "覆盖率与覆盖率误区"]) {
@@ -241,6 +252,9 @@ test("所有学习模块都展示课题背景、固定练习契约和验收标�
     const html = await (await render(`/courses/${moduleId}`)).text();
     assert.equal((html.match(/<dt>固定契约<\/dt>/g) ?? []).length, 10, moduleId);
     assert.equal((html.match(/<dt>验收标准<\/dt>/g) ?? []).length, 10, moduleId);
+    assert.equal((html.match(/<section class="blueprint-practice"/g) ?? []).length, 10, moduleId);
+    assert.equal((html.match(/<div class="blueprint-editor-shell"/g) ?? []).length, 10, moduleId);
+    assert.match(html, /TODO（你来完成）/);
     assert.doesNotMatch(html, /将补齐：基础解释/);
   }
 });

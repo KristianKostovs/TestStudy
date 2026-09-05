@@ -308,11 +308,11 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .standalone-roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin: 0; padding: 0; list-style: none; }
 .standalone-roadmap > li { display: grid; grid-template-columns: 64px 1fr; min-height: 145px; border: 1px solid #d9ceb9; background: #fffdf7; box-shadow: 4px 4px 0 #e1d7c2; }
 .standalone-roadmap > li > b { display: grid; place-items: center; color: #f5e7c1; background: var(--green); font: 800 19px Georgia; }
-.standalone-roadmap div { padding: 20px; }
+.standalone-roadmap > li > div { padding: 20px; }
 .standalone-roadmap div > span { color: var(--red); font-size: 9px; font-weight: 900; letter-spacing: .14em; }
 .standalone-roadmap h3 { margin: 8px 0 7px; font: 800 19px Georgia, "Songti SC", serif; }
 .standalone-roadmap p { margin: 0; color: #6c776f; font-size: 11px; line-height: 1.65; }
-.standalone-roadmap > li.detailed { min-height: 0; }
+.standalone-roadmap > li.detailed { grid-column: 1 / -1; min-height: 0; }
 .standalone-roadmap > li.detailed > div { display: flex; flex-direction: column; }
 .standalone-roadmap .level-question { min-height: 52px; color: #3f5448; font-size: 13px; }
 .standalone-roadmap .level-question b { display: block; margin-bottom: 5px; color: #a33625; font-size: 10px; letter-spacing: .08em; }
@@ -324,6 +324,32 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .level-deliverables dt { color: #a33625; font-size: 10px; font-weight: 900; }
 .level-deliverables dd { margin: 0; color: #59665e; font-size: 11px; line-height: 1.6; }
 .level-deliverables dd ul { display: grid; gap: 4px; margin: 0; padding-left: 16px; }
+.blueprint-practice { margin-top: 24px; border-top: 4px solid var(--gold); background: #f8f1e1; }
+.blueprint-practice > header { display: flex; justify-content: space-between; gap: 24px; padding: 19px 21px; }
+.blueprint-practice > header span { color: #a33625; font-size: 9px; font-weight: 900; letter-spacing: .14em; }
+.blueprint-practice > header h4 { margin: 7px 0 5px; color: #1c382d; font: 800 18px Georgia, "Songti SC", serif; }
+.blueprint-practice > header p { max-width: 650px; color: #5d695f; font-size: 11px; }
+.blueprint-practice > header small { align-self: flex-start; flex: none; padding: 6px 9px; color: #765118; border: 1px solid #dcb85c; background: #fff7df; font-size: 10px; font-weight: 800; }
+.blueprint-focus { display: flex; align-items: center; gap: 16px; margin: 0 21px 18px; padding: 12px 14px; border-left: 3px solid var(--green); background: #eef4ef; }
+.blueprint-focus b { flex: none; color: #245642; font-size: 10px; }
+.blueprint-focus ul { display: flex; flex-wrap: wrap; gap: 7px 22px; margin: 0; padding-left: 18px; }
+.blueprint-focus li { color: #4f6258; font-size: 11px; }
+.blueprint-editor-shell { overflow: hidden; margin: 0 21px 21px; color: #e4ece7; border: 1px solid #29483b; border-radius: 10px; background: #10231b; box-shadow: 0 12px 30px rgba(17, 43, 33, .14); }
+.blueprint-editor-topbar { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 14px; padding: 11px 14px; border-bottom: 1px solid #29483b; background: #112a20; }
+.blueprint-editor-topbar strong { font: 700 12px var(--font-geist-mono), ui-monospace, monospace; }
+.blueprint-editor-topbar > span { color: #8ba398; font-size: 10px; }
+.blueprint-window-dots { display: flex; gap: 6px; }
+.blueprint-window-dots i { width: 9px; height: 9px; border-radius: 50%; background: #df6d5d; }
+.blueprint-window-dots i:nth-child(2) { background: #d9ad46; }
+.blueprint-window-dots i:nth-child(3) { background: #58aa82; }
+.blueprint-file-tabs { display: flex; gap: 0; overflow-x: auto; padding: 0 14px; border-bottom: 1px solid #29483b; background: #0d1d17; }
+.blueprint-file-tabs span { flex: none; padding: 10px 12px; color: #8ea198; border-bottom: 2px solid transparent; font: 600 10px var(--font-geist-mono), ui-monospace, monospace; }
+.blueprint-file-tabs span.active { color: #8ae1bd; border-bottom-color: #49ba90; background: #143327; }
+.blueprint-code-editor { padding: 0; }
+.blueprint-code-editor .cm-editor { padding: 0; }
+.blueprint-editor-statusbar { display: flex; justify-content: space-between; align-items: center; gap: 18px; padding: 9px 14px; color: #91a69b; border-top: 1px solid #29483b; background: #0d1d17; font-size: 10px; }
+.blueprint-editor-statusbar button { padding: 6px 9px; color: #f4c65c; border: 1px solid #506b60; background: transparent; font: inherit; font-weight: 800; cursor: pointer; }
+.blueprint-editor-statusbar button:hover { color: #10231b; background: #f4c65c; }
 .course-gap-review { max-width: 1120px; margin: 0 auto; padding: 90px 28px 20px; }
 .course-gap-review .section-heading { margin-bottom: 34px; }
 .gap-review-head { display: flex; justify-content: space-between; gap: 24px; padding: 15px 18px; color: #f6efdc; background: var(--dark-green); }
@@ -389,6 +415,13 @@ footer span { color: #9aafa3; font-size: 12px; }
   .gap-review-head { align-items: flex-start; flex-direction: column; gap: 8px; }
   .gap-review-head span { text-align: left; }
   .level-deliverables > div { grid-template-columns: 1fr; gap: 5px; }
+  .blueprint-practice > header { align-items: flex-start; flex-direction: column; gap: 10px; }
+  .blueprint-focus { align-items: flex-start; flex-direction: column; gap: 8px; }
+  .blueprint-focus ul { display: grid; gap: 5px; }
+  .blueprint-editor-shell { margin-left: 10px; margin-right: 10px; }
+  .blueprint-editor-topbar { grid-template-columns: auto 1fr; }
+  .blueprint-editor-topbar > span { grid-column: 1 / -1; }
+  .blueprint-editor-statusbar { align-items: flex-start; flex-direction: column; }
   .module-detail { padding: 24px 18px; }
   .module-roadmap { grid-template-columns: 1fr; }
   .map-section { padding-left: 14px; padding-right: 14px; }
