@@ -155,8 +155,8 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(editor, /collectPythonDiagnostics/);
   assert.match(editor, /上一行以冒号结尾/);
   assert.match(editor, /你是不是想写/);
-  assert.match(editor, /框架代码已载入/);
-  assert.match(editor, /恢复框架代码/);
+  assert.match(editor, /最新版框架已载入/);
+  assert.match(editor, /恢复最新版框架/);
   assert.match(source, /course-workspace/);
   assert.match(source, /suite-topbar course-suite-topbar/);
   assert.match(courseStyles, /\.code-editor-statusbar/);
@@ -257,6 +257,18 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.match(rubric, /请求结构由题目明确给定，不得要求学习者猜测未声明字段/);
   assert.match(answers, /requirement_cases\.yaml[\s\S]*teardown:[\s\S]*always:/);
   assert.match(rubric, /action 明确返回并构造 ActionResult/);
+
+  const supportTable = source.slice(source.indexOf("const supportByLevel"), source.indexOf("const legacyStarterByLevel"));
+  const level10Support = supportTable.slice(supportTable.indexOf("  10: {"));
+  const level10Answer = answers.slice(answers.indexOf("  10: `"));
+  for (const actionName of ["fixture.resolve", "inventory.snapshot", "request.build", "stock.adjust", "fixture.restore"]) {
+    assert.match(level10Support, new RegExp(actionName.replace(".", "\\.")));
+    assert.match(level10Answer, new RegExp(actionName.replace(".", "\\.")));
+  }
+  assert.doesNotMatch(level10Support, /after_sale\.notify|client\.close/);
+  assert.doesNotMatch(level10Answer, /after_sale\.notify|client\.close/);
+  assert.match(level10Answer, /def validate_flow[\s\S]*def run_flow[\s\S]*SYSTEM_ERROR/);
+  assert.match(editor, /恢复最新版框架代码会替换当前编辑内容[\s\S]*恢复最新版框架/);
 });
 
 test("所有学习模块都展示课题背景、固定练习契约和验收标准", async () => {

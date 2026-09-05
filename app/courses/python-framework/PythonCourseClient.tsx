@@ -406,25 +406,32 @@ def resolve_after_sale_fixture(database, constraints):
   setup:
     - action: fixture.resolve
       save_as: resolved_fixture
-  steps:
     - action: inventory.snapshot
-      save_as: before_inventory
-    - action: after_sale.notify
-      business_status: 710
+      source: resolved_fixture
+      save_as: before_snapshot
+  steps:
+    - action: request.build
+      source: resolved_fixture
+      adjust_amount: -10
+      save_as: request
+    - action: stock.adjust
+      source: request
       save_as: processing_result
   assertions:
     - source: processing_result.response
-      equals:
-        success: true
+      path: success
+      equals: true
   teardown:
     always:
-      - action: fixture.restore`,
+      - action: fixture.restore
+        source: before_snapshot`,
     task: "选择一个实际需求，实现从 requirement_cases.yaml 到 MockTransport 全链路，并输出标准化 evidence JSON。",
     taskContext: "背景：Boss 战把前九关组合成一条可审计的售后链路。提交物同时包含 YAML 声明、Python adapters/tests 和 evidence JSON；网页编辑器用于集中提交这些文本，不会直接运行 YAML。",
     taskContract: [
       "固定场景 ID：boss_01_after_sale；YAML 文件名 requirement_cases.yaml",
-      "common_flow 必须包含 setup、steps、assertions、teardown.always，action 名都能在 adapters.py 中解析",
-      "tests/test_boss_mock.py 使用 MockTransport 跑通成功分支和至少一个失败分支，不访问真实网络",
+      "固定 action 链路：fixture.resolve → inventory.snapshot → request.build → stock.adjust → fixture.restore",
+      "common_flow 必须包含 setup、steps、assertions、teardown.always，所有 action 在 ADAPTERS 中解析并返回 ActionResult",
+      "tests/test_boss_mock.py 使用 MockTransport 跑通 -10 成功与 500/SYSTEM_ERROR 失败，不访问真实网络",
       "collect-only 必须能导入 adapters 并收集用例；静态校验在执行前拒绝缺字段和未绑定 action",
       "evidence JSON 至少包含 case_id、success、request、response、outputs、side_effects、error、teardown；失败时保留主异常且仍记录清理结果",
     ],
@@ -950,15 +957,28 @@ common_flow:
   setup:
     - action: fixture.resolve
       save_as: resolved_fixture
+    - action: inventory.snapshot
+      source: resolved_fixture
+      save_as: before_snapshot
   steps:
     - action: request.build
+      source: resolved_fixture
+      adjust_amount: -10
       save_as: request
-    # TODO（你来完成）：增加调用库存调整接口的 action，并保存 result
+    - action: stock.adjust
+      source: request
+      save_as: processing_result
   assertions:
-    # TODO（你来完成）：声明 success 和 flowNo 断言
+    - source: processing_result.response
+      path: success
+      equals: null  # TODO（你来完成）：成功分支应等于什么
+    - source: processing_result.response
+      path: data.flowNo
+      exists: null  # TODO（你来完成）：流水号是否必须存在
   teardown:
     always:
-      - action: client.close
+      - action: fixture.restore
+        source: before_snapshot
 
 # ===== requirements/BOSS_01/adapters.py =====
 from dataclasses import dataclass, field
@@ -976,35 +996,124 @@ class ActionResult:
 
 
 def resolve_fixture(entry, context):
-    return {"skuId": "SKU-001", "available": 100}
+    return ActionResult(
+        success=True,
+        outputs={"skuId": "SKU-001", "available": 100},
+    )
+
+
+def inventory_snapshot(entry, context):
+    fixture = context[entry["source"]].outputs
+    return ActionResult(success=True, outputs=dict(fixture))
 
 
 def build_request(entry, context):
-    fixture = context["resolved_fixture"]
-    return {"skuId": fixture["skuId"], "adjustAmount": -10}
+    fixture = context[entry["source"]].outputs
+    request = {
+        "skuId": fixture["skuId"],
+        "adjustAmount": entry["adjust_amount"],
+    }
+    return ActionResult(success=True, request=request, outputs=request)
+
+
+def adjust_stock(entry, context):
+    payload = context[entry["source"]].outputs
+    response = context["client"].post(
+        "https://example.test/stock/adjust",
+        json=payload,
+    )
+    body = response.json()
+    # TODO（你来完成）：无论成功或失败都返回 ActionResult，并保留 request/response
+
+
+def restore_fixture(entry, context):
+    snapshot = context[entry["source"]].outputs
+    # TODO（你来完成）：返回成功的 ActionResult，并记录恢复副作用
 
 
 ADAPTERS = {
     "fixture.resolve": resolve_fixture,
+    "inventory.snapshot": inventory_snapshot,
     "request.build": build_request,
-    # TODO（你来完成）：绑定 stock.adjust 和 client.close
+    "stock.adjust": adjust_stock,
+    "fixture.restore": restore_fixture,
 }
 
+# ===== framework/runner.py =====
+from requirements.BOSS_01.adapters import ActionResult
+
+
+def read_path(value, path):
+    current = value
+    for part in path.split("."):
+        current = current[part] if isinstance(current, dict) else getattr(current, part)
+    return current
+
+
+def validate_flow(flow, adapters):
+    # TODO（你来完成）：检查四个生命周期区段以及所有 action 是否已绑定
+    ...
+
+
+def run_entry(entry, adapters, context):
+    result = adapters[entry["action"]](entry, context)
+    if not isinstance(result, ActionResult):
+        raise TypeError("action 必须返回 ActionResult")
+    if entry.get("save_as"):
+        context[entry["save_as"]] = result
+    return result
+
+
+def run_flow(flow, adapters, context, case_id):
+    evidence = {
+        "case_id": case_id,
+        "success": False,
+        "request": None,
+        "response": None,
+        "outputs": {},
+        "side_effects": [],
+        "error": None,
+        "teardown": [],
+    }
+    # TODO（你来完成）：依次执行 setup/steps/assertions；finally 中始终执行 teardown.always
+    return evidence
+
 # ===== tests/test_boss_mock.py =====
+from copy import deepcopy
+import json
+from pathlib import Path
+
 import httpx
+import yaml
+
+from framework.runner import run_flow, validate_flow
+from requirements.BOSS_01.adapters import ADAPTERS
+
+
+common_flow = yaml.safe_load(
+    Path("requirements/BOSS_01/requirement_cases.yaml").read_text()
+)["common_flow"]
 
 
 def handler(request: httpx.Request):
-    # TODO（你来完成）：检查固定请求，并返回成功或失败响应
-    ...
+    assert request.method == "POST"
+    assert request.url.path == "/stock/adjust"
+    payload = json.loads(request.content)
+    assert payload["skuId"] == "SKU-001"
+    # TODO（你来完成）：-10 返回成功；500 返回 HTTP 500 / SYSTEM_ERROR
 
 
 def test_boss_flow_success_and_failure():
     transport = httpx.MockTransport(handler)
     with httpx.Client(transport=transport, timeout=2.0) as client:
-        # TODO（你来完成）：通过 Runner 跑成功与失败链路
-        ...
-    # TODO（你来完成）：断言 teardown.always 已执行
+        validate_flow(common_flow, ADAPTERS)
+        success = run_flow(common_flow, ADAPTERS, {"client": client}, "boss_01_after_sale")
+
+        failure_flow = deepcopy(common_flow)
+        failure_flow["steps"][0]["adjust_amount"] = 500
+        failure = run_flow(failure_flow, ADAPTERS, {"client": client}, "boss_01_after_sale")
+
+    # TODO（你来完成）：断言成功/失败证据，并证明两条路径都执行 fixture.restore
 
 # ===== evidence/boss_01_after_sale.json =====
 {
@@ -1018,7 +1127,8 @@ def test_boss_flow_success_and_failure():
   "teardown": []
 }
 
-# 只修改 TODO 区域；目录、字段名、函数签名和生命周期结构已经固定。`,
+# common_flow 由上面的 requirement_cases.yaml 读取；这里只集中展示多文件骨架。
+# 只修改 TODO 区域；目录、字段名、action 名、函数签名和生命周期结构已经固定。`,
     verifyCommand: "python verify_declarative_delivery.py ... && pytest -q tests/test_boss_mock.py",
     expected: "三级静态门禁通过\nMock 全链路通过\nevidence JSON 包含 request/response",
     hint: "可以直接复用第 5、6、7、8 关产物，不要重写 Client、Provider 或 Runner。",
@@ -2179,7 +2289,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           </aside>}
                           <aside className="starter-policy" aria-label="项目练习填写说明">
                             <b>框架代码已经放进编辑器</b>
-                            <p>目录、字段、函数签名、测试入口和固定样例由课程提供。你只需要完成标有 <code>TODO（你来完成）</code> 的关键逻辑；已有个人草稿不会被覆盖。</p>
+                            <p>目录、字段、函数签名、测试入口和固定样例由课程提供。你只需要完成标有 <code>TODO（你来完成）</code> 的关键逻辑；已有个人草稿不会被自动覆盖，需要升级时可点击编辑器右上角的“恢复最新版框架”。</p>
                           </aside>
                           <details className="help-panel compact-task-help">
                             <summary>查看框架代码说明、验证方法与验收标准</summary>

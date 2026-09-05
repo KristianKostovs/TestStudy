@@ -45,7 +45,29 @@ const gradingRubricDefinitions: GradingRubricDefinition[] = [
     ],
   },
   { levelId: 9, title: "架构边界与副作用", task: "把库存查询、共享快照和售后选数规则拆成三层并分别测试。", taskContract: ["Provider=query_rows(connection, sql, params)", "Shared Action=capture_inventory_snapshot(provider, sku_id)", "Requirement=select_legal_after_sale_sku(rows, constraints)", "筛选 available>=minimum_available 且 locked is False", "依赖方向 Requirement -> Shared Action -> Provider"], acceptance: ["Provider 不知道售后业务规则", "筛选规则留在需求层且依赖方向正确", "三层可分别单元测试"] },
-  { levelId: 10, title: "Boss 战：完整声明式链路", task: "完成固定 boss_01_after_sale 场景的 YAML、adapters、Mock 测试和 evidence JSON。", taskContract: ["requirement_cases.yaml 含 setup/steps/assertions/teardown.always", "所有 action 能在 adapters.py 解析", "tests/test_boss_mock.py 不访问真实网络", "evidence 含 case_id/success/request/response/outputs/side_effects/error/teardown"], acceptance: ["YAML 静态校验通过", "adapter 可导入且 collect-only 通过", "Mock 完整跑通 setup→assertions→teardown.always", "成功与失败 evidence 均包含约定字段"] },
+  {
+    levelId: 10,
+    title: "Boss 战：完整声明式链路",
+    task: "完成固定 boss_01_after_sale 场景的 YAML、adapters、Runner、Mock 测试和 evidence JSON。",
+    taskContract: [
+      "固定 action 链路为 fixture.resolve → inventory.snapshot → request.build → stock.adjust → fixture.restore",
+      "requirement_cases.yaml 含 setup/steps/assertions/teardown.always，stock.adjust 的结果保存为 processing_result",
+      "所有 action 都在 ADAPTERS 中解析并统一返回 ActionResult",
+      "tests/test_boss_mock.py 用 MockTransport 覆盖 -10 成功与 500/SYSTEM_ERROR 失败，不访问真实网络",
+      "evidence 含 case_id/success/request/response/outputs/side_effects/error/teardown",
+    ],
+    acceptance: [
+      "YAML 静态校验通过，缺少区段或未绑定 action 会在执行前失败",
+      "adapter 可导入且 collect-only 不执行 HTTP 请求",
+      "Mock 完整跑通 setup→steps→assertions→teardown.always",
+      "成功与失败 evidence 均保留请求、响应和 fixture.restore 结果",
+    ],
+    authoritativeNotes: [
+      "以题目给出的五个 action 名和数据流为准，IDE 骨架与参考答案必须一致。",
+      "HTTP Client 由 with httpx.Client 管理关闭；teardown.always 负责恢复业务 fixture，不使用 client.close action。",
+      "失败分支不得通过 raise_for_status 丢失原始响应，SYSTEM_ERROR 必须进入 evidence.response。",
+    ],
+  },
 ];
 
 export const gradingRubrics: GradingRubric[] = gradingRubricDefinitions.map((rubric) => ({

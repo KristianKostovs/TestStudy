@@ -311,7 +311,7 @@ rows = capture_inventory_snapshot(FakeProvider(), "SKU-001")
 selected = select_legal_after_sale_sku(rows, {"minimum_available": 100})
 assert selected["available"] == 120
 assert selected["locked"] is False`,
-  10: `# requirement_cases.yaml
+  10: `# ===== requirements/BOSS_01/requirement_cases.yaml =====
 name: boss_01_after_sale
 common_flow:
   setup:
@@ -321,10 +321,12 @@ common_flow:
       source: resolved_fixture
       save_as: before_snapshot
   steps:
-    - action: after_sale.notify
-      request:
-        skuId: "{{ resolved_fixture.skuId }}"
-        adjustAmount: -10
+    - action: request.build
+      source: resolved_fixture
+      adjust_amount: -10
+      save_as: request
+    - action: stock.adjust
+      source: request
       save_as: processing_result
   assertions:
     - source: processing_result.response
@@ -338,27 +340,235 @@ common_flow:
       - action: fixture.restore
         source: before_snapshot
 
-# adapters.py
-# 每个 action 都返回 ActionResult：
-# request/response 保存调用证据，outputs 给后续步骤使用，
-# side_effects 记录库存变化和恢复动作。
+# ===== requirements/BOSS_01/adapters.py =====
+from dataclasses import dataclass, field
+from typing import Any
 
-# tests/test_boss_mock.py 至少验证：
-# 1. YAML 通过 FlowEntry schema 校验；
-# 2. 所有 action ref 都能导入；
-# 3. pytest --collect-only 不访问网络；
-# 4. MockTransport 成功路径保存 flowNo；
-# 5. MockTransport 失败路径保留主异常和已完成步骤；
-# 6. 成功和失败两条路径都执行 fixture.restore。
 
-# evidence.json（成功和失败都使用同一结构）
+@dataclass
+class ActionResult:
+    success: bool
+    request: dict[str, Any] | None = None
+    response: dict[str, Any] | None = None
+    outputs: dict[str, Any] = field(default_factory=dict)
+    side_effects: list[str] = field(default_factory=list)
+    error: str | None = None
+
+
+def resolve_fixture(entry, context):
+    return ActionResult(
+        success=True,
+        outputs={"skuId": "SKU-001", "available": 100},
+    )
+
+
+def inventory_snapshot(entry, context):
+    fixture = context[entry["source"]].outputs
+    return ActionResult(success=True, outputs=dict(fixture))
+
+
+def build_request(entry, context):
+    fixture = context[entry["source"]].outputs
+    request = {
+        "skuId": fixture["skuId"],
+        "adjustAmount": entry["adjust_amount"],
+    }
+    return ActionResult(success=True, request=request, outputs=request)
+
+
+def adjust_stock(entry, context):
+    payload = context[entry["source"]].outputs
+    response = context["client"].post(
+        "https://example.test/stock/adjust",
+        json=payload,
+    )
+    body = response.json()
+    success = response.status_code < 400 and body.get("success") is True
+    return ActionResult(
+        success=success,
+        request=payload,
+        response=body,
+        outputs={"flowNo": body.get("data", {}).get("flowNo")},
+        side_effects=["inventory adjusted"] if success else [],
+        error=None if success else body.get("code", "stock adjust failed"),
+    )
+
+
+def restore_fixture(entry, context):
+    snapshot = context[entry["source"]].outputs
+    return ActionResult(
+        success=True,
+        outputs={"restored": snapshot},
+        side_effects=["inventory restored"],
+    )
+
+
+ADAPTERS = {
+    "fixture.resolve": resolve_fixture,
+    "inventory.snapshot": inventory_snapshot,
+    "request.build": build_request,
+    "stock.adjust": adjust_stock,
+    "fixture.restore": restore_fixture,
+}
+
+# ===== framework/runner.py =====
+from requirements.BOSS_01.adapters import ActionResult
+
+
+def read_path(value, path):
+    current = value
+    for part in path.split("."):
+        current = current[part] if isinstance(current, dict) else getattr(current, part)
+    return current
+
+
+def validate_flow(flow, adapters):
+    for section in ("setup", "steps", "assertions", "teardown"):
+        if section not in flow:
+            raise ValueError(f"缺少生命周期区段: {section}")
+    if "always" not in flow["teardown"]:
+        raise ValueError("teardown 缺少 always")
+
+    executable = flow["setup"] + flow["steps"] + flow["teardown"]["always"]
+    for entry in executable:
+        action_name = entry.get("action")
+        if not action_name:
+            raise ValueError("步骤缺少 action")
+        if action_name not in adapters:
+            raise KeyError(f"未绑定 action: {action_name}")
+
+
+def run_entry(entry, adapters, context):
+    result = adapters[entry["action"]](entry, context)
+    if not isinstance(result, ActionResult):
+        raise TypeError("action 必须返回 ActionResult")
+    if entry.get("save_as"):
+        context[entry["save_as"]] = result
+    return result
+
+
+def run_flow(flow, adapters, context, case_id):
+    validate_flow(flow, adapters)
+    evidence = {
+        "case_id": case_id,
+        "success": False,
+        "request": None,
+        "response": None,
+        "outputs": {},
+        "side_effects": [],
+        "error": None,
+        "teardown": [],
+    }
+
+    try:
+        for section in ("setup", "steps"):
+            for entry in flow[section]:
+                result = run_entry(entry, adapters, context)
+                evidence["side_effects"].extend(result.side_effects)
+
+        for rule in flow["assertions"]:
+            source = read_path(context, rule["source"])
+            actual = read_path(source, rule["path"])
+            if "equals" in rule and actual != rule["equals"]:
+                raise AssertionError(
+                    f"{rule['source']}.{rule['path']} expected "
+                    f"{rule['equals']!r}, got {actual!r}"
+                )
+            if rule.get("exists") is True and actual is None:
+                raise AssertionError(f"{rule['source']}.{rule['path']} 不存在")
+        evidence["success"] = True
+    except Exception as error:
+        evidence["error"] = f"{type(error).__name__}: {error}"
+    finally:
+        action_result = context.get("processing_result")
+        if action_result:
+            evidence["request"] = action_result.request
+            evidence["response"] = action_result.response
+            evidence["outputs"] = action_result.outputs
+        for entry in flow["teardown"]["always"]:
+            try:
+                result = run_entry(entry, adapters, context)
+                evidence["teardown"].append({
+                    "action": entry["action"],
+                    "success": result.success,
+                })
+                evidence["side_effects"].extend(result.side_effects)
+            except Exception as teardown_error:
+                evidence["teardown"].append({
+                    "action": entry.get("action"),
+                    "success": False,
+                    "error": str(teardown_error),
+                })
+    return evidence
+
+# ===== tests/test_boss_mock.py =====
+from copy import deepcopy
+import json
+from pathlib import Path
+
+import httpx
+import pytest
+import yaml
+
+from framework.runner import run_flow, validate_flow
+from requirements.BOSS_01.adapters import ADAPTERS
+
+
+FLOW = yaml.safe_load(
+    Path("requirements/BOSS_01/requirement_cases.yaml").read_text()
+)["common_flow"]
+
+
+def handler(request: httpx.Request):
+    assert request.method == "POST"
+    assert request.url.path == "/stock/adjust"
+    payload = json.loads(request.content)
+    assert payload["skuId"] == "SKU-001"
+    if payload["adjustAmount"] == 500:
+        return httpx.Response(500, json={"success": False, "code": "SYSTEM_ERROR"})
+    return httpx.Response(
+        200,
+        json={"success": True, "data": {"flowNo": "FLOW-001"}},
+    )
+
+
+@pytest.mark.parametrize(
+    ("adjust_amount", "expected_success"),
+    [(-10, True), (500, False)],
+)
+def test_boss_flow_success_and_failure(adjust_amount, expected_success):
+    flow = deepcopy(FLOW)
+    flow["steps"][0]["adjust_amount"] = adjust_amount
+    validate_flow(flow, ADAPTERS)
+
+    transport = httpx.MockTransport(handler)
+    with httpx.Client(transport=transport, timeout=2.0) as client:
+        evidence = run_flow(
+            flow,
+            ADAPTERS,
+            {"client": client},
+            "boss_01_after_sale",
+        )
+
+    assert evidence["success"] is expected_success
+    assert evidence["teardown"] == [
+        {"action": "fixture.restore", "success": True}
+    ]
+    if expected_success:
+        assert evidence["outputs"]["flowNo"] == "FLOW-001"
+        assert evidence["error"] is None
+    else:
+        assert evidence["response"]["code"] == "SYSTEM_ERROR"
+        assert evidence["error"] is not None
+
+# ===== evidence/boss_01_after_sale.json =====
 {
   "case_id": "boss_01_after_sale",
   "success": true,
   "request": {"skuId": "SKU-001", "adjustAmount": -10},
   "response": {"success": true, "data": {"flowNo": "FLOW-001"}},
   "outputs": {"flowNo": "FLOW-001"},
-  "side_effects": ["inventory adjusted"],
+  "side_effects": ["inventory adjusted", "inventory restored"],
   "error": null,
   "teardown": [{"action": "fixture.restore", "success": true}]
 }`,
