@@ -39,6 +39,7 @@ test("学习中心只负责选择独立课程方向", async () => {
   assert.match(html, /先选方向/);
   for (const moduleId of [
     "python-framework",
+    "python-agent-fast-track",
     "ui-automation",
     "api-automation",
     "ai-testing",
@@ -53,6 +54,7 @@ test("学习中心只负责选择独立课程方向", async () => {
 test("各方向拥有可独立访问的课程页面", async () => {
   const cases = [
     ["/courses/python-framework", "Python 框架基础十关"],
+    ["/courses/python-agent-fast-track", "Python 基础 Agent 快速通道"],
     ["/courses/ui-automation", "UI 自动化十关路线"],
     ["/courses/api-automation", "API 自动化十关路线"],
     ["/courses/ai-testing", "AI 测试十关路线"],
@@ -67,6 +69,47 @@ test("各方向拥有可独立访问的课程页面", async () => {
     assert.match(html, new RegExp(`<title>${expectedTitle} \\| 测试能力修炼场<\\/title>`), pathname);
     assert.match(html, /href=["']\/learn["']/, pathname);
   }
+});
+
+test("Python Agent 快速通道提供完整十六节学习内容和连续工单项目", async () => {
+  const [data, client, registry, styles] = await Promise.all([
+    readFile(new URL("../app/courses/python-agent-fast-track/course-data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-agent-fast-track/AgentFastTrackClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-agent-fast-track/python-agent-fast-track.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.equal((data.match(/\n {4}id: \d+,\n {4}chapter: \d+,/g) ?? []).length, 16);
+  assert.equal((data.match(/\n {4}objective:/g) ?? []).length, 16);
+  assert.equal((data.match(/\n {4}diagnostic:/g) ?? []).length, 16);
+  assert.equal((data.match(/\n {4}starter:/g) ?? []).length, 16);
+  assert.equal((data.match(/\n {4}referenceAnswer:/g) ?? []).length, 16);
+  assert.equal((data.match(/\n {4}pass:/g) ?? []).length, 16);
+  assert.equal((data.match(/\n {4}lookupOnly:/g) ?? []).length, 2);
+  for (const topic of ["可变默认参数", "is、== 与 None", "Pydantic", "TypedDict、Annotated", "async/await 与 yield", "LangChain 工具", "LangGraph 状态", "工单查询 Agent"]) {
+    assert.match(data, new RegExp(topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(data, /totalAgentFastTrackMinutes = 1760/);
+  assert.match(client, /参考答案与解释（默认折叠）/);
+  assert.match(client, /<BlueprintPracticeEditor/);
+  assert.match(client, /我已独立完成并达到标准/);
+  assert.match(client, /下一步入口/);
+  assert.match(client, /这一节只掌握用法即可/);
+  assert.match(client, /python-agent-fast-track-completed-v1/);
+  assert.match(registry, /id: "python-agent-fast-track"/);
+  assert.match(registry, /foundation\.langchain/);
+  assert.match(registry, /foundation\.langgraph/);
+  assert.match(styles, /font-size: 16px/);
+
+  const response = await render("/courses/python-agent-fast-track");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /Python 基础 Agent 快速通道/);
+  assert.match(html, /工单查询助手/);
+  assert.match(html, /最小可运行示例/);
+  assert.match(html, /输出是什么，或错误在哪里/);
+  assert.match(html, /IDE 练习区/);
+  assert.match(html, /TODO（你来完成）/);
 });
 
 test("详情页不会错误继承首页分享图", async () => {
