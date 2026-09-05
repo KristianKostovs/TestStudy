@@ -1027,6 +1027,75 @@ def test_boss_flow_success_and_failure():
   },
 };
 
+// 旧版“载入起步代码”会把模板保存成个人草稿。只有内容与旧模板完全一致时才升级，
+// 避免把学习者真正修改过的答案覆盖掉。
+const legacyStarterByLevel: Readonly<Record<number, string>> = {
+  1: `def get_by_path(data: dict, path: str):
+    # 1. current 从整个 data 开始
+    # 2. 把 "data.flowNo" 拆成 ["data", "flowNo"]
+    # 3. 逐层取值，找不到就报错
+    pass`,
+  2: `from copy import deepcopy
+
+fixture = {"request": {"businessStatus": 710}}
+
+case_a = deepcopy(fixture)
+case_b = deepcopy(fixture)
+# 修改 case_a，然后断言 case_b 未变`,
+  3: `from importlib import import_module
+
+
+def resolve_callable(ref: str):
+    module_name, function_name = ref.split(":", 1)
+    # 导入 module，取出 function，检查 callable
+    pass`,
+  4: `from dataclasses import dataclass, field
+from typing import Any
+
+
+@dataclass
+class ActionResult:
+    # 定义 success、request、response、outputs、side_effects
+    pass`,
+  5: `import pytest
+
+
+@pytest.fixture
+def api_client():
+    # 创建 client
+    # yield client
+    # 关闭 client`,
+  6: `from pydantic import BaseModel, model_validator
+
+
+class FlowEntry(BaseModel):
+    action: str | None = None
+    request: dict | None = None
+    # 增加组合校验`,
+  7: `def run_entry(entry, adapters, context):
+    # 找 handler
+    # 执行 handler
+    # 根据 save_as 保存结果`,
+  8: `import json
+import httpx
+
+
+def handler(request: httpx.Request):
+    # request 是 HTTPX 创建的对象，可读取：
+    # request.method / request.url.path / request.content / request.headers
+    payload = json.loads(request.content)
+    # 按题目给定的 10 / 500 / 101 三种规则返回 httpx.Response`,
+  9: `# 从一个混合 adapter 中标注：
+# [Provider] 基础访问
+# [Shared Action] 页面稳定动作
+# [Requirement] 需求特有规则`,
+  10: `requirements/BOSS_01/
+├── constraint_spec.yaml
+├── requirement_cases.yaml
+├── adapters.py
+└── source_queries.py`,
+};
+
 const knowledgeByLevel: Record<number, KnowledgePoint[]> = {
   1: [
     { term: "path: str", plain: "path 是函数接收的参数，str 表示它应该是字符串。", role: "传入 data.flowNo，告诉函数要沿哪条字段路线查找。", example: `path = "data.flowNo"` },
@@ -1647,9 +1716,10 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   }
 
   function answerForLevel(id: number, drafts: Record<number, string>) {
-    return Object.prototype.hasOwnProperty.call(drafts, id)
-      ? drafts[id]
-      : supportByLevel[id].starter;
+    if (!Object.prototype.hasOwnProperty.call(drafts, id)) return supportByLevel[id].starter;
+    const savedDraft = drafts[id];
+    if (savedDraft.trim() === legacyStarterByLevel[id]?.trim()) return supportByLevel[id].starter;
+    return savedDraft;
   }
 
   async function submitTask(id: number) {

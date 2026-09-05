@@ -197,6 +197,8 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.match(source, /taskContext: "背景：生产代码会用 HTTPX 调用库存调整接口/);
   assert.equal((source.match(/TODO（你来完成）/g) ?? []).length >= 10, true);
   assert.match(source, /function answerForLevel[\s\S]*hasOwnProperty[\s\S]*supportByLevel\[id\]\.starter/);
+  assert.match(source, /legacyStarterByLevel[\s\S]*savedDraft\.trim\(\) === legacyStarterByLevel\[id\]\?\.trim\(\)/);
+  assert.match(source, /requirements\/BOSS_01\/[\s\S]*constraint_spec\.yaml[\s\S]*source_queries\.py/);
   assert.match(source, /value=\{currentDraft\}/);
   assert.match(source, /框架代码已经放进编辑器/);
   assert.match(source, /requirements\/BOSS_01\/requirement_cases\.yaml[\s\S]*requirements\/BOSS_01\/adapters\.py[\s\S]*tests\/test_boss_mock\.py[\s\S]*evidence\/boss_01_after_sale\.json/);
