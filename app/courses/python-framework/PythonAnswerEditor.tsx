@@ -388,7 +388,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
       doc: valueRef.current,
       extensions: [
         basicSetup,
-        levelId === 10 ? [] : python(),
+        python(),
         oneDark,
         indentUnit.of("    "),
         keymap.of([indentWithTab]),
@@ -470,7 +470,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
         ))}</ul>}
       </section>
       <small>{levelId === 10
-        ? "本关允许集中提交 Python、YAML 和 evidence JSON，因此关闭 Python 专属语法诊断以避免误报；网页不会执行 YAML，仍需在项目中运行静态校验与 pytest。"
+        ? "本关保留 Python 语法高亮、自动缩进和代码补全；因为同一编辑器还包含 YAML 与 evidence JSON，只关闭 Python 专属问题提示以避免误报。网页不会执行 YAML，仍需在项目中运行静态校验与 pytest。"
         : `按 Ctrl/⌘ + Space 可查看第 ${levelId} 关模板和常见对象补全；补全来自课程契约，不代表依赖已经安装或导入。这里做语法和初级名称检查，业务正确性仍由助教按验收标准判定。`}</small>
     </section>
   );

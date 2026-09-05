@@ -251,7 +251,8 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   for (const completion of ["@pytest.fixture", "@pytest.mark.parametrize", "@dataclass", "model_validator", "signature", "common_flow"]) {
     assert.match(editor, new RegExp(completion.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
-  assert.match(editor, /levelId === 10 \? \[\] : python\(\)/);
+  assert.match(editor, /extensions: \[[\s\S]*basicSetup,[\s\S]*python\(\),/);
+  assert.match(editor, /本关保留 Python 语法高亮、自动缩进和代码补全/);
   assert.match(editor, /补全只展示名称，不会自动导入/);
   assert.equal((rubric.match(/taskContract:/g) ?? []).length, 11);
   assert.match(rubric, /请求结构由题目明确给定，不得要求学习者猜测未声明字段/);
