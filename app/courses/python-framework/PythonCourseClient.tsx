@@ -2396,6 +2396,14 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           <button className="complete-button" disabled={!done && !passedQuiz} onClick={() => completeLevel(level.id)}>
                             {done ? "✓ 已通关，点击撤销" : passedQuiz ? (level.id === 10 ? "记录 Boss 战通关，正式出师" : "小测已通过，记录本关通关") : "先通过本关小测"}
                           </button>
+                          {level.id === 10 && done && <aside className="boss-reward-card">
+                            <span>LEVEL 10 REWARD · 已解锁</span>
+                            <div>
+                              <h4>声明式 pytest 框架全景笔记</h4>
+                              <p>完整执行流程图、框架角色边界、核心数据结构、工程目录树，以及数据库配置和清理链路。</p>
+                            </div>
+                            <a href="/courses/python-framework/rewards/framework-flow-notes">打开 HTML 通关笔记 →</a>
+                          </aside>}
                         </div></section>}
                       </div>
                     )}

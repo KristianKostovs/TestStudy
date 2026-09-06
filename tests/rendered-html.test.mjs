@@ -272,6 +272,44 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.match(editor, /恢复最新版框架代码会替换当前编辑内容[\s\S]*恢复最新版框架/);
 });
 
+test("第十关通关后解锁完整的 pytest 框架 HTML 笔记", async () => {
+  const [course, rewardPage, rewardStyles] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/rewards/framework-flow-notes/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/rewards/framework-flow-notes/reward-notes.css", import.meta.url), "utf8"),
+  ]);
+
+  assert.match(course, /level\.id === 10 && done/);
+  assert.match(course, /href="\/courses\/python-framework\/rewards\/framework-flow-notes"/);
+  assert.match(course, /打开 HTML 通关笔记/);
+  for (const detail of [
+    "yaml_collector.py",
+    "FlowEntry",
+    "pytest --collect-only",
+    "db_connection fixture",
+    "MockTransport",
+    "teardown.always",
+    "ActionResult",
+    "evidence.json",
+    "fixture.restore",
+    "DATABASE_URL",
+  ]) {
+    assert.match(rewardPage, new RegExp(detail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
+  }
+  assert.match(rewardPage, /Requirement → Shared Action → Provider \/ Client/);
+  assert.match(rewardPage, /真实密码、Token 和生产连接串/);
+  assert.match(rewardPage, /href="\/courses\/python-framework\/chapters\/4#level-10"/);
+  assert.match(rewardStyles, /\.flow-map::before/);
+  assert.match(rewardStyles, /@media \(max-width: 720px\)/);
+
+  const response = await render("/courses/python-framework/rewards/framework-flow-notes");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /声明式 pytest 框架/);
+  assert.match(html, /可落地的完整 pytest 工程结构/);
+  assert.match(html, /配置数据库的完整依赖链/);
+});
+
 test("所有学习模块都展示课题背景、固定练习契约和验收标准", async () => {
   const [roadmaps, registry, page, starters, editor, chatRoute, gradeRoute] = await Promise.all([
     readFile(new URL("../app/blueprint-roadmaps.ts", import.meta.url), "utf8"),
