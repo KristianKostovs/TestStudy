@@ -367,7 +367,41 @@ export default function FrameworkFlowRewardPage() {
         <div className="section-heading"><span>04</span><div><p>PROJECT LAYOUT</p><h2>可落地的完整 pytest 工程结构</h2></div></div>
         <p className="section-intro">这不是唯一目录写法，但边界清楚：框架能力、具体需求、SQL、固定样例、测试入口、产物与脚本各自归位。</p>
         <pre className="tree-block"><code>{projectTree}</code></pre>
-      </section>
+        <div className="test-taxonomy">
+          <div className="taxonomy-heading">
+            <span>紧跟 <code>tests/</code> 目录理解</span>
+            <h3>前三类按测试范围划分，requirements 按业务归属划分</h3>
+            <p><code>unit</code>、<code>contract</code>、<code>integration</code> 和 <code>requirements</code> 不是完全平行的四种测试级别，而是两种分类维度。</p>
+          </div>
+          <div className="dimension-map" aria-label="测试目录的两种分类维度">
+            <article>
+              <span>技术范围维度</span>
+              <strong>unit → contract → integration</strong>
+              <p>回答“测多大范围、连接了多少组件”。</p>
+            </article>
+            <i>+</i>
+            <article>
+              <span>业务归属维度</span>
+              <strong>requirements / BOSS_01</strong>
+              <p>回答“这个测试证明哪个具体需求”。</p>
+            </article>
+          </div>
+          <div className="taxonomy-cards">
+            <article><code>unit/</code><h4>一个小零件本身对不对？</h4><p>隔离测试单个函数或类，例如 Schema、Dispatcher、路径解析器。通常不访问真实 HTTP 和数据库。</p></article>
+            <article><code>contract/</code><h4>零件之间的接口约定对不对？</h4><p>验证 action 是否已经注册、handler 签名是否符合约定，以及是否统一返回 <code>ActionResult</code>。</p></article>
+            <article><code>integration/</code><h4>多个零件连接后能否工作？</h4><p>组合测试 Provider、测试数据库、HTTP Client 或 MockTransport，关注组件边界是否真正接通。</p></article>
+            <article><code>requirements/</code><h4>具体业务需求最终是否实现？</h4><p>以 BOSS_01 等需求为入口，串起 YAML、Runner、Adapter、断言、清理和 Evidence，验证验收标准。</p></article>
+          </div>
+          <aside className="taxonomy-overlap">
+            <div><b>同一个测试可以同时拥有两种属性</b><code>业务归属：BOSS_01 + 测试级别：integration</code></div>
+            <pre><code>{`@pytest.mark.requirement("BOSS_01")
+@pytest.mark.integration
+def test_boss_01_after_sale():
+    ...`}</code></pre>
+            <p>目录只能表达一个主要分类，因此再用 pytest marker 补充另一个维度。这样既能运行全部集成测试，也能筛选某个需求的所有测试。</p>
+          </aside>
+        </div>
+        </section>
 
       <section className="reward-section" id="database">
         <div className="section-heading"><span>05</span><div><p>DATABASE CHAIN</p><h2>配置数据库的完整依赖链</h2></div></div>

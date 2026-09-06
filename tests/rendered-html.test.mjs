@@ -293,11 +293,17 @@ test("第十关通关后解锁完整的 pytest 框架 HTML 笔记", async () => 
     "evidence.json",
     "fixture.restore",
     "DATABASE_URL",
+    "技术范围维度",
+    "业务归属维度",
+    "test_action_contract.py",
+    "@pytest.mark.integration",
   ]) {
     assert.match(rewardPage, new RegExp(detail.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.match(rewardPage, /Requirement → Shared Action → Provider \/ Client/);
   assert.match(rewardPage, /真实密码、Token 和生产连接串/);
+  assert.match(rewardPage, /前三类按测试范围划分，requirements 按业务归属划分/);
+  assert.match(rewardPage, /同一个测试可以同时拥有两种属性/);
   assert.match(rewardPage, /href="\/courses\/python-framework\/chapters\/4#level-10"/);
   assert.match(rewardStyles, /\.flow-map::before/);
   assert.match(rewardStyles, /@media \(max-width: 720px\)/);

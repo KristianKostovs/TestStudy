@@ -45,6 +45,26 @@ body { margin: 0; background: #f4f1e9; }
 .reward-section pre { max-width: 100%; margin: 18px 0 0; padding: 24px; overflow-x: auto; color: #dce8e2; border-radius: 11px; background: #102d25; font: 13px/1.75 var(--font-geist-mono), "SFMono-Regular", Consolas, monospace; }
 .subheading { margin: 34px 0 0; font-size: 20px; }
 .tree-block { max-height: 1000px; }
+.test-taxonomy { margin-top: 32px; padding-top: 30px; border-top: 1px solid var(--reward-line); }
+.taxonomy-heading > span { color: var(--reward-green); font-size: 13px; font-weight: 800; }
+.taxonomy-heading h3 { margin: 10px 0 8px; font: 700 clamp(23px, 3vw, 31px)/1.25 Georgia, "Songti SC", serif; }
+.taxonomy-heading p { margin: 0; color: #5f6862; font-size: 15px; line-height: 1.8; }
+.dimension-map { display: grid; grid-template-columns: 1fr auto 1fr; gap: 16px; align-items: center; margin-top: 24px; }
+.dimension-map article { display: grid; gap: 8px; min-height: 145px; align-content: center; padding: 22px; border: 1px solid #d7e4dc; border-radius: 11px; background: #edf4ef; }
+.dimension-map article span { color: var(--reward-green); font-size: 12px; font-weight: 800; }
+.dimension-map article strong { font: 800 15px var(--font-geist-mono), monospace; }
+.dimension-map article p { margin: 0; color: #5e6761; line-height: 1.7; }
+.dimension-map > i { color: var(--reward-gold); font: 700 28px Georgia, serif; }
+.taxonomy-cards { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-top: 16px; }
+.taxonomy-cards article { padding: 22px; border: 1px solid var(--reward-line); border-radius: 11px; background: #fff; }
+.taxonomy-cards article > code { color: var(--reward-green); font-weight: 800; }
+.taxonomy-cards h4 { margin: 11px 0 8px; font-size: 17px; }
+.taxonomy-cards p { margin: 0; color: #5e6761; line-height: 1.72; }
+.taxonomy-overlap { margin-top: 16px; padding: 24px; color: #fff; border-radius: 12px; background: var(--reward-green); }
+.taxonomy-overlap > div { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 10px 20px; }
+.taxonomy-overlap > div code { color: #ffe39a; }
+.taxonomy-overlap pre { margin-top: 18px; border: 1px solid rgba(255, 255, 255, .14); background: #102d25; }
+.taxonomy-overlap p { margin: 16px 0 0; color: #dcebe5; line-height: 1.75; }
 .chain { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 28px 0; }
 .chain span { display: inline-flex; align-items: center; gap: 8px; padding: 10px 12px; }
 .chain i { color: var(--reward-gold); font-style: normal; }
@@ -70,7 +90,8 @@ body { margin: 0; background: #f4f1e9; }
   .reward-hero { padding-bottom: 42px; }
   .reward-hero nav { align-items: flex-start; flex-direction: column; }
   .reward-kicker { margin-top: 44px; }
-  .reward-index, .role-grid, .explain-grid, .cleanup-grid { grid-template-columns: 1fr; }
+  .reward-index, .role-grid, .explain-grid, .cleanup-grid, .dimension-map, .taxonomy-cards { grid-template-columns: 1fr; }
+  .dimension-map > i { justify-self: center; }
   .reward-section { padding: 25px 18px; border-radius: 12px; }
   .section-heading { gap: 14px; }
   .section-heading > span { width: 40px; height: 40px; flex-basis: 40px; }
