@@ -41,6 +41,11 @@ export default function LearningHome() {
         <article><b>03</b><div><h2>进步可以验证</h2><p>主关卡必须包含解释、框架代码和客观验收方式；项目练习只留关键逻辑待完成。</p></div></article>
       </section>
 
+      <section className="career-path-entry" aria-label="独立岗位学习专区">
+        <div><span>独立岗位学习专区</span><h2>5 级 AI 开发岗学习路线</h2><p>从零基础到业务 AI 项目，查看基础知识、项目步骤和验收要求。</p></div>
+        <a href="/ai-developer-level5">进入 AI 开发专区 →</a>
+      </section>
+
       <section className="module-section home-module-section" id="modules">
         <div className="section-heading">
           <p>LEARNING DIRECTIONS</p>

@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 const platformNav = [
   { href: "/", short: "总", label: "成长总览", matches: (path: string) => path === "/" },
   { href: "/learn", short: "学", label: "学习中心", matches: (path: string) => path === "/learn" || path.startsWith("/courses/") || path === "/grading-queue" },
+  { href: "/ai-developer-level5", short: "AI", label: "AI 开发 5 级", matches: (path: string) => path === "/ai-developer-level5" },
   { href: "/interview", short: "练", label: "面试成长", matches: (path: string) => path.startsWith("/interview") },
   { href: "/radar", short: "新", label: "技术雷达", matches: (path: string) => path.startsWith("/radar") },
   { href: "/growth", short: "迹", label: "成长档案", matches: (path: string) => path.startsWith("/growth") },

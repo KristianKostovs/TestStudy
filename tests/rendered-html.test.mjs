@@ -16,6 +16,25 @@ async function render(pathname = "/") {
   );
 }
 
+test("AI 开发 5 级专区可直接访问，学习与项目锚点完整且不载入其他课程关卡", async () => {
+  const response = await render("/ai-developer-level5");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /<title>5 级 AI 开发岗学习路线 \| 测试能力修炼场<\/title>/);
+  for (const anchor of ["requirements", "foundations", "python", "data", "api", "model", "rag", "agent", "delivery", "training", "infrastructure", "projects", "evidence", "resources"]) {
+    assert.match(html, new RegExp(`id=["']${anchor}["']`));
+    assert.match(html, new RegExp(`href=["']#${anchor}["']`));
+  }
+  assert.match(html, /不计入其他课程的关卡、进度或面试评分/);
+  assert.match(html, /前置知识/);
+  assert.match(html, /自检要求与成果材料/);
+  assert.match(html, /不是公司新增门槛/);
+  assert.doesNotMatch(html, /id=["']level-1["']|name=["']answer["']/);
+  const learningHome = await (await render("/learn")).text();
+  assert.match(learningHome, /独立岗位学习专区/);
+  assert.match(learningHome, /href=["']\/ai-developer-level5["']/);
+});
+
 test("首页是学习、面试和技术雷达的统一成长总览", async () => {
   const response = await render();
   assert.equal(response.status, 200);
