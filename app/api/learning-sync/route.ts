@@ -31,7 +31,7 @@ type LearningState = {
 };
 
 const defaultCourseId = "python-framework";
-const supportedCourses = new Set([defaultCourseId, "ai-developer-level5"]);
+const supportedCourses = new Set([defaultCourseId, "ai-developer-level5", "python-agent-fast-track"]);
 function selectedCourse(request: Request) {
   const id = new URL(request.url).searchParams.get("courseId") ?? defaultCourseId;
   return supportedCourses.has(id) ? id : null;
@@ -50,7 +50,7 @@ async function currentUserId() {
 }
 
 function validLevel(value: unknown): value is number {
-  return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 10;
+  return Number.isInteger(value) && Number(value) >= 1 && Number(value) <= 16;
 }
 
 function levelList(value: unknown) {
@@ -125,7 +125,7 @@ function clockRecord(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
   return Object.fromEntries(Object.entries(value as Record<string, unknown>)
     .filter(([key, item]) => key.length <= 80 && typeof item === "string" && !Number.isNaN(Date.parse(item)))
-    .slice(0, 100));
+    .slice(0, 200));
 }
 
 function parseState(value: unknown): LearningState | null {

@@ -50,7 +50,7 @@ function recordValue<T>(value: unknown): Record<number, T> {
 
 function listValue(value: unknown) {
   if (!Array.isArray(value)) return [];
-  return value.filter((item): item is number => Number.isInteger(item) && item >= 1 && item <= 10);
+  return value.filter((item): item is number => Number.isInteger(item) && item >= 1 && item <= 16);
 }
 
 function hasData(value: unknown) {
@@ -132,7 +132,7 @@ function mergeMessages(local: CodexChatMessage[], remote: CodexChatMessage[]) {
 
 function mergeCompleted(local: LearningSyncState, remote: LearningSyncState) {
   const completed: number[] = [];
-  for (let levelId = 1; levelId <= 10; levelId += 1) {
+  for (let levelId = 1; levelId <= 16; levelId += 1) {
     const key = `progress.completed.${levelId}`;
     const side = newerSide(
       local.clocks[key] ?? local.clocks["progress.completed"],

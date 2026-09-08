@@ -1,11 +1,11 @@
 "use client";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { emptyLearningState, mergeLearningStates, stampLearningState, type LearningSyncState } from "../courses/python-framework/learning-sync";
-import { aiCourseId } from "./exercises";
+import { importAgentLegacyState } from "../courses/python-agent-fast-track/legacy-progress";
 
-const endpoint = `/api/learning-sync?courseId=${aiCourseId}`;
 
-export function useCourseState() {
+export function useCourseState(courseId: string) {
+  const endpoint = `/api/learning-sync?courseId=${courseId}`;
   const [state, setState] = useState(emptyLearningState);
   const [ready, setReady] = useState(false);
   const [message, setMessage] = useState("正在读取账号学习记录…");
@@ -24,7 +24,7 @@ export function useCourseState() {
       for (let attempt = 0; attempt < 3; attempt += 1) {
         const snapshot = current.current;
         setMessage("正在保存本课程的答案与进度…");
-        const response = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ courseId: aiCourseId, state: snapshot, baseRevision: revision.current }) });
+        const response = await fetch(endpoint, { method: "PUT", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ courseId, state: snapshot, baseRevision: revision.current }) });
         const result = await response.json();
         if (response.status === 409) {
           revision.current = result.revision;
@@ -44,7 +44,7 @@ export function useCourseState() {
     } catch (error) {
       if (alive.current) setMessage(`${error instanceof Error ? error.message : "同步失败"}；修改仍在当前页面，请重试保存`);
     } finally { saving.current = false; }
-  }, []);
+  }, [courseId, endpoint]);
 
   useEffect(() => {
     alive.current = true;
@@ -53,17 +53,19 @@ export function useCourseState() {
       const result = await response.json();
       if (!response.ok) throw new Error(result.error ?? "读取失败");
       if (cancelled) return;
-      current.current = result.state ?? emptyLearningState();
+      const loaded = result.state ?? emptyLearningState();
+      current.current = courseId === "python-agent-fast-track" ? importAgentLegacyState(loaded, window.localStorage) : loaded;
+      dirty.current = current.current !== loaded;
       revision.current = result.revision;
       setState(current.current);
-      setMessage("已从账号加载 · 本课程独立记录");
+      setMessage(dirty.current ? "已找回旧版进度与草稿，正在随账号保存…" : "已从账号加载 · 本课程独立记录");
     }).catch((error) => {
       if (!cancelled) setMessage(`${error instanceof Error ? error.message : "读取失败"}；可以阅读，修改后请登录并重试保存`);
     }).finally(() => { if (!cancelled) setReady(true); });
     const preventLoss = (event: BeforeUnloadEvent) => { if (dirty.current) { event.preventDefault(); event.returnValue = ""; } };
     window.addEventListener("beforeunload", preventLoss);
     return () => { cancelled = true; alive.current = false; window.removeEventListener("beforeunload", preventLoss); };
-  }, []);
+  }, [courseId, endpoint]);
 
   useEffect(() => {
     if (!ready || !dirty.current) return;
