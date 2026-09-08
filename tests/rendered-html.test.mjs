@@ -30,8 +30,12 @@ test("AI 开发专区复用 Python 分步课程，项目指南独立保留", asy
   for (const anchor of ["requirements", "foundations", "projects", "evidence", "resources"]) assert.match(guide, new RegExp(`id=["']${anchor}["']`));
   assert.match(guide, /不是公司新增门槛/);
   const learningHome = await (await render("/learn")).text();
-  assert.match(learningHome, /独立岗位学习专区/);
-  assert.match(learningHome, /href=["']\/ai-developer-level5["']/);
+  assert.match(learningHome, /class="module-card route-card" href="\/courses\/ai-developer-level5"/);
+  assert.match(learningHome, /9 节已开放/);
+  assert.doesNotMatch(learningHome, /career-path-entry|进入 AI 开发专区/);
+  const course = await render("/courses/ai-developer-level5");
+  assert.equal(course.status, 200);
+  assert.match(await course.text(), /course-workspace ai5-course/);
 });
 
 test("首页是学习、面试和技术雷达的统一成长总览", async () => {

@@ -470,6 +470,16 @@ export const learningModules: LearningModule[] = [
     roadmap: qualityEngineeringRoadmap,
     updateRule: "ISTQB 基础与 Quality in DevOps 提供通用体系，coverage.py 和本地质量门禁资产提供工程实践。",
   },
+  {
+    id: "ai-developer-level5",
+    sigil: "AI5",
+    title: "AI 开发 5 级",
+    subtitle: "从 Python 与数据处理，到知识问答、工具调用和业务 AI 项目，逐步对照 5 级岗位要求。",
+    status: "active",
+    sourceIds: ["foundation.python"],
+    roadmap: ["Python 编程与开发工具", "数据处理与 SQL", "接口调用与服务开发", "大模型与提示词", "知识检索问答", "工具调用与智能体", "评测部署与交付", "模型微调实验", "基础设施拓展"],
+    updateRule: "依据 2026 版岗位能力模型整理，独立保存本课程的学习记录。",
+  },
 ];
 
 export function sourcesForModule(learningModule: LearningModule): SourceAdapter[] {

@@ -1,11 +1,5 @@
 @import "tailwindcss";
 
-.career-path-entry { max-width: 1120px; margin: 36px auto 0; padding: 24px 28px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 18px; border: 1px solid var(--line); border-left: 4px solid var(--green); background: var(--paper); }
-.career-path-entry span { font-size: .875rem; color: var(--red); font-weight: 700; }
-.career-path-entry h2 { font-size: 1.5rem; margin: 8px 0; }
-.career-path-entry p { font-size: 1rem; line-height: 1.7; margin: 0; }
-.career-path-entry a { padding: 12px 18px; background: var(--green); color: white; font-size: 1rem; font-weight: 700; }
-.career-path-entry a:focus-visible { outline: 3px solid var(--red); outline-offset: 4px; }
 
 :root {
   --ink: #18231d;

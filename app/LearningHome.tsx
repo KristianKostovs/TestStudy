@@ -27,8 +27,8 @@ export default function LearningHome() {
             <strong>{learningModules.length}</strong>
             <p>个独立学习方向</p>
             <ul>
-              <li><b>2</b> 条路线已有完整互动课程</li>
-              <li><b>5</b> 条路线已备十关 IDE 框架练习</li>
+              <li><b>{learningModules.filter((module) => module.status === "active").length}</b> 条路线已有完整互动课程</li>
+              <li><b>{learningModules.filter((module) => module.status === "blueprint").length}</b> 条路线已备十关 IDE 框架练习</li>
               <li><b>3</b> 类知识来源持续供给内容</li>
             </ul>
           </aside>
@@ -39,11 +39,6 @@ export default function LearningHome() {
         <article><b>01</b><div><h2>课程各自独立</h2><p>每个方向有专属地址、关卡路线和内容空间。</p></div></article>
         <article><b>02</b><div><h2>知识持续更新</h2><p>基础、官方新技术与项目实战共同驱动课程成长。</p></div></article>
         <article><b>03</b><div><h2>进步可以验证</h2><p>主关卡必须包含解释、框架代码和客观验收方式；项目练习只留关键逻辑待完成。</p></div></article>
-      </section>
-
-      <section className="career-path-entry" aria-label="独立岗位学习专区">
-        <div><span>独立岗位学习专区</span><h2>5 级 AI 开发岗学习路线</h2><p>从零基础到业务 AI 项目，查看基础知识、项目步骤和验收要求。</p></div>
-        <a href="/ai-developer-level5">进入 AI 开发专区 →</a>
       </section>
 
       <section className="module-section home-module-section" id="modules">
@@ -58,7 +53,7 @@ export default function LearningHome() {
             return (
               <a className="module-card route-card" href={`/courses/${module.id}`} key={module.id}>
                 <span className="module-sigil">{module.sigil}</span>
-                <span className="module-state">{module.id === "python-agent-fast-track" ? "16 节已开放" : module.status === "active" ? "十关已开放" : "十关框架已备"}</span>
+                <span className="module-state">{module.id === "ai-developer-level5" ? "9 节已开放" : module.id === "python-agent-fast-track" ? "16 节已开放" : module.status === "active" ? "十关已开放" : "十关框架已备"}</span>
                 <h3>{module.title}</h3>
                 <p>{module.subtitle}</p>
                 <span className="module-source-badges">
