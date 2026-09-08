@@ -111,7 +111,7 @@ test("Python Agent 快速通道提供完整十六节学习内容和连续工单�
     assert.match(data, new RegExp(topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.match(data, /totalAgentFastTrackMinutes = 1760/);
-  assert.match(client, /<InteractiveCourse config=\{agentCourseConfig\}/);
+  assert.match(client, /<InteractiveCourse config=\{agentCourseConfig\} chapterId=\{chapterId\}/);
   assert.match(interactive, /quizCode: lesson.diagnostic.code/);
   assert.match(registry, /id: "python-agent-fast-track"/);
   assert.match(registry, /foundation\.langchain/);
@@ -124,7 +124,16 @@ test("Python Agent 快速通道提供完整十六节学习内容和连续工单�
   assert.match(html, /Python 基础 Agent 快速通道/);
   assert.match(html, /工单查询助手/);
   assert.match(html, /course-workspace/);
-  assert.match(html, /十六节学习地图/);
+  assert.match(html, /五章学习路线/);
+  assert.match(html, /href="\/courses\/python-agent-fast-track\/chapters\/1"/);
+  assert.match(html, /完成上一章后解锁/);
+  const firstChapter = await render("/courses/python-agent-fast-track/chapters/1");
+  assert.equal(firstChapter.status, 200);
+  const chapterHtml = (await firstChapter.text()).replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, "");
+  assert.match(chapterHtml, /本章关卡/);
+  assert.match(chapterHtml.replace(/<!--.*?-->/g, ""), /通过第 1 关后解锁/);
+  assert.doesNotMatch(chapterHtml, /毕业任务：可测试的工单查询 Agent/);
+  assert.equal((await render("/courses/python-agent-fast-track/chapters/99")).status, 404);
   assert.doesNotMatch(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""), /本关学习步骤|本关学习笔记/);
   assert.doesNotMatch(html, /agent-course-layout|agent-lesson-nav/);
 });

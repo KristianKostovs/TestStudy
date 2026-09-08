@@ -61,6 +61,7 @@ const distractors = [
 ];
 
 export const agentCourseConfig: InteractiveCourseConfig = {
+  chapters: agentFastTrackChapters, baseHref: "/courses/python-agent-fast-track",
   id: "python-agent-fast-track", title: "Python → Agent", brand: "Python → Agent", sigil: "λ",
   eyebrow: "PYTHON TO AGENT QUEST", mapTitle: "十六节学习地图",
   nextHref: "/courses/ai-testing", nextTitle: "进入 AI 测试课程",
