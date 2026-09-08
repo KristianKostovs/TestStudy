@@ -19,6 +19,7 @@ type Problem = {
 
 type PythonAnswerEditorProps = {
   levelId: number;
+  courseId?: string;
   value: string;
   starter: string;
   onChange: (value: string) => void;
@@ -357,7 +358,7 @@ function courseCompletions(levelId: number) {
   };
 }
 
-export default function PythonAnswerEditor({ levelId, value, starter, onChange }: PythonAnswerEditorProps) {
+export default function PythonAnswerEditor({ levelId, courseId = "python-framework", value, starter, onChange }: PythonAnswerEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -373,7 +374,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
     if (!hostRef.current) return;
     let mounted = true;
     const inspection = linter((view) => {
-      const diagnostics = collectPythonDiagnostics(view.state, levelId);
+      const diagnostics = collectPythonDiagnostics(view.state, courseId === "python-framework" ? levelId : 0);
       const nextProblems = diagnostics.slice(0, 6).map((diagnostic) => ({
         line: view.state.doc.lineAt(diagnostic.from).number,
         message: diagnostic.message,
@@ -392,7 +393,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
         oneDark,
         indentUnit.of("    "),
         keymap.of([indentWithTab]),
-        autocompletion({ override: [courseCompletions(levelId)], activateOnTyping: true }),
+        autocompletion({ override: [courseCompletions(courseId === "python-framework" ? levelId : 0)], activateOnTyping: true }),
         inspection,
         lintGutter(),
         placeholder(starter),
@@ -424,7 +425,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
       view.destroy();
       viewRef.current = null;
     };
-  }, [levelId, starter]);
+  }, [levelId, courseId, starter]);
 
   useEffect(() => {
     const view = viewRef.current;
@@ -459,7 +460,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
         <div className="codemirror-host" ref={hostRef} />
         <footer className="code-editor-statusbar">
           <span>Ln {cursor.line}, Col {cursor.column}</span>
-          <span>Spaces: 4</span><span>UTF-8</span><span>{levelId === 10 ? "Python / YAML / JSON" : "Python"}</span>
+          <span>Spaces: 4</span><span>UTF-8</span><span>{courseId === "python-framework" && levelId === 10 ? "Python / YAML / JSON" : "Python"}</span>
           <strong className={problems.length ? "has-problems" : ""}>{problems.length ? `${problems.length} 个问题` : "检查通过"}</strong>
         </footer>
       </div>
@@ -469,7 +470,7 @@ export default function PythonAnswerEditor({ levelId, value, starter, onChange }
           <li className={problem.severity} key={`${problem.line}-${problem.message}-${index}`}><i>{problem.severity === "error" ? "×" : "!"}</i><span><b>第 {problem.line} 行</b>{problem.message}</span></li>
         ))}</ul>}
       </section>
-      <small>{levelId === 10
+      <small>{courseId !== "python-framework" ? "按 Ctrl/⌘ + Space 使用 Python 通用补全。编辑器不会执行代码，运行结果需在你的 Python 环境验证。" : levelId === 10
         ? "本关保留 Python 语法高亮、自动缩进和代码补全；因为同一编辑器还包含 YAML 与 evidence JSON，只关闭 Python 专属问题提示以避免误报。网页不会执行 YAML，仍需在项目中运行静态校验与 pytest。"
         : `按 Ctrl/⌘ + Space 可查看第 ${levelId} 关模板和常见对象补全；补全来自课程契约，不代表依赖已经安装或导入。这里做语法和初级名称检查，业务正确性仍由助教按验收标准判定。`}</small>
     </section>

@@ -1,0 +1,22 @@
+/* Core surfaces, steps, editor, notes and tutor use Python's course-flow.css. */
+.ai5-level-picker { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 9px; margin: 0 0 28px; max-width: none; }
+.ai5-level-picker button { display: flex; align-items: center; gap: 10px; height: 100%; padding: 12px; color: #59675f; border: 1px solid #e1e5e2; border-radius: 9px; background: #fff; text-align: left; cursor: pointer; font-size: .875rem; }
+.ai5-level-picker button.active { color: #25765f; border-color: #afc8be; background: #edf5f2; }
+.ai5-level-picker b { flex: 0 0 24px; }
+.ai5-course .stage-panel { padding: 12px 0; font-size: 1rem; line-height: 1.8; }
+.ai5-course .ai5-code { overflow-x: auto; padding: 20px; border: 1px solid #293b34; border-radius: 11px; background: #10231b; color: #dfece6; font: .875rem/1.8 var(--font-geist-mono), monospace; }
+.ai5-term { padding: 16px; }
+.ai5-term summary { cursor: pointer; font-weight: 700; color: #25765f; }
+.ai5-term p { margin: 10px 0 0; }
+.ai5-walkthrough li { padding: 8px 0; }
+.ai5-tutor > p, .ai5-tutor > .ai5-code { margin: 16px; }
+.ai5-grade { margin: 20px 0; padding: 18px; border: 1px solid #dfe5e1; border-left: 4px solid #25765f; border-radius: 10px; background: #f7faf8; }
+.ai5-grade button { padding: 10px 14px; color: white; border: 0; border-radius: 9px; background: #202321; cursor: pointer; }
+.ai5-quiz { display: grid; gap: 12px; border: 0; padding: 0; }
+.ai5-quiz legend { font-weight: 700; margin-bottom: 16px; }
+.ai5-quiz label { display: flex; gap: 12px; align-items: baseline; padding: 13px; border: 1px solid #dfe5e1; cursor: pointer; border-radius: 10px; }
+.ai5-pager { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 14px; padding-top: 24px; }
+.ai5-pager button { border: 0; background: transparent; color: #25765f; cursor: pointer; text-align: left; }
+.ai5-course button:disabled { cursor: not-allowed; opacity: .55; }
+.ai5-course :focus-visible { outline: 3px solid #0f8a6a; outline-offset: 3px; }
+@media (max-width: 760px) { .ai5-level-picker { grid-template-columns: 1fr; } }

@@ -2,6 +2,8 @@
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./course-flow.css";
+import LearningStepNav from "../LearningStepNav";
+import KnowledgeDialog from "../KnowledgeDialog";
 import CourseContentEditButton from "./CourseContentEditButton";
 import CourseNotePanel from "./CourseNotePanel";
 import type { CourseContentOverride, CourseContentValue } from "../../course-content";
@@ -1411,7 +1413,7 @@ type LearningSyncResponse = {
   error?: string;
 };
 
-const learningStages = ["先认词", "看数据", "逐行理解", "动手练", "自动小测"];
+
 
 export default function Home({ chapterId }: { chapterId?: number }) {
   const currentChapter = chapterId ? getPythonCourseChapter(chapterId) : undefined;
@@ -2139,19 +2141,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                     </button>
                     {open && unlocked && (
                       <div className="level-body">
-                        <ol className="stage-tabs" aria-label="本关学习步骤">
-                          {learningStages.map((label, index) => {
-                            const stageNumber = index + 1;
-                            return <li key={label}>
-                              <button
-                                type="button"
-                                disabled={stageNumber > maxStage}
-                                className={`${stage === stageNumber ? "active" : ""} ${stageNumber < maxStage ? "finished" : ""}`}
-                                onClick={() => selectStage(level.id, stageNumber)}
-                              ><b>{stageNumber}</b><span>{label}</span>{stageNumber > maxStage && <i>锁</i>}</button>
-                            </li>;
-                          })}
-                        </ol>
+                        <LearningStepNav active={stage} unlocked={maxStage} onSelect={(step) => selectStage(level.id, step)} />
                         <CourseNotePanel
                           courseId={courseId}
                           chapterId={currentChapter.id}
@@ -2420,47 +2410,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
         </nav>}
       </section>
 
-      {activeKnowledge && (
-        <div
-          className="knowledge-overlay"
-          role="button"
-          tabIndex={0}
-          aria-label="关闭基础知识弹窗"
-          onClick={(event) => {
-            if (event.target === event.currentTarget) setActiveKnowledge(null);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "Enter" || event.key === " ") setActiveKnowledge(null);
-          }}
-        >
-          <section
-            className="knowledge-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="knowledge-title"
-          >
-            <button className="knowledge-close" type="button" aria-label="关闭基础知识弹窗" onClick={() => setActiveKnowledge(null)}>×</button>
-            <span className="knowledge-kicker">基础知识 · 随点随查</span>
-            <h2 id="knowledge-title">{activeKnowledge.term}</h2>
-            <div className="knowledge-answer">
-              <b>先用一句话理解</b>
-              <p>{activeKnowledge.plain}</p>
-            </div>
-            <div className="knowledge-answer role-answer">
-              <b>它在当前代码里做什么</b>
-              <p>{activeKnowledge.role}</p>
-            </div>
-            {activeKnowledge.example && (
-              <div className="knowledge-example">
-                <b>最小例子</b>
-                <pre><code>{activeKnowledge.example}</code></pre>
-              </div>
-            )}
-            <button className="knowledge-return" type="button" onClick={() => setActiveKnowledge(null)}>我明白了，返回本关</button>
-            <small>也可以点击弹窗外部或按 Esc 关闭</small>
-          </section>
-        </div>
-      )}
+      {activeKnowledge && <KnowledgeDialog knowledge={activeKnowledge} onClose={() => setActiveKnowledge(null)} />}
 
       <footer>
         <p>PYTHON FRAMEWORK QUEST</p>

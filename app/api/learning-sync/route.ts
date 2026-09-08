@@ -30,7 +30,12 @@ type LearningState = {
   clocks: Record<string, string>;
 };
 
-const courseId = "python-framework";
+const defaultCourseId = "python-framework";
+const supportedCourses = new Set([defaultCourseId, "ai-developer-level5"]);
+function selectedCourse(request: Request) {
+  const id = new URL(request.url).searchParams.get("courseId") ?? defaultCourseId;
+  return supportedCourses.has(id) ? id : null;
+}
 const maxStateBytes = 300_000;
 
 async function ensureSchema() {
@@ -159,7 +164,7 @@ function parseStoredState(value: unknown) {
   }
 }
 
-function responseState(row: Row | null) {
+function responseState(row: Row | null, courseId: string) {
   if (!row) return { courseId, state: null, revision: 0, updatedAt: null };
   return {
     courseId,
@@ -169,17 +174,19 @@ function responseState(row: Row | null) {
   };
 }
 
-async function findState(ownerId: string) {
+async function findState(ownerId: string, courseId: string) {
   return env.DB.prepare("SELECT state_json, revision, updated_at FROM course_learning_states WHERE owner_id = ? AND course_id = ? LIMIT 1")
     .bind(ownerId, courseId).first<Row>();
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
     const ownerId = await currentUserId();
     if (!ownerId) return Response.json({ error: "请先使用 ChatGPT 账户登录后再同步" }, { status: 401 });
+    const courseId = selectedCourse(request);
+    if (!courseId) return Response.json({ error: "课程标识无效" }, { status: 400 });
     await ensureSchema();
-    return Response.json(responseState(await findState(ownerId)));
+    return Response.json(responseState(await findState(ownerId, courseId), courseId));
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "读取学习进度失败" }, { status: 500 });
   }
@@ -189,6 +196,8 @@ export async function PUT(request: Request) {
   try {
     const ownerId = await currentUserId();
     if (!ownerId) return Response.json({ error: "请先使用 ChatGPT 账户登录后再同步" }, { status: 401 });
+    const courseId = selectedCourse(request);
+    if (!courseId) return Response.json({ error: "课程标识无效" }, { status: 400 });
     await ensureSchema();
 
     const payload = await request.json() as Record<string, unknown>;
@@ -198,31 +207,33 @@ export async function PUT(request: Request) {
     const baseRevision = Number(payload.baseRevision);
     if (!Number.isInteger(baseRevision) || baseRevision < 0) return Response.json({ error: "同步版本无效" }, { status: 400 });
 
-    const existing = await findState(ownerId);
+    const existing = await findState(ownerId, courseId);
     if (!existing) {
-      if (baseRevision !== 0) return Response.json(responseState(null), { status: 409 });
+      if (baseRevision !== 0) return Response.json(responseState(null, courseId), { status: 409 });
       await env.DB.prepare("INSERT INTO course_learning_states (owner_id, course_id, state_json, revision) VALUES (?, ?, ?, 1)")
         .bind(ownerId, courseId, JSON.stringify(state)).run();
-      return Response.json(responseState(await findState(ownerId)));
+      return Response.json(responseState(await findState(ownerId, courseId), courseId));
     }
 
     if (Number(existing.revision) !== baseRevision) {
-      return Response.json(responseState(existing), { status: 409 });
+      return Response.json(responseState(existing, courseId), { status: 409 });
     }
 
     const updated = await env.DB.prepare("UPDATE course_learning_states SET state_json = ?, revision = revision + 1, updated_at = CURRENT_TIMESTAMP WHERE owner_id = ? AND course_id = ? AND revision = ? RETURNING state_json, revision, updated_at")
       .bind(JSON.stringify(state), ownerId, courseId, baseRevision).first<Row>();
-    if (!updated) return Response.json(responseState(await findState(ownerId)), { status: 409 });
-    return Response.json(responseState(updated));
+    if (!updated) return Response.json(responseState(await findState(ownerId, courseId), courseId), { status: 409 });
+    return Response.json(responseState(updated, courseId));
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "保存学习进度失败" }, { status: 500 });
   }
 }
 
-export async function DELETE() {
+export async function DELETE(request: Request) {
   try {
     const ownerId = await currentUserId();
     if (!ownerId) return Response.json({ error: "请先使用 ChatGPT 账户登录后再同步" }, { status: 401 });
+    const courseId = selectedCourse(request);
+    if (!courseId) return Response.json({ error: "课程标识无效" }, { status: 400 });
     await ensureSchema();
     await env.DB.prepare("DELETE FROM course_learning_states WHERE owner_id = ? AND course_id = ?")
       .bind(ownerId, courseId).run();

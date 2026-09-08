@@ -16,20 +16,19 @@ async function render(pathname = "/") {
   );
 }
 
-test("AI 开发 5 级专区可直接访问，学习与项目锚点完整且不载入其他课程关卡", async () => {
+test("AI 开发专区复用 Python 分步课程，项目指南独立保留", async () => {
   const response = await render("/ai-developer-level5");
   assert.equal(response.status, 200);
   const html = await response.text();
   assert.match(html, /<title>5 级 AI 开发岗学习路线 \| 测试能力修炼场<\/title>/);
-  for (const anchor of ["requirements", "foundations", "python", "data", "api", "model", "rag", "agent", "delivery", "training", "infrastructure", "projects", "evidence", "resources"]) {
-    assert.match(html, new RegExp(`id=["']${anchor}["']`));
-    assert.match(html, new RegExp(`href=["']#${anchor}["']`));
-  }
-  assert.match(html, /不计入其他课程的关卡、进度或面试评分/);
+  assert.match(html, /course-workspace ai5-course/);
+  for (const label of ["先认词", "看数据", "逐行理解", "动手练", "自动小测"]) assert.match(html, new RegExp(label));
+  assert.match(html, /本关学习步骤/);
   assert.match(html, /前置知识/);
-  assert.match(html, /自检要求与成果材料/);
-  assert.match(html, /不是公司新增门槛/);
-  assert.doesNotMatch(html, /id=["']level-1["']|name=["']answer["']/);
+  assert.doesNotMatch(html, /agent-fast-track|find_records\(records, device_id\)/);
+  const guide = await (await render("/ai-developer-level5/guide")).text();
+  for (const anchor of ["requirements", "foundations", "projects", "evidence", "resources"]) assert.match(guide, new RegExp(`id=["']${anchor}["']`));
+  assert.match(guide, /不是公司新增门槛/);
   const learningHome = await (await render("/learn")).text();
   assert.match(learningHome, /独立岗位学习专区/);
   assert.match(learningHome, /href=["']\/ai-developer-level5["']/);
@@ -164,7 +163,9 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   const localSiteAgent = await readFile(new URL("../deploy/com.baiyi.python-framework-quest-site.plist", import.meta.url), "utf8");
   const viteConfig = await readFile(new URL("../vite.config.ts", import.meta.url), "utf8");
 
-  assert.match(source, /const learningStages = \["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
+  const stepNav = await readFile(new URL("../app/courses/LearningStepNav.tsx", import.meta.url), "utf8");
+  assert.match(stepNav, /\["先认词", "看数据", "逐行理解", "动手练", "自动小测"\]/);
+  assert.match(source, /<LearningStepNav/);
   assert.match(source, /<PythonAnswerEditor/);
   assert.match(editor, /@codemirror\/lang-python/);
   assert.match(editor, /indentUnit\.of\(" {4}"\)/);
