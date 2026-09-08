@@ -18,6 +18,7 @@ export type InteractiveCourseConfig = {
 export default function InteractiveCourse({ config }: { config: InteractiveCourseConfig }) {
   const { stages: learningStages, exercises, id: aiCourseId } = config;
   const [activeId, setActiveId] = useState(1);
+  const [inLesson, setInLesson] = useState(false);
   const [step, setStep] = useState(1);
   const [choice, setChoice] = useState<number | null>(null);
   const [quizFeedback, setQuizFeedback] = useState("");
@@ -40,17 +41,27 @@ export default function InteractiveCourse({ config }: { config: InteractiveCours
     function readHash() {
       const raw = window.location.hash.slice(1);
       const index = learningStages.findIndex((item, i) => item.id === raw || raw === `lesson-${i + 1}`);
+      setInLesson(index >= 0);
       if (index >= 0) { setActiveId(index + 1); activeRef.current = index + 1; setStep(1); setChoice(null); setQuizFeedback(""); setShowAnswer(false); }
     }
     readHash();
     window.addEventListener("hashchange", readHash);
-    return () => window.removeEventListener("hashchange", readHash);
+    window.addEventListener("popstate", readHash);
+    return () => { window.removeEventListener("hashchange", readHash); window.removeEventListener("popstate", readHash); };
   }, [learningStages]);
 
   function selectLesson(id: number) {
+    setInLesson(true);
     activeRef.current = id;
     setActiveId(id); setStep(1); setChoice(null); setQuizFeedback(""); setQuestion(""); setError(""); setShowAnswer(false);
-    window.history.replaceState(null, "", `#lesson-${id}`);
+    window.history.pushState(null, "", `#lesson-${id}`);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function showOverview() {
+    setInLesson(false);
+    setKnowledge(null);
+    window.history.pushState(null, "", "#roadmap");
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
@@ -96,17 +107,18 @@ export default function InteractiveCourse({ config }: { config: InteractiveCours
   }
 
   return <main className="ready course-workspace ai5-course">
-    <header className="suite-topbar course-suite-topbar"><div><strong>学习中心 · {config.title}</strong><span>第 {activeId} 节 · 一次专注一个学习步骤</span></div><div className="suite-live"><i />{completed.length} / {learningStages.length} 节</div></header>
-    <header className="hero">
+    <header className="suite-topbar course-suite-topbar"><div><strong>学习中心 · {config.title}</strong><span>{inLesson ? `第 ${activeId} 节 · 一次专注一个学习步骤` : "课程总览 · 选择关卡开始学习"}</span></div><div className="suite-live"><i />{completed.length} / {learningStages.length} 节</div></header>
+    {!inLesson && <header className="hero">
       <nav><a className="brand" href="/learn"><i>{config.sigil}</i> {config.brand}</a><div className="nav-actions"><a className="text-button course-back" href="/learn">← 返回学习中心</a><a className="text-button" href={config.nextHref}>{config.nextTitle}</a></div></nav>
-      <div className="hero-grid"><section><p className="eyebrow">{config.eyebrow} · LEVEL {activeId}</p><h1>{lesson.title}</h1><p className="lead">{lesson.goal}</p><a className="hero-cta" href={`#level-${activeId}`}>进入当前关卡 <span>→</span></a></section>
+      <div className="hero-grid"><section><p className="eyebrow">{config.eyebrow} · LEVEL {activeId}</p><h1>{config.title}</h1><p className="lead">选择需要学习的关卡，按五个步骤完成练习与小测。</p><button type="button" className="hero-cta" onClick={() => selectLesson(activeId)}>进入当前关卡 <span>→</span></button></section>
         <aside className="progress-card"><div className="progress-top"><span>{config.title}当前进度</span><strong>{progress}%</strong></div><div className="bar"><i style={{ width: `${progress}%` }} /></div><p>{completed.length} / {learningStages.length} 节已完成</p><div className="course-sync-state" role="status"><i /><span>{message}</span><button type="button" disabled={!ready} onClick={() => void flush()}>重试</button></div><ol>{learningStages.map((item, index) => <li className={completed.includes(index + 1) ? "lit" : ""} key={item.id}>{index + 1}</li>)}</ol></aside>
       </div>
-    </header>
+    </header>}
+    {inLesson && <nav className="lesson-return" aria-label="关卡导航"><button type="button" className="text-button" onClick={showOverview}>← 返回课程总览</button><span>{config.title} · 第 {activeId} 节</span></nav>}
     <section className="map-section" id="roadmap">
-      <div className="section-heading"><p>{config.eyebrow}</p><h2>{config.mapTitle}</h2><span>概念、数据、逐行理解、练习与小测。进度与其他课程分别保存。</span></div>
-      <nav className="ai5-level-picker" aria-label="课程目录">{learningStages.map((item, index) => <button type="button" className={activeId === index + 1 ? "active" : ""} aria-current={activeId === index + 1 ? "page" : undefined} onClick={() => selectLesson(index + 1)} key={item.id}><b>{completed.includes(index + 1) ? "✓" : index + 1}</b><span>{item.title}</span></button>)}</nav>
-      <div className="quest-map">
+      {!inLesson && <><div className="section-heading"><p>{config.eyebrow}</p><h2>{config.mapTitle}</h2><span>概念、数据、逐行理解、练习与小测。进度与其他课程分别保存。</span></div>
+      <nav className="ai5-level-picker" aria-label="课程目录">{learningStages.map((item, index) => <button type="button" className={activeId === index + 1 ? "active" : ""} aria-current={activeId === index + 1 ? "page" : undefined} onClick={() => selectLesson(index + 1)} key={item.id}><b>{completed.includes(index + 1) ? "✓" : index + 1}</b><span>{item.title}</span></button>)}</nav></>}
+      {inLesson && <div className="quest-map">
         <article className={`level open ${completed.includes(activeId) ? "done" : ""}`} id={`level-${activeId}`}>
           <div className="seal">{completed.includes(activeId) ? "✓" : activeId}</div>
           <div className="level-copy"><header className="level-header"><div><span className="level-no">LEVEL {String(activeId).padStart(2, "0")} · {learningStepLabels[step - 1]}</span><h3>{lesson.title}</h3><p>{lesson.mapping}</p></div></header><div className="level-body">
@@ -127,9 +139,9 @@ export default function InteractiveCourse({ config }: { config: InteractiveCours
         <nav className="chapter-pager ai5-pager" aria-label="课程翻页"><button type="button" disabled={activeId === 1} onClick={() => selectLesson(activeId - 1)}>上一节<br /><b>{learningStages[activeId - 2]?.title ?? "已经是第一节"}</b></button>{activeId < learningStages.length ? <button type="button" onClick={() => selectLesson(activeId + 1)}>下一节<br /><b>{learningStages[activeId].title}</b></button> : <a href={config.nextHref}>继续学习<br /><b>{config.nextTitle} →</b></a>}</nav>
           </div></div>
         </article>
-      </div>
+      </div>}
     </section>
-    {config.resources && <nav className="course-resources" aria-label="课程官方资料"><strong>遇到时查阅官方资料</strong>{config.resources.map((resource) => <a key={resource.href} href={resource.href} target="_blank" rel="noreferrer">{resource.title} ↗</a>)}</nav>}
+    {!inLesson && config.resources && <nav className="course-resources" aria-label="课程官方资料"><strong>遇到时查阅官方资料</strong>{config.resources.map((resource) => <a key={resource.href} href={resource.href} target="_blank" rel="noreferrer">{resource.title} ↗</a>)}</nav>}
     {knowledge && <KnowledgeDialog knowledge={knowledge} onClose={() => setKnowledge(null)} />}
   </main>;
 }

@@ -22,9 +22,8 @@ test("AI 开发专区复用 Python 分步课程，项目指南独立保留", asy
   const html = await response.text();
   assert.match(html, /<title>5 级 AI 开发岗学习路线 \| 测试能力修炼场<\/title>/);
   assert.match(html, /course-workspace ai5-course/);
-  for (const label of ["先认词", "看数据", "逐行理解", "动手练", "自动小测"]) assert.match(html, new RegExp(label));
-  assert.match(html, /本关学习步骤/);
-  assert.match(html, /前置知识/);
+  assert.match(html, /九节学习地图/);
+  assert.doesNotMatch(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""), /本关学习步骤|本关学习笔记/);
   assert.doesNotMatch(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""), /agent-fast-track|find_records\(records, device_id\)/);
   const guide = await (await render("/ai-developer-level5/guide")).text();
   for (const anchor of ["requirements", "foundations", "projects", "evidence", "resources"]) assert.match(guide, new RegExp(`id=["']${anchor}["']`));
@@ -126,7 +125,7 @@ test("Python Agent 快速通道提供完整十六节学习内容和连续工单�
   assert.match(html, /工单查询助手/);
   assert.match(html, /course-workspace/);
   assert.match(html, /十六节学习地图/);
-  for (const label of ["先认词", "看数据", "逐行理解", "动手练", "自动小测"]) assert.ok(html.includes(label));
+  assert.doesNotMatch(html.replace(/<script\b[^>]*>[\s\S]*?<\/script>/g, ""), /本关学习步骤|本关学习笔记/);
   assert.doesNotMatch(html, /agent-course-layout|agent-lesson-nav/);
 });
 

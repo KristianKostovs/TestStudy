@@ -24,3 +24,7 @@
 .course-resources { display: flex; flex-wrap: wrap; gap: 18px; padding: 24px; font-size: 1rem; }
 .course-resources a { color: var(--green); }
 .ai5-course .beginner-note p { white-space: pre-line; }
+
+.lesson-return { display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 20px 32px; border-bottom: 1px solid var(--line); }
+.lesson-return span { color: #657069; font-size: .875rem; }
+.ai5-course button.hero-cta { border: 0; cursor: pointer; font: inherit; }
