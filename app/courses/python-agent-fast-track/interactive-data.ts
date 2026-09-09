@@ -21,6 +21,158 @@ const vocabulary: [string, string][][] = [
   [["provider / service", "分别封装外部数据来源和可独立测试的业务逻辑。"], ["工作流", "用明确的状态与分支组织工具调用及结果处理。"]],
 ];
 
+// Each glossary entry owns its context and example; never reuse the whole lesson.
+const knowledgeDetails: Record<string, { role: string; example: string }> = {
+  "列表 list": {
+    role: "tickets 保存多条工单；tickets[0] 先取第一条记录，之后才能读取它的字段。",
+    example: 'tickets = [{"id": "T-101"}, {"id": "T-102"}]\nprint(tickets[0])  # {"id": "T-101"}',
+  },
+  "字典 dict": {
+    role: "一条工单用字典保存 id、status 等字段；方括号中的字段名决定读取哪个值。",
+    example: 'ticket = {"id": "T-101", "status": "open"}\nprint(ticket["id"])  # T-101',
+  },
+  "集合 set": {
+    role: "all_tags 收集每条工单的标签并去重；同一个 api 标签只保留一次。",
+    example: 'tags = ["api", "urgent", "api"]\nunique_tags = set(tags)\nprint(len(unique_tags))  # 2\nprint("api" in unique_tags)  # True',
+  },
+  "不可变字符串": {
+    role: "raw.strip() 不会修改 raw；cleaned 接住它返回的新字符串，后续拆分才使用清理后的文本。",
+    example: 'raw = "  T-101  "\ncleaned = raw.strip()\nprint(repr(raw))      # \'  T-101  \'\nprint(repr(cleaned))  # \'T-101\'',
+  },
+  "切片": {
+    role: "可以用 ticket_id[2:] 取出 T-101 中的数字部分。本节主示例使用 split 拆分文本，没有直接用切片；这里单独演示起止位置和步长。",
+    example: 'ticket_id = "T-101"\nprint(ticket_id[2:])   # 101：从下标 2 取到末尾\nprint(ticket_id[0:2])  # T-：不包含下标 2\nprint(ticket_id[2::2]) # 11：从下标 2 开始，每隔 2 个位置取一次',
+  },
+  "短路判断": {
+    role: "先判断 ticket 不是 None，再读取 status；左边为假时不执行右边，避免对 None 取下标。",
+    example: 'ticket = None\nis_open = ticket is not None and ticket["status"] == "open"\nprint(is_open)  # False，不会访问 ticket["status"]',
+  },
+  "推导式": {
+    role: "把逐条读取工单、过滤优先级、生成结果列表放在一个表达式中；if 决定保留谁，前面的表达式决定输出什么。",
+    example: 'tickets = [{"id": "T-1", "priority": 3}, {"id": "T-2", "priority": 1}]\nids = [t["id"] for t in tickets if t["priority"] >= 3]\nprint(ids)  # [\'T-1\']',
+  },
+  "可变对象": {
+    role: "两个变量引用同一个工单列表时，通过其中一个追加记录，另一个也能看到变化；赋值不是复制。",
+    example: 'tickets = ["T-1"]\nalias = tickets\nalias.append("T-2")\nprint(tickets)  # [\'T-1\', \'T-2\']',
+  },
+  "is 与 ==": {
+    role: "比较两份工单数据是否相同时用 ==；排查是否共享同一个列表对象时用 is。",
+    example: 'a = ["T-1"]\nb = ["T-1"]\nprint(a == b)  # True：内容相同\nprint(a is b)  # False：不是同一个列表',
+  },
+  "None": {
+    role: "用 None 表示调用者没有提供列表，然后在函数内部创建新列表，避免多次调用共享可变默认值。",
+    example: 'def add_id(ticket_id, ids=None):\n    if ids is None:\n        ids = []\n    ids.append(ticket_id)\n    return ids\n\nprint(add_id("T-1"))  # [\'T-1\']\nprint(add_id("T-2"))  # [\'T-2\']',
+  },
+  "关键字参数": {
+    role: "调用查询函数时直接写参数名；星号后的参数必须按名称传入，避免把筛选开关的位置记反。",
+    example: 'def query(ticket_id, *, only_open=True):\n    return ticket_id, only_open\n\nprint(query("T-101", only_open=False))  # (\'T-101\', False)',
+  },
+  "类型标注": {
+    role: "参数旁的 str 和返回值旁的 bool 告诉读代码的人预期数据类型，不会自动拦截所有错误输入。",
+    example: 'def is_open(status: str) -> bool:\n    return status == "open"\n\nprint(is_open("open"))  # True\nprint(is_open(123))     # False，标注没有自动抛类型错误',
+  },
+  "模块": {
+    role: "把查询函数放进可导入的文件；使用 __name__ 守卫，让演示代码只在直接运行文件时执行。",
+    example: '# 保存为 query.py；其他文件可用 from query import query_ticket\ndef query_ticket(ticket_id):\n    return {"id": ticket_id}\n\nif __name__ == "__main__":\n    print(query_ticket("T-101"))',
+  },
+  "异常边界": {
+    role: "在能说明失败原因的位置捕获具体异常，再抛出带业务语义的异常；不要返回 None 掩盖解析失败。",
+    example: 'def parse_priority(raw):\n    try:\n        return int(raw)\n    except ValueError as exc:\n        raise ValueError("优先级必须是整数") from exc\n\nprint(parse_priority("3"))  # 3',
+  },
+  "self": {
+    role: "实例方法通过 self 读取当前对象保存的工单数据；不同实例可以保存不同的数据。",
+    example: 'class Ticket:\n    def __init__(self, ticket_id):\n        self.ticket_id = ticket_id\n\n    def describe(self):\n        return self.ticket_id\n\nprint(Ticket("T-101").describe())  # T-101',
+  },
+  "dataclass": {
+    role: "声明查询结果有哪些字段，并自动生成初始化方法，不必手写给每个属性赋值的 __init__。",
+    example: 'from dataclasses import dataclass\n\n@dataclass\nclass QueryResult:\n    ticket_id: str\n    found: bool\n\nresult = QueryResult("T-101", True)\nprint(result.found)  # True',
+  },
+  "依赖注入": {
+    role: "查询服务从外部接收 provider；测试时传入固定返回值的实现，不需要连接真实网络。",
+    example: 'def query_ticket(ticket_id, provider):\n    return provider(ticket_id)\n\ndef fake_provider(ticket_id):\n    return {"id": ticket_id, "status": "open"}\n\nprint(query_ticket("T-101", fake_provider)["status"])  # open',
+  },
+  "虚拟环境": {
+    role: "将当前项目的解释器和依赖与其他项目隔离；先确认运行脚本用的是项目环境，再排查缺包问题。",
+    example: '# 终端创建环境：python3 -m venv .venv\n# macOS/Linux 激活：source .venv/bin/activate\n# Windows PowerShell 激活：.venv\\Scripts\\Activate.ps1\n# 在激活后的 Python 中检查：\nimport sys\nprint(sys.prefix != sys.base_prefix)  # 虚拟环境中为 True',
+  },
+  "环境变量": {
+    role: "启动时读取外部配置；没有提供必需配置时明确报错，而不是把密钥写入源码或打印出来。",
+    example: 'import os\n\nbase_url = os.getenv("TICKET_API_URL")\nif not base_url:\n    raise ValueError("请先设置 TICKET_API_URL")',
+  },
+  "Path": {
+    role: "用 / 组合数据目录和文件名，避免手工拼接不同操作系统的路径分隔符。",
+    example: 'from pathlib import Path\n\npath = Path("data") / "tickets.json"\nprint(path.name)    # tickets.json\nprint(path.suffix)  # .json',
+  },
+  "JSON": {
+    role: "接口或文件中的 JSON 文本必须先解析成 Python 对象，之后才能用字段名读取工单编号。",
+    example: 'import json\n\nraw = \'{"id": "T-101"}\'\nticket = json.loads(raw)\nprint(ticket["id"])  # T-101',
+  },
+  "超时": {
+    role: "HTTP 查询不能无限等待；向客户端传递 timeout，超时后交给调用方处理。示例只定义函数，不发送请求。",
+    example: 'def fetch_ticket(client, ticket_id):\n    return client.get(f"/tickets/{ticket_id}", timeout=5.0)',
+  },
+  "协议与业务状态": {
+    role: "raise_for_status 检查 HTTP 层；即使返回 200，也要继续检查 success，才能决定能否使用 data。",
+    example: 'def read_ticket(response):\n    response.raise_for_status()\n    body = response.json()\n    if body.get("success") is not True:\n        raise ValueError(body.get("msg", "查询失败"))\n    return body["data"]',
+  },
+  "Schema": {
+    role: "用 Pydantic 字段约束定义查询参数的合法形状，例如 ticket_id 至少包含一个字符。",
+    example: '# 需要安装 pydantic\nfrom pydantic import BaseModel, Field\n\nclass Query(BaseModel):\n    ticket_id: str = Field(min_length=1)\n\nprint(Query(ticket_id="T-101").ticket_id)  # T-101',
+  },
+  "ValidationError": {
+    role: "创建参数模型时，输入不满足约束会抛出 ValidationError；可提取字段位置，提示调用者修正输入。",
+    example: '# 需要安装 pydantic\nfrom pydantic import BaseModel, Field, ValidationError\n\nclass Query(BaseModel):\n    ticket_id: str = Field(min_length=1)\n\ntry:\n    Query(ticket_id="")\nexcept ValidationError as exc:\n    print(exc.errors()[0]["loc"])  # (\'ticket_id\',)',
+  },
+  "TypedDict": {
+    role: "描述工作流状态字典有哪些键及其类型；运行时仍然是普通 dict，不会自动验证外部输入。",
+    example: 'from typing import TypedDict\n\nclass State(TypedDict):\n    ticket_id: str\n    found: bool\n\nstate: State = {"ticket_id": "T-101", "found": True}\nprint(type(state).__name__)  # dict',
+  },
+  "Annotated": {
+    role: "给状态字段附加合并函数等元数据；普通 Python 不会自动运行它，需要 LangGraph 等框架读取并使用。",
+    example: 'import operator\nfrom typing import Annotated, get_args\n\nHistory = Annotated[list[str], operator.add]\nprint(get_args(History)[1] is operator.add)  # True',
+  },
+  "reducer": {
+    role: "节点返回新状态时，reducer 决定历史记录是追加还是覆盖。operator.add 对列表的效果是拼接。",
+    example: 'import operator\n\nold = ["开始查询"]\nupdate = ["查到工单"]\nprint(operator.add(old, update))  # [\'开始查询\', \'查到工单\']',
+  },
+  "coroutine": {
+    role: "调用 async def 函数时先得到协程对象，而不是查询结果；交给 asyncio.run 才会驱动这个例子执行。",
+    example: 'import asyncio\n\nasync def query():\n    return {"id": "T-101"}\n\npending = query()\nprint(asyncio.iscoroutine(pending))  # True\nprint(asyncio.run(pending)["id"])    # T-101',
+  },
+  "await": {
+    role: "在异步函数中等待查询完成，并把结果交给 ticket；不能省略 await 后直接把协程当字典读取。",
+    example: 'import asyncio\n\nasync def query():\n    return {"id": "T-101"}\n\nasync def main():\n    ticket = await query()\n    print(ticket["id"])  # T-101\n\nasyncio.run(main())',
+  },
+  "yield": {
+    role: "需要逐步输出事件时，每次 yield 交出一个值；下次迭代从暂停位置继续，不是一次性返回整份列表。",
+    example: 'def events():\n    yield "开始查询"\n    yield "查询完成"\n\nstream = events()\nprint(next(stream))  # 开始查询\nprint(next(stream))  # 查询完成',
+  },
+  "工具 tool": {
+    role: "把普通查询函数包装成带名称、用途和参数规则的工具，供 Agent 发现和调用。",
+    example: '# 需要安装 langchain-core\nfrom langchain_core.tools import tool\n\n@tool\ndef query_ticket(ticket_id: str) -> str:\n    """按工单编号查询工单。"""\n    return f"工单 {ticket_id}"\n\nprint(query_ticket.name)  # query_ticket',
+  },
+  "invoke": {
+    role: "工具包装后按工具接口调用：把参数放进字典交给 invoke，不依赖大模型也能验证工具的输出。",
+    example: '# 需要安装 langchain-core\nfrom langchain_core.tools import tool\n\n@tool\ndef query_ticket(ticket_id: str) -> str:\n    """按工单编号查询工单。"""\n    return f"工单 {ticket_id}"\n\nprint(query_ticket.invoke({"ticket_id": "T-101"}))  # 工单 T-101',
+  },
+  "节点 node": {
+    role: "节点接收当前状态，只返回它要更新的字段；注册名字并不等于决定执行顺序。",
+    example: 'def format_answer(state):\n    return {"answer": f"工单 {state[\'ticket_id\']}"}\n\nprint(format_answer({"ticket_id": "T-101"}))  # {\'answer\': \'工单 T-101\'}',
+  },
+  "条件边": {
+    role: "路由函数根据查询结果选择回答或转人工的分支；还需要在图中把返回标签映射到目标节点。",
+    example: 'def route(state):\n    return "answer" if state["found"] else "handoff"\n\nprint(route({"found": True}))   # answer\nprint(route({"found": False}))  # handoff',
+  },
+  "provider / service": {
+    role: "provider 负责取原始工单，service 负责判定工单是否可用；两层分开后可以独立替换数据来源和测试规则。",
+    example: 'def provider(ticket_id):\n    return {"id": ticket_id, "status": "open"}\n\ndef service(ticket_id, fetch):\n    ticket = fetch(ticket_id)\n    return ticket["status"] == "open"\n\nprint(service("T-101", provider))  # True',
+  },
+  "工作流": {
+    role: "把查询、判断、回答或转人工串成有明确分支的过程。这个普通 Python 小例子演示顺序与分支，本节再用图表达它。",
+    example: 'def workflow(ticket_id, fetch):\n    ticket = fetch(ticket_id)\n    if ticket is None:\n        return "转人工"\n    return f"查询完成：{ticket[\'id\']}"\n\nprint(workflow("T-101", lambda _: None))  # 转人工',
+  },
+};
+
 const walkthroughs: string[][] = [
   ["tickets 保存工单字典列表；[0] 先取第一条，再用字段名读取。", "open_ids 逐条检查 status，只保留 open 工单的 id。", "all_tags 遍历每条工单里的 tags，集合自动去掉重复标签。"],
   ["先读取原始工单编号，观察其中的空格和大小写。", "strip 等字符串方法返回新值，赋值之后变量才指向清理结果。", "读取可选字段时给出明确默认值；切片不会包含右端位置。"],
@@ -87,7 +239,9 @@ export const agentCourseConfig: InteractiveCourseConfig = {
     const options = [...distractors[index]];
     options.splice(correct, 0, lesson.diagnostic.answer);
     return {
-      terms: vocabulary[index], input: lesson.example, example: lesson.example, walkthrough: walkthroughs[index],
+      terms: vocabulary[index],
+      knowledge: vocabulary[index].map(([term, plain]) => ({ term, plain, ...knowledgeDetails[term] })),
+      input: lesson.example, example: lesson.example, walkthrough: walkthroughs[index],
       task: `工单查询助手 · ${lesson.objective} 完成本节项目骨架中的 TODO，并逐条验证以下标准。`,
       starter: lesson.starter, files: lesson.files, acceptance: lesson.pass,
       reference: `${lesson.referenceAnswer}\n\n# 参考解释\n${lesson.referenceExplanation.split("\n").map((line) => `# ${line}`).join("\n")}`,

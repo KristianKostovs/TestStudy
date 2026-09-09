@@ -17,6 +17,47 @@ const plan = await loadSource("../app/ai-developer-level5/learning-plan.ts");
 globalThis.__aiCoursePlan = plan;
 const exerciseModule = await loadSource("../app/ai-developer-level5/exercises.ts", (source) => source.replace('import { learningStages } from "./learning-plan";', 'const { learningStages } = globalThis.__aiCoursePlan;'));
 
+test("Agent 全部 16 节的 37 个术语有独立上下文与可解析的最小例子", () => {
+  const config = agentInteractive.agentCourseConfig;
+  assert.equal(config.stages.length, 16);
+  let count = 0;
+  for (const [index, exercise] of config.exercises.entries()) {
+    assert.equal(exercise.knowledge.length, exercise.terms.length);
+    const roles = new Set();
+    const examples = new Set();
+    for (const [term, plain] of exercise.terms) {
+      const point = exercise.knowledge.find((item) => item.term === term);
+      assert.ok(point, "第 " + (index + 1) + " 节缺少 " + term);
+      assert.equal(point.plain, plain);
+      assert.ok(point.role?.length > 10, term);
+      assert.ok(point.example?.trim(), term);
+      assert.notEqual(point.role, config.stages[index].explanation, term);
+      assert.notEqual(point.example, exercise.example, term);
+      assert.ok(!roles.has(point.role), term + " 复用了同节解释");
+      assert.ok(!examples.has(point.example), term + " 复用了同节示例");
+      roles.add(point.role);
+      examples.add(point.example);
+      // Compile only: dependencies/configuration are marked in examples.
+      // Validation must not issue network requests or require secrets.
+      const run = spawnSync("python3", ["-c", "import sys; compile(sys.stdin.read(), '<glossary>', 'exec')"], { input: point.example, encoding: "utf8" });
+      assert.equal(run.status, 0, term + ": " + run.stderr);
+      count++;
+    }
+  }
+  assert.equal(count, 37);
+  const slice = config.exercises[1].knowledge.find((item) => item.term === "切片");
+  assert.match(slice.example, /ticket_id\[0:2\]/);
+  assert.match(slice.role, /没有直接用切片/);
+  const run = spawnSync("python3", ["-c", slice.example], { encoding: "utf8" });
+  assert.equal(run.status, 0, run.stderr);
+  assert.deepEqual(run.stdout.trim().split("\n"), ["101", "T-", "11"]);
+});
+
+test("公共弹窗优先使用术语专属内容，同时兼容未迁移课程", async () => {
+  const source = await readFile(new URL("../app/ai-developer-level5/AiDeveloperCourse.tsx", import.meta.url), "utf8");
+  assert.match(source, /exercise\.knowledge\?\.find\(\(point\) => point\.term === term\) \?\?/);
+});
+
 test("九节练习参考答案可执行，小测选项与关卡材料有效", () => {
   assert.equal(exerciseModule.exercises.length, plan.learningStages.length);
   for (const [index, exercise] of exerciseModule.exercises.entries()) {
