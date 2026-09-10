@@ -177,6 +177,8 @@ if ticket is not None and ticket["status"] == "open":
     pitfalls: ["混用 Tab 与空格会造成缩进问题", "不要把带副作用的复杂逻辑塞进推导式", "遍历 dict 默认得到键，需要 items() 才同时得到键和值"],
     files: ["ticket_assistant/filtering.py"],
     starter: String.raw`def summarize_open_tickets(tickets: list[dict]) -> list[str]:
+    # 学习提示：先判断 None 再访问字段；可用短路条件，也可分步判断。
+    # 只需完成代码，短路求值的文字解释或注释不是通过条件。
     summaries = []
     # TODO（你来完成）：忽略 None 和非 open 工单
     # TODO（你来完成）：输出形如 'T-101 | P3 | login failed'
@@ -197,8 +199,8 @@ assert summarize_open_tickets(DATA) == ["T-101 | P3 | login failed"]`,
             f"{ticket['id']} | P{ticket['priority']} | {ticket['summary'].lower()}"
         )
     return summaries`,
-    referenceExplanation: "先用 continue 排除无效数据，主路径无需继续嵌套。这里普通循环比复杂推导式更清楚。",
-    pass: ["能手写 if/for/continue", "能解释短路求值", "任务代码不依赖固定列表下标"],
+    referenceExplanation: "先用 continue 排除无效数据，主路径无需继续嵌套。这里普通循环比复杂推导式更清楚。本节按代码行为验收：不要求额外文字或注释解释短路求值，不得仅因缺少解释而扣分或判定不通过。安全的短路条件或分步判空均可；先访问 None 的字段仍属于错误。",
+    pass: ["能手写 if/for/continue", "安全跳过 None 和非 open 工单", "按工单顺序返回 '编号 | P优先级 | 小写摘要' 字符串列表", "任务代码不依赖固定列表下标"],
   },
   {
     id: 4,

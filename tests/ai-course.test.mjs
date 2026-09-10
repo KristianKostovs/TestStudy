@@ -139,11 +139,17 @@ test("在线助教依据课程选择服务端题目，概念提问不强制先�
   assert.match(capturedPrompt, /毕业任务/);
   assert.doesNotMatch(capturedPrompt, /find_records/);
   assert.doesNotMatch(capturedPrompt, /get_by_path/);
+  const lesson3 = agentData.agentFastTrackLessons[2];
+  assert.equal((await ask({ courseId: "python-agent-fast-track", level: { id: 3 }, message: "请批改", answer: lesson3.referenceAnswer })).status, 200);
+  assert.match(capturedPrompt, /不得仅因缺少解释而扣分或判定不通过/);
+  assert.doesNotMatch(capturedPrompt, /能解释短路求值/);
+  assert.match(lesson3.starter, /文字解释或注释不是通过条件/);
+  assert.deepEqual(agentInteractive.agentCourseConfig.exercises[2].acceptance, agentInteractive.getAgentGradingRubric(3).acceptance);
   assert.equal((await ask({ level: { id: 1 }, message: "请给提示", answer: "x".repeat(35) })).status, 200);
   assert.match(capturedPrompt, /get_by_path/);
   assert.equal((await ask({ courseId: "unknown", level: { id: 1 }, message: "提示" })).status, 400);
   assert.equal((await ask({ courseId: "ai-developer-level5", level: { id: 10 }, message: "提示" })).status, 404);
-  assert.equal(calls, 3);
+  assert.equal(calls, 4);
 });
 
 
