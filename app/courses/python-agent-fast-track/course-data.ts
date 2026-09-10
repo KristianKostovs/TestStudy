@@ -70,7 +70,10 @@ print(data["tickets"]["id"])`,
     },
     pitfalls: ["dict[key] 缺键会抛 KeyError；不确定时先用 get", "set 无稳定业务顺序，不能依赖它的展示顺序", "不要一边遍历列表一边删除其中元素"],
     files: ["data/tickets.json", "ticket_assistant/query.py"],
-    starter: String.raw`TICKETS = [
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能解释 list、dict、set 在本项目中的职责
+# 是否通过以实现行为和本节验收标准为准。
+TICKETS = [
     {"id": "T-101", "status": "open", "assignee": "alice", "tags": ["api", "urgent"]},
     {"id": "T-102", "status": "closed", "assignee": "bob", "tags": ["ui"]},
     {"id": "T-103", "status": "open", "assignee": "alice", "tags": ["api"]},
@@ -96,7 +99,7 @@ assert unique_tags(TICKETS) == {"api", "urgent", "ui"}`,
 def unique_tags(tickets):
     return {tag for ticket in tickets for tag in ticket["tags"]}`,
     referenceExplanation: "第一段推导式先遍历工单再过滤；第二段是双层遍历，把每个 tags 列表中的字符串放进集合去重。",
-    pass: ["不看答案写出两层下标读取 ticket id", "能解释 list、dict、set 在本项目中的职责", "两个 assert 均通过"],
+    pass: ["正确遍历工单并读取 id","用列表收集 open 工单编号、用集合去重标签","两个 assert 均通过"],
   },
   {
     id: 2,
@@ -127,7 +130,11 @@ print(f"[{ticket_id}]")`,
     },
     pitfalls: ["split 可能得到比预期更多或更少的段", "切片 stop 不包含在结果里", "f-string 中表达式会立即求值，日志里不要放敏感信息"],
     files: ["ticket_assistant/normalize.py"],
-    starter: String.raw`def normalize_ticket_query(raw: str) -> dict[str, str]:
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能解释 [start:stop] 为什么不含 stop
+# 能判断何时需要 f-string
+# 是否通过以实现行为和本节验收标准为准。
+def normalize_ticket_query(raw: str) -> dict[str, str]:
     """把 '  t-101 : Login FAILED  ' 变成标准查询结构。"""
     # TODO（你来完成）：去空格，只按第一个冒号拆分
     # TODO（你来完成）：id 转大写，关键词转小写
@@ -144,7 +151,7 @@ assert normalize_ticket_query("  t-101 : Login FAILED  ") == {
         "keyword": keyword.strip().lower(),
     }`,
     referenceExplanation: "maxsplit=1 保证摘要里的冒号不会继续拆分；每一步都接住字符串方法返回的新值。",
-    pass: ["能解释 [start:stop] 为什么不含 stop", "能判断何时需要 f-string", "标准输入与摘要含冒号的输入都能处理"],
+    pass: ["正确清理编号和摘要的空白与大小写","标准输入与摘要含冒号的输入都能处理"],
   },
   {
     id: 3,
@@ -236,7 +243,10 @@ print(collect("T-2"))`,
     },
     pitfalls: ["可变默认参数会跨调用污染", "dict.copy() 对嵌套对象只是浅拷贝", "使用 is None，不使用 == None；其他值通常使用 =="],
     files: ["ticket_assistant/state.py", "tests/test_state.py"],
-    starter: String.raw`from copy import deepcopy
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能解释浅拷贝与深拷贝差异
+# 是否通过以实现行为和本节验收标准为准。
+from copy import deepcopy
 
 def add_history(state: dict, event: str, history=None) -> dict:
     # TODO（你来完成）：每次调用都得到独立 history
@@ -258,7 +268,7 @@ assert second["history"] == ["escalated"]`,
     result["history"] = history
     return result`,
     referenceExplanation: "None 是安全的不可变哨兵；deepcopy 隔离 state 的嵌套结构。若 history 由调用者传入，函数会按约定修改该列表，可进一步改成 history.copy() 取得完全隔离。",
-    pass: ["能独立修复可变默认参数", "能解释浅拷贝与深拷贝差异", "能正确选择 is 和 =="],
+    pass: ["使用 None 默认值，省略 history 时每次调用创建独立列表","复制嵌套 state，修改返回结果不会污染原始 state","追加当前事件并正确返回 history，使用 is 判断 None、使用 == 比较值"],
   },
   {
     id: 5,
@@ -291,7 +301,10 @@ find_ticket(DATA, "T-101", include_history=True)`,
     },
     pitfalls: ["print 只是副作用，不等于 return", "默认参数应放在必填参数之后", "**kwargs 很灵活，但会隐藏真实契约，框架边界不要滥用"],
     files: ["ticket_assistant/query.py", "tests/test_query.py"],
-    starter: String.raw`from typing import Any
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能解释形参与实参、位置参数与关键字参数
+# 是否通过以实现行为和本节验收标准为准。
+from typing import Any
 
 def query_tickets(
     tickets: list[dict[str, Any]],
@@ -316,7 +329,7 @@ assert [item["id"] for item in query_tickets(DATA, status="open", assignee="alic
             break
     return matched`,
     referenceExplanation: "None 表示不启用对应过滤条件；keyword-only 参数使调用意图清晰；达到 limit 后提前结束遍历。",
-    pass: ["能解释形参与实参、位置参数与关键字参数", "能写出 dict | None 返回标注", "测试覆盖无条件、单条件、组合条件和 limit"],
+    pass: ["按声明支持位置参数与关键字参数","能写出 dict | None 返回标注","测试覆盖无条件、单条件、组合条件和 limit"],
   },
   {
     id: 6,
@@ -355,7 +368,11 @@ except TicketNotFoundError as error:
     },
     pitfalls: ["不要用裸 except 吞掉所有问题", "不要在模块顶层执行网络或数据库动作", "捕获后若无法恢复，应 raise 保留失败"],
     files: ["ticket_assistant/errors.py", "ticket_assistant/repository.py", "tests/test_repository.py"],
-    starter: String.raw`class TicketDataError(RuntimeError):
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能从项目根目录解释一次绝对导入
+# 能说明 import 顶层副作用的风险
+# 是否通过以实现行为和本节验收标准为准。
+class TicketDataError(RuntimeError):
     pass
 
 def load_ticket(repository, ticket_id: str) -> dict:
@@ -378,7 +395,7 @@ except TicketDataError as error:
     except TimeoutError as error:
         raise TicketDataError(f"读取工单失败：{ticket_id}") from error`,
     referenceExplanation: "领域层看到稳定的 TicketDataError，同时 __cause__ 保留底层 TimeoutError，日志和 trace 仍可追溯根因。",
-    pass: ["能从项目根目录解释一次绝对导入", "能说明 import 顶层副作用的风险", "异常测试同时验证领域信息与原始 cause"],
+    pass: ["异常测试同时验证领域信息与原始 cause"],
   },
   {
     id: 7,
@@ -418,7 +435,10 @@ TicketService().get("T-101")`,
     },
     pitfalls: ["实例方法不要漏写 self", "dataclass 的 list/dict 默认值仍要用 field(default_factory=...)", "优先组合小对象，不急着设计继承体系"],
     files: ["ticket_assistant/models.py", "ticket_assistant/service.py", "tests/test_service.py"],
-    starter: String.raw`from dataclasses import dataclass, field
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能解释 self、__init__ 和实例属性
+# 是否通过以实现行为和本节验收标准为准。
+from dataclasses import dataclass, field
 
 @dataclass
 class Ticket:
@@ -449,7 +469,7 @@ assert TicketService(FakeRepository()).get("T-101").tags == ["api"]`,
             raise LookupError(f"工单不存在：{ticket_id}")
         return Ticket(**data)`,
     referenceExplanation: "Service 依赖抽象行为 get，而不是在内部固定创建真实 repository；FakeRepository 因而可以直接替换。",
-    pass: ["能解释 self、__init__ 和实例属性", "两个 Ticket 实例不会共享 tags", "成功和不存在分支都有测试"],
+    pass: ["通过构造参数保存并使用 repository 依赖","两个 Ticket 实例不会共享 tags","成功和不存在分支都有测试"],
   },
   {
     id: 8,
@@ -538,7 +558,10 @@ data = json.load(text)`,
     },
     pitfalls: ["明确 encoding='utf-8'", "不要假设 JSON 顶层一定是 dict", "写文件前考虑临时文件与原子替换，避免中途失败留下半份数据"],
     files: ["data/tickets.json", "ticket_assistant/storage.py", "tests/test_storage.py"],
-    starter: String.raw`import json
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能区分 load/loads 和 dump/dumps
+# 是否通过以实现行为和本节验收标准为准。
+import json
 from pathlib import Path
 
 def load_open_tickets(path: Path) -> list[dict]:
@@ -555,7 +578,7 @@ def load_open_tickets(path: Path) -> list[dict]:
         raise ValueError("工单 JSON 顶层必须是列表")
     return [ticket for ticket in data if ticket.get("status") == "open"]`,
     referenceExplanation: "先完成解析和结构门禁，再执行业务过滤；get 让缺少 status 的不完整记录自然不进入 open 结果。",
-    pass: ["能区分 load/loads 和 dump/dumps", "能用临时文件测试成功、坏 JSON、错顶层结构", "代码不依赖当前工作目录的偶然位置"],
+    pass: ["从文件对象正确解析 JSON","能用临时文件测试成功、坏 JSON、错顶层结构","代码不依赖当前工作目录的偶然位置"],
   },
   {
     id: 10,
@@ -588,7 +611,10 @@ return response.json()["data"]`,
     },
     pitfalls: ["每个真实请求都应有明确 timeout", "不要把测试指向真实生产服务", "记录错误时对令牌、Cookie 和个人数据脱敏"],
     files: ["ticket_assistant/http_repository.py", "tests/test_http_repository.py"],
-    starter: String.raw`import httpx
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能说明 MockTransport 如何匹配 handler
+# 是否通过以实现行为和本节验收标准为准。
+import httpx
 
 def fetch_ticket(client: httpx.Client, ticket_id: str) -> dict:
     # TODO（你来完成）：GET /tickets/{ticket_id}
@@ -616,7 +642,7 @@ def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"success": True, "data": {"id": ticket_id, "status": "open"}})
     return httpx.Response(200, json={"success": False, "code": "NOT_FOUND", "message": "工单不存在"})`,
     referenceExplanation: "MockTransport 会把客户端请求交给 handler，无需真实网络；handler 根据明确路径返回固定响应，测试覆盖协议和业务两层。",
-    pass: ["成功、HTTP 500、HTTP 200 业务失败三条测试通过", "请求有 timeout 且 client 会关闭", "能说明 MockTransport 如何匹配 handler"],
+    pass: ["成功、HTTP 500、HTTP 200 业务失败三条测试通过","请求有 timeout 且 client 会关闭","通过 MockTransport 将请求交给测试 handler，不访问真实网络"],
   },
   {
     id: 11,
@@ -648,7 +674,10 @@ print(query.model_dump())`,
     },
     pitfalls: ["BaseModel 验证结构，不证明业务事实正确", "field(default_factory=...) 用于每个实例独立的可变默认值", "模型版本升级时留意 v1/v2 API 差异"],
     files: ["ticket_assistant/schemas.py", "tests/test_schemas.py"],
-    starter: String.raw`from typing import Literal
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能区分字段校验与跨字段校验
+# 是否通过以实现行为和本节验收标准为准。
+from typing import Literal
 from pydantic import BaseModel, Field, model_validator
 
 class TicketQuery(BaseModel):
@@ -668,7 +697,7 @@ def has_filter(self):
         raise ValueError("ticket_id 和 assignee 至少提供一个")
     return self`,
     referenceExplanation: "字段类型和 Field 先完成单字段检查，after validator 再读取已验证对象，补充跨字段关系。",
-    pass: ["能区分字段校验与跨字段校验", "会用 pytest.raises 验证 ValidationError", "能把 model_dump() 结果交给普通查询函数"],
+    pass: ["实现题目约定的字段约束和跨字段约束","会用 pytest.raises 验证 ValidationError","能把 model_dump() 结果交给普通查询函数"],
   },
   {
     id: 12,
@@ -701,7 +730,11 @@ def load_node(state: TicketState) -> dict:
     },
     pitfalls: ["TypedDict 不会在运行时拒绝错字段", "reducer 必须符合并发合并语义", "@tool 的 docstring 是给模型看的契约，不要写空泛描述"],
     files: ["ticket_assistant/state.py", "ticket_assistant/tools.py"],
-    starter: String.raw`import operator
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能说明 TypedDict 与 BaseModel 的运行时差异
+# 能读懂 Annotated reducer
+# 是否通过以实现行为和本节验收标准为准。
+import operator
 from typing import Annotated
 from typing_extensions import TypedDict
 from langchain.tools import tool
@@ -725,7 +758,7 @@ def query_ticket(ticket_id: str) -> dict:
     """
     return repository.get(ticket_id)`,
     referenceExplanation: "装饰器把普通函数包装成工具对象；类型标注生成输入结构，名称和 docstring 帮模型决定何时以及如何调用。",
-    pass: ["能说明 TypedDict 与 BaseModel 的运行时差异", "能读懂 Annotated reducer", "工具描述明确到另一个人可仅凭 Schema 正确调用"],
+    pass: ["按骨架声明状态字段与日志 reducer","工具调用已有 repository 查询，不复制查询逻辑","工具描述明确到另一个人可仅凭 Schema 正确调用"],
   },
   {
     id: 13,
@@ -763,7 +796,11 @@ print(ticket["id"])`,
     },
     pitfalls: ["忘记 await", "在 async 代码中调用 time.sleep 或同步慢 I/O", "gather 中一个任务失败时要明确是否取消、保留或汇总其他结果"],
     files: ["ticket_assistant/async_query.py", "tests/test_async_query.py"],
-    starter: String.raw`import asyncio
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能解释并发 I/O 与并行 CPU 的区别
+# 能读懂 fixture 中 yield 前后的 setup/teardown
+# 是否通过以实现行为和本节验收标准为准。
+import asyncio
 
 async def fetch_ticket(client, ticket_id: str) -> dict:
     response = await client.get(f"/tickets/{ticket_id}")
@@ -785,7 +822,7 @@ def ticket_ids(tickets):
     for ticket in tickets:
         yield ticket["id"]`,
     referenceExplanation: "gather 接收多个 coroutine 并按传入顺序返回结果；包含 yield 的函数成为 generator，每次迭代才继续执行到下一个 yield。",
-    pass: ["能修复忘记 await 的代码", "能解释并发 I/O 与并行 CPU 的区别", "能读懂 fixture 中 yield 前后的 setup/teardown"],
+    pass: ["正确 await 异步结果","并发查询并保持输入顺序","用 yield 逐个产生工单 id，不预先创建完整结果列表"],
   },
   {
     id: 14,
@@ -819,7 +856,10 @@ print(get_ticket.invoke({"ticket_id": "T-101"}))`,
     },
     pitfalls: ["不要在工具函数里复制一份业务逻辑", "工具名称、类型和 docstring 都是模型上下文的一部分", "真实写操作工具要有权限、幂等和确认边界"],
     files: ["ticket_assistant/query.py", "ticket_assistant/tools.py", "tests/test_tools.py"],
-    starter: String.raw`from langchain.tools import tool
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能打印并解释输入 JSON Schema
+# 是否通过以实现行为和本节验收标准为准。
+from langchain.tools import tool
 
 def find_ticket(tickets: list[dict], ticket_id: str) -> dict:
     # 已有并通过单元测试的普通 Python 函数
@@ -849,7 +889,7 @@ schema = query_ticket.args_schema.model_json_schema()
 assert "ticket_id" in schema["properties"]
 assert query_ticket.invoke({"ticket_id": "T-101"})["status"] == "open"`,
     referenceExplanation: "业务函数和框架适配层分开：前者不依赖 LangChain，后者只负责描述与委托，测试也能精确定位失败层。",
-    pass: ["普通函数测试与工具测试都通过", "能打印并解释输入 JSON Schema", "在不接真实模型时完成一次 invoke"],
+    pass: ["普通函数测试与工具测试都通过","工具输入 JSON Schema 与参数定义一致","在不接真实模型时完成一次 invoke"],
   },
   {
     id: 15,
@@ -885,7 +925,11 @@ builder.add_node("load", load_ticket)`,
     },
     pitfalls: ["注册节点不等于连接节点", "条件函数返回值必须和映射/目标节点匹配", "多个节点更新同一字段时要明确 reducer 或覆盖规则"],
     files: ["ticket_assistant/graph.py", "tests/test_graph.py"],
-    starter: String.raw`from typing import Literal
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能画出 START 到 END 的两条路径
+# 能说明 state Schema、节点返回更新和条件边各自职责
+# 是否通过以实现行为和本节验收标准为准。
+from typing import Literal
 from typing_extensions import TypedDict
 from langgraph.graph import StateGraph, START, END
 
@@ -928,7 +972,7 @@ builder.add_edge("answer", END)
 builder.add_edge("escalate", END)
 graph = builder.compile()`,
     referenceExplanation: "load 节点只做读取，route_after_load 只做判断，answer/escalate 各自产出最终答案。两条分支都显式结束。",
-    pass: ["T-101 走 answer，T-404 走 escalate", "能画出 START 到 END 的两条路径", "能说明 state Schema、节点返回更新和条件边各自职责"],
+    pass: ["T-101 走 answer，T-404 走 escalate","两条分支均能从 START 到 END","节点返回约定的状态更新，条件边根据查询结果正确选择分支"],
   },
   {
     id: 16,
@@ -963,9 +1007,13 @@ print(result["answer"])`,
       answer: "失败无法定位、单元测试必须同时替换多种外部依赖、工具无法复用，且异常很容易被吞掉。",
       why: "应拆成可独立验证的 provider/service/tool/node；图只负责有意义的状态转换与路由。",
     },
-    pitfalls: ["不要把真实密钥或工单隐私写入样例和 trace", "异常分支必须保留原始错误并给用户安全答复", "完成标准是独立跑通和解释，不是复制参考答案"],
+    pitfalls: ["不要把真实密钥或工单隐私写入样例和 trace", "异常分支必须保留原始错误并给用户安全答复", "完成标准是实现正确并通过测试，概念解释用于辅助理解"],
     files: ["data/tickets.json", "ticket_assistant/storage.py", "ticket_assistant/service.py", "ticket_assistant/tools.py", "ticket_assistant/graph.py", "tests/"],
-    starter: String.raw`ticket-agent/
+    starter: String.raw`# 学习提示（可选理解，不要求在答案中复述）：
+# 能逐层解释一次查询从输入到最终 answer 的数据形状
+# 能主动说明一个失败的层级、证据和修复位置
+# 是否通过以实现行为和本节验收标准为准。
+ticket-agent/
 ├── data/tickets.json
 ├── ticket_assistant/
 │   ├── schemas.py       # 已给：Pydantic 输入模型
@@ -1000,7 +1048,7 @@ print(result["answer"])`,
 - T-404 返回人工升级分支
 - HTTP 500 与业务失败不会被伪装成“未找到”`,
     referenceExplanation: "毕业任务没有唯一文件排版，但依赖方向、外部边界、状态流和验收证据必须清楚。先让普通 Python 通过，再接 LangChain，最后接 LangGraph。",
-    pass: ["不看参考答案，从空 TODO 独立完成并让全部离线测试通过", "能逐层解释一次查询从输入到最终 answer 的数据形状", "能主动说明一个失败的层级、证据和修复位置"],
+    pass: ["完成 TODO 并让全部离线测试通过","查询从输入到最终 answer 的数据传递正确","失败路径保留错误证据并返回约定结果"],
   },
 ];
 

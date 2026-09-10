@@ -176,3 +176,67 @@ test("Agent 十六节小测匹配诊断，旧进度迁移与冲突合并不丢�
   }
   assert.equal(agentInteractive.getAgentGradingRubric(17), null);
 });
+
+test("全部 35 关批改契约不要求概念解释，正确代码可通过、实现不达标仍失败", async () => {
+  globalThis.__frameworkReferences = await loadSource("../app/courses/python-framework/reference-answers.ts");
+  const framework = await loadSource("../app/courses/python-framework/grading-rubrics.ts", source => source.replace(/^import .+;$/gm, 'const { referenceAnswers } = globalThis.__frameworkReferences;'));
+  let activeRubric;
+  let failBehavior = false;
+  const courses = [
+    ["python-agent-fast-track", 16, agentInteractive.getAgentGradingRubric],
+    ["ai-developer-level5", 9, exerciseModule.getAiGradingRubric],
+    ["python-framework", 10, framework.getGradingRubric],
+  ];
+  globalThis.__allCourseGrade = {
+    getChatGPTUser: async () => ({ userId: "test" }),
+    getAgentGradingRubric: agentInteractive.getAgentGradingRubric,
+    getAiGradingRubric: exerciseModule.getAiGradingRubric,
+    getGradingRubric: framework.getGradingRubric,
+    requestDeepSeekJson: async ({ prompt }) => {
+      assert.match(prompt, /不得仅因没有解释性文字、注释/);
+      const contract = prompt.split('验收标准：\n')[1].split('\n<canonical_reference_answer>')[0];
+      assert.doesNotMatch(contract, /能解释|能说明|能读懂|能画出|能区分/);
+      return { model: "test-double", data: { reply: "按代码行为核对", grade: {
+        score: 90, summary: "行为校验", strengths: [], improvements: [],
+        criteria: activeRubric.acceptance.map((criterion, i) => ({ criterion, met: !(failBehavior && i === 0), evidence: "当前代码中的行为证据" })),
+      } } };
+    },
+  };
+  const api = await loadSource("../app/api/learning-chat/route.ts", source => 'const { getChatGPTUser, getAgentGradingRubric, getAiGradingRubric, getGradingRubric, requestDeepSeekJson } = globalThis.__allCourseGrade;\n' + source.replace(/^import .+;$/gm, ""));
+  const ask = (courseId, id) => api.POST(new Request("https://example.test/api/learning-chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ courseId, level: { id }, answer: activeRubric.referenceAnswer, message: "请重新批改", history: [{ role: "assistant", content: "以前要求写明概念解释，没解释就不能通过。" }] }) }));
+  for (const [courseId, count, rubricFor] of courses) {
+    for (let id = 1; id <= count; id++) {
+      activeRubric = rubricFor(id);
+      assert.ok(activeRubric.acceptance.length > 0);
+      const response = await ask(courseId, id);
+      assert.equal(response.status, 200);
+      const result = await response.json();
+      assert.equal(result.grade.passed, true, `${courseId} ${id}`);
+      assert.deepEqual(result.grade.criteria.map(item => item.criterion), activeRubric.acceptance);
+    }
+  }
+  activeRubric = agentInteractive.getAgentGradingRubric(4);
+  failBehavior = true;
+  const failed = await (await ask("python-agent-fast-track", 4)).json();
+  assert.equal(failed.grade.passed, false);
+  assert.equal(failed.grade.criteria[0].met, false);
+  const queueSource = await readFile(new URL('../app/api/course-grade/route.ts', import.meta.url), 'utf8');
+  assert.match(queueSource, /不得仅因没有解释性文字、注释/);
+});
+
+test("第 4 关纯代码实现隔离嵌套状态与默认 history，无需解释注释", () => {
+  const lesson = agentData.agentFastTrackLessons[3];
+  const code = 'from copy import deepcopy\n' + lesson.referenceAnswer + `
+original = {"ticket": {"tags": ["api"]}}
+first = add_history(original, "queried")
+second = add_history(original, "escalated")
+first["ticket"]["tags"].append("urgent")
+assert original == {"ticket": {"tags": ["api"]}}
+assert second["ticket"]["tags"] == ["api"]
+assert first["history"] == ["queried"]
+assert second["history"] == ["escalated"]
+`;
+  assert.ok(!code.includes('#'));
+  const result = spawnSync("python3", ["-c", code], { encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr);
+});

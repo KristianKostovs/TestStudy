@@ -50,6 +50,7 @@ function buildPrompt(courseId: string, levelId: number, answer: string, message:
     fullAnswerRequested
       ? "本轮 response_mode=full_answer：学员已经明确索要正确/完整答案。必须直接给出与本关任务匹配的完整可运行答案，包含必要导入、实现和关键验证；不得以助教引导为由拒绝、拖延或只给提示。grade 设为 null，除非学员同时明确要求批改。"
       : "本轮 response_mode=tutoring：如果只是追问概念、索要提示或询问错误原因，将 grade 设为 null；明确要求只给提示时不要泄露完整答案。",
+    "编程任务以当前代码、断言和结果证据判定，不要求另写概念解释或复述学习提示。不得仅因没有解释性文字、注释或沿用历史中已取消的解释要求而扣分或判为不通过。工具 docstring、提示词等属于题目要求的功能内容，仍按契约检查。",
     "输出前必须进行一次独立复核：先暂时忽略自己或历史助教的既有结论，重新核对任务、每条验收标准、权威说明、可信参考答案和当前答案证据，再判断初步结论是否错误。不要为了与历史结论保持一致而维持错误。",
     "若复核发现历史中的助教判断或自己准备给出的初步判断有误，self_check.previous_judgment_wrong=true，并在 reply 中明确说“我重新核对后发现之前的判断有误”，随后说明错因和正确结论；不要输出详细思维链。",
     "只输出一个 JSON 对象，不要 Markdown 代码块。reply 是教学回复；grade 是 null 或完整评分。",
