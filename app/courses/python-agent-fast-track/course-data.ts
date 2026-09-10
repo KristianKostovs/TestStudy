@@ -406,7 +406,9 @@ except TicketDataError as error:
     priority: "入门前必须会",
     explanation: [
       "class 定义对象的状态和行为；__init__ 创建实例状态；实例方法第一个参数 self 指向当前对象。dataclass 适合以数据为主的结构，会生成初始化和比较等样板代码。",
-      "把 repository 从外部传给 TicketService，测试时就能传 FakeRepository。这是最小依赖注入，不需要先学大型容器。",
+      "本节继续使用“工单查询助手”：TicketService 负责“怎样查询并返回一张工单”，但它还需要另一个对象替它读取原始数据。我们把这个专门读取数据的对象叫 repository；它只要提供 get(ticket_id) 方法即可。真实项目里的 repository 可以查 JSON、数据库或接口。",
+      "测试时不想连接真实数据源，所以准备 FakeRepository：它也有 get(ticket_id) 方法，但只返回代码中写好的固定数据。执行 TicketService(FakeRepository()) 时，会先创建 FakeRepository，再把它作为 repository 参数传进 TicketService.__init__，最后保存到 self.repository。",
+      "因此 TicketService.get() 只调用 self.repository.get(ticket_id)，不需要知道接入的是真实数据源还是测试替身。这种“由外部把依赖对象传进来，而不是在 TicketService 内部写死创建它”的方式，就是这里所说的最小依赖注入。",
     ],
     javaBridge: { useful: "self 类似显式写出的 this；构造注入与 Java 常见做法一致。", trap: "Python 没有 private 强制边界；下划线更多是约定。也不要为了复用两行代码就建深继承树。" },
     example: String.raw`from dataclasses import dataclass

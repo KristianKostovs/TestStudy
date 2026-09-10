@@ -58,3 +58,13 @@ test('在线编辑的多行说明均成为注释，缺少定位也不会丢失�
   assert.equal(codeWithComments('    x = 1', ['说明\n第二行'], ['x =']), '    # 说明\n    # 第二行\n    x = 1');
   assert.equal(codeWithComments('x = 1', ['保留'], ['old']), '# 保留\nx = 1');
 });
+
+test('Agent 第七节先交代 repository、service 与测试替身的关系', async () => {
+  const source = await readFile(new URL('../app/courses/python-agent-fast-track/course-data.ts', import.meta.url), 'utf8');
+  const notes = await readFile(new URL('../app/courses/python-agent-fast-track/interactive-data.ts', import.meta.url), 'utf8');
+
+  assert.match(source, /真实项目里的 repository 可以查 JSON、数据库或接口/);
+  assert.match(source, /FakeRepository：它也有 get\(ticket_id\) 方法/);
+  assert.match(notes, /Service 自己不负责连接数据源/);
+  assert.match(notes, /真实运行时可以换成数据库或 HTTP Repository/);
+});

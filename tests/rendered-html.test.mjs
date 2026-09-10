@@ -111,6 +111,11 @@ test("Python Agent 快速通道提供完整十六节学习内容和连续工单�
     assert.match(data, new RegExp(topic.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")));
   }
   assert.match(data, /totalAgentFastTrackMinutes = 1760/);
+  assert.match(data, /TicketService 负责“怎样查询并返回一张工单”/);
+  assert.match(data, /这个专门读取数据的对象叫 repository/);
+  assert.match(data, /执行 TicketService\(FakeRepository\(\)\) 时/);
+  assert.match(data, /由外部把依赖对象传进来/);
+  assert.doesNotMatch(data, /把 repository 从外部传给 TicketService，测试时就能传 FakeRepository。这是最小依赖注入/);
   assert.match(client, /<InteractiveCourse config=\{agentCourseConfig\} chapterId=\{chapterId\}/);
   assert.match(interactive, /quizCode: lesson.diagnostic.code/);
   assert.match(registry, /id: "python-agent-fast-track"/);
