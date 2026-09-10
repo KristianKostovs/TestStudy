@@ -464,3 +464,6 @@
   .course-workspace .seal, .course-workspace .quest-map::before { display: none; }
   .course-workspace .level-body { padding: 0 14px 18px; }
 }
+
+/* Keep explanatory comments readable on narrow lesson panels. */
+.stage-panel pre.annotated-code { white-space: pre-wrap; overflow-wrap: anywhere; }

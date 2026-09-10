@@ -1,4 +1,5 @@
 "use client";
+import { codeWithComments, walkthroughAnchors } from "../code-walkthrough";
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import "./course-flow.css";
@@ -2180,12 +2181,12 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                         {stage === 2 && <section className="stage-panel">
                           <section className="example-panel">
                             <div className="stage-intro"><span>先看它长什么样</span><h4>{support.exampleTitle}</h4></div>
-                            <pre><code>{support.example}</code></pre>
-                            <ol className="walkthrough">{support.walkthrough.map((sourceStep, index) => {
+                            <pre className="annotated-code"><code>{codeWithComments(support.example, support.walkthrough.map((text, index) => editableContent(`${courseId}.level-${level.id}.walkthrough-${index + 1}`, { text }).text), walkthroughAnchors["python-framework-example"][level.id - 1])}</code></pre>
+                            {support.walkthrough.map((text, index) => {
                               const contentKey = `${courseId}.level-${level.id}.walkthrough-${index + 1}`;
-                              const step = editableContent(contentKey, { text: sourceStep });
-                              return <li className="editable-course-content" key={`${level.id}-walkthrough-${index}`}>{step.text}{contentEditor(level.id, "walkthrough", contentKey, [{ name: "text", label: `第 ${index + 1} 步说明`, value: step.text, multiline: true }])}</li>;
-                            })}</ol>
+                              const step = editableContent(contentKey, { text });
+                              return <span key={contentKey}>{contentEditor(level.id, "walkthrough", contentKey, [{ name: "text", label: `代码注释 ${index + 1}`, value: step.text, multiline: true }])}</span>;
+                            })}
                           </section>
                           <button className="stage-continue" type="button" onClick={() => advanceStage(level.id, 2)}>数据结构看懂了，进入“逐行理解” →</button>
                         </section>}
@@ -2194,12 +2195,11 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           <div className="objective editable-course-content"><b>本关目标</b><p>{objectiveContent.text}</p>{contentEditor(level.id, "objective", objectiveKey, [{ name: "text", label: "本关目标", value: objectiveContent.text, multiline: true }])}</div>
                           <div className="lesson-grid">
                           <section>
-                            <h4>理解例子以后，再掌握这些</h4>
-                            <ul>{level.lessons.map((sourceLesson, index) => {
+                            {level.lessons.map((text, index) => {
                               const contentKey = `${courseId}.level-${level.id}.lesson-${index + 1}`;
-                              const lesson = editableContent(contentKey, { text: sourceLesson });
-                              return <li className="editable-course-content" key={`${level.id}-lesson-${index}`}>{lesson.text}{contentEditor(level.id, "lesson", contentKey, [{ name: "text", label: `知识说明 ${index + 1}`, value: lesson.text, multiline: true }])}</li>;
-                            })}</ul>
+                              const lesson = editableContent(contentKey, { text });
+                              return <span key={contentKey}>{contentEditor(level.id, "lesson", contentKey, [{ name: "text", label: `代码注释 ${index + 1}`, value: lesson.text, multiline: true }])}</span>;
+                            })}
                           </section>
                           <aside className="ai-lens editable-course-content"><span>AI 审查镜</span><p>{aiLensContent.text}</p>{contentEditor(level.id, "ai-lens", aiLensKey, [{ name: "text", label: "AI 审查提示", value: aiLensContent.text, multiline: true }])}</aside>
                           </div>
@@ -2222,7 +2222,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           </section>
                           <div className="code-wrap interactive-code-wrap">
                           <div><span>PYTHON / YAML</span><i>带虚线的代码可以点击解释</i></div>
-                          <pre><code><InteractiveCode code={level.code} knowledge={knowledge} onOpen={setActiveKnowledge} /></code></pre>
+                          <pre className="annotated-code"><code><InteractiveCode code={codeWithComments(level.code, level.lessons.map((text, index) => editableContent(`${courseId}.level-${level.id}.lesson-${index + 1}`, { text }).text), walkthroughAnchors[courseId][level.id - 1])} knowledge={knowledge} onOpen={setActiveKnowledge} /></code></pre>
                           </div>
                           {supplementalKnowledge.length > 0 && (
                           <details className="compact-disclosure supplement-disclosure">
