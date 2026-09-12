@@ -244,6 +244,11 @@ export const agentCourseConfig: InteractiveCourseConfig = {
       input: lesson.example, example: lesson.example, walkthrough: walkthroughs[index],
       task: `工单查询助手 · ${lesson.objective} 完成本节项目骨架中的 TODO，并逐条验证以下标准。`,
       starter: lesson.starter, files: lesson.files, acceptance: lesson.pass,
+      starterDownload: lesson.id === 8 ? {
+        href: "/starter-projects/python-agent-level-08.zip",
+        label: "下载第 8 关项目骨架",
+        help: "解压后从创建虚拟环境开始练习",
+      } : undefined,
       reference: `${lesson.referenceAnswer}\n\n# 参考解释\n${lesson.referenceExplanation.split("\n").map((line) => `# ${line}`).join("\n")}`,
       quizCode: lesson.diagnostic.code,
       quiz: { question: lesson.diagnostic.prompt, options, correct, explanation: lesson.diagnostic.why },

@@ -143,6 +143,36 @@ test("Python Agent 快速通道提供完整十六节学习内容和连续工单�
   assert.doesNotMatch(html, /agent-course-layout|agent-lesson-nav/);
 });
 
+test("Python Agent 第 8 关无需现成项目即可站内作答或下载骨架实操", async () => {
+  const [data, interactive, course, readme, requirements, settings, verify, archive] = await Promise.all([
+    readFile(new URL("../app/courses/python-agent-fast-track/course-data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-agent-fast-track/interactive-data.ts", import.meta.url), "utf8"),
+    readFile(new URL("../app/ai-developer-level5/AiDeveloperCourse.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-agent-level-08/README.md", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-agent-level-08/requirements.txt", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-agent-level-08/ticket_assistant/settings.py", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-agent-level-08/verify_setup.py", import.meta.url), "utf8"),
+    readFile(new URL("../public/starter-projects/python-agent-level-08.zip", import.meta.url)),
+  ]);
+
+  assert.match(data, /你不需要已有项目/);
+  assert.match(data, /===== requirements\.txt/);
+  assert.match(data, /===== \.gitignore/);
+  assert.match(data, /站内批改只检查项目文件内容/);
+  assert.match(interactive, /python-agent-level-08\.zip/);
+  assert.match(course, /没有现成项目也可以开始/);
+  assert.match(course, /# ===== 文件名 =====/);
+  assert.match(readme, /python3 -m venv \.venv/);
+  assert.match(readme, /python verify_setup\.py/);
+  assert.match(requirements, /httpx==0\.28\.1/);
+  assert.match(requirements, /pydantic==2\.11\.7/);
+  assert.match(requirements, /python-dotenv==1\.1\.1/);
+  assert.match(settings, /TICKET_API_URL = \.\.\./);
+  assert.match(settings, /TICKET_API_KEY = \.\.\./);
+  assert.match(verify, /第 8 关环境验证通过/);
+  assert.equal(archive.subarray(0, 2).toString(), "PK");
+});
+
 test("详情页不会错误继承首页分享图", async () => {
   const pythonHtml = await (await render("/courses/python-framework")).text();
   assert.match(pythonHtml, /og\.png/);
