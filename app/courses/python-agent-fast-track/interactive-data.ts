@@ -242,7 +242,9 @@ export const agentCourseConfig: InteractiveCourseConfig = {
       terms: vocabulary[index],
       knowledge: vocabulary[index].map(([term, plain]) => ({ term, plain, ...knowledgeDetails[term] })),
       input: lesson.example, example: lesson.example, walkthrough: walkthroughs[index],
-      task: `工单查询助手 · ${lesson.objective} 完成本节项目骨架中的 TODO，并逐条验证以下标准。`,
+      task: lesson.id === 8
+        ? "工单查询助手 · 课程已经提供项目目录、固定依赖、.gitignore 和验证脚本。站内只完成 settings.py 中的两个 TODO；本机实操时再下载骨架运行验证。"
+        : `工单查询助手 · ${lesson.objective} 完成本节项目骨架中的 TODO，并逐条验证以下标准。`,
       starter: lesson.starter, files: lesson.files, acceptance: lesson.pass,
       starterDownload: lesson.id === 8 ? {
         href: "/starter-projects/python-agent-level-08.zip",
@@ -260,5 +262,10 @@ export function getAgentGradingRubric(levelId: number): GradingRubric | null {
   const lesson = agentFastTrackLessons[levelId - 1];
   if (!Number.isInteger(levelId) || !lesson) return null;
   return { levelId, title: lesson.title, task: `${lesson.objective}\n项目骨架：\n${lesson.starter}`, taskContract: lesson.pass, acceptance: lesson.pass, referenceAnswer: lesson.referenceAnswer,
-    authoritativeNotes: [lesson.referenceExplanation, "仅按 Python → Agent 本节任务批改，不套用其他课程的同编号题目。", "参考答案可能只包含需要补充的函数，应结合项目骨架判断完整行为。代码审阅不代表真实运行已经通过。"] };
+    authoritativeNotes: [
+      lesson.referenceExplanation,
+      "仅按 Python → Agent 本节任务批改，不套用其他课程的同编号题目。",
+      "参考答案可能只包含需要补充的函数，应结合项目骨架判断完整行为。代码审阅不代表真实运行已经通过。",
+      ...(levelId === 8 ? ["第 8 关的 requirements.txt、.gitignore、.env.example 和 verify_setup.py 是课程提供物，不属于 current_student_answer；绝对不能因为学员没有重复粘贴这些文件而扣分。只检查 settings.py 两个 TODO 及不泄露密钥。"] : []),
+    ] };
 }

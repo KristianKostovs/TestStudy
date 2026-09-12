@@ -174,6 +174,14 @@ test("Agent 十六节小测匹配诊断，旧进度迁移与冲突合并不丢�
     assert.equal(exercise.starter, agentData.agentFastTrackLessons[index].starter);
     assert.ok(exercise.terms.length >= 2 && exercise.walkthrough.length >= 3);
   }
+  const level8 = agentInteractive.getAgentGradingRubric(8);
+  assert.deepEqual(level8.acceptance, [
+    "TICKET_API_URL 使用 os.environ.get，并提供 http://127.0.0.1:8000 默认值",
+    "TICKET_API_KEY 使用 os.environ[...] 读取，缺少时立即抛 KeyError",
+    "没有在 settings.py 中硬编码或打印真实密钥",
+  ]);
+  assert.match(level8.authoritativeNotes.join("\n"), /不属于 current_student_answer/);
+  assert.match(level8.authoritativeNotes.join("\n"), /绝对不能因为学员没有重复粘贴这些文件而扣分/);
   assert.equal(agentInteractive.getAgentGradingRubric(17), null);
 });
 

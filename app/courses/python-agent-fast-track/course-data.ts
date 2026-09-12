@@ -534,32 +534,13 @@ load_dotenv(Path.cwd() / ".env")
 # TODO（你来完成）：URL 可选且有本地默认值；API_KEY 必填
 TICKET_API_URL = ...
 TICKET_API_KEY = ...`,
-    referenceAnswer: String.raw`# ===== requirements.txt =====
-httpx==0.28.1
-pydantic==2.11.7
-python-dotenv==1.1.1
-
-# ===== .env.example =====
-TICKET_API_URL=http://127.0.0.1:8000
-TICKET_API_KEY=replace-me
-
-# ===== .gitignore =====
-.venv/
-.env
-__pycache__/
-*.pyc
-
-# ===== ticket_assistant/settings.py =====
+    referenceAnswer: String.raw`# 你只需要提交 ticket_assistant/settings.py 中两个 TODO 的实现
 import os
-from pathlib import Path
-from dotenv import load_dotenv
-
-load_dotenv(Path.cwd() / ".env")
 
 TICKET_API_URL = os.environ.get("TICKET_API_URL", "http://127.0.0.1:8000")
 TICKET_API_KEY = os.environ["TICKET_API_KEY"]`,
-    referenceExplanation: "这三个版本已由课程在全新 Python 3.9 虚拟环境中安装验证。站内批改只检查项目文件内容；下载骨架后运行 verify_setup.py，才能取得真实环境的执行证明。URL 有安全本地默认值，密钥缺失则立即失败。",
-    pass: ["requirements.txt 保留课程已验证的三个固定版本", ".gitignore 排除 .env、.venv、__pycache__ 和 *.pyc", "settings.py 让 URL 有本地默认值，并让缺少 API_KEY 时立即抛 KeyError"],
+    referenceExplanation: "requirements.txt、.gitignore、.env.example 和验证脚本都由课程提供，不属于学员提交范围。站内只批改 settings.py 的两个 TODO：URL 使用本地默认值，密钥缺失时立即失败。下载骨架后运行 verify_setup.py，才能取得真实环境的执行证明。",
+    pass: ["TICKET_API_URL 使用 os.environ.get，并提供 http://127.0.0.1:8000 默认值", "TICKET_API_KEY 使用 os.environ[...] 读取，缺少时立即抛 KeyError", "没有在 settings.py 中硬编码或打印真实密钥"],
   },
   {
     id: 9,

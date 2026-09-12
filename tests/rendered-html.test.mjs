@@ -144,10 +144,11 @@ test("Python Agent 快速通道提供完整十六节学习内容和连续工单�
 });
 
 test("Python Agent 第 8 关无需现成项目即可站内作答或下载骨架实操", async () => {
-  const [data, interactive, course, readme, requirements, settings, verify, archive] = await Promise.all([
+  const [data, interactive, course, editor, readme, requirements, settings, verify, archive] = await Promise.all([
     readFile(new URL("../app/courses/python-agent-fast-track/course-data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/python-agent-fast-track/interactive-data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/ai-developer-level5/AiDeveloperCourse.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/python-framework/PythonAnswerEditor.tsx", import.meta.url), "utf8"),
     readFile(new URL("../course-starters/python-agent-level-08/README.md", import.meta.url), "utf8"),
     readFile(new URL("../course-starters/python-agent-level-08/requirements.txt", import.meta.url), "utf8"),
     readFile(new URL("../course-starters/python-agent-level-08/ticket_assistant/settings.py", import.meta.url), "utf8"),
@@ -158,10 +159,15 @@ test("Python Agent 第 8 关无需现成项目即可站内作答或下载骨架�
   assert.match(data, /你不需要已有项目/);
   assert.match(data, /===== requirements\.txt/);
   assert.match(data, /===== \.gitignore/);
-  assert.match(data, /站内批改只检查项目文件内容/);
+  assert.match(data, /requirements\.txt、\.gitignore、\.env\.example 和验证脚本都由课程提供，不属于学员提交范围/);
+  assert.match(data, /TICKET_API_URL 使用 os\.environ\.get/);
+  assert.match(data, /没有在 settings\.py 中硬编码或打印真实密钥/);
   assert.match(interactive, /python-agent-level-08\.zip/);
+  assert.match(interactive, /绝对不能因为学员没有重复粘贴这些文件而扣分/);
   assert.match(course, /没有现成项目也可以开始/);
   assert.match(course, /# ===== 文件名 =====/);
+  assert.match(course, /仍在显示旧草稿/);
+  assert.match(editor, /恢复最新版起步代码/);
   assert.match(readme, /python3 -m venv \.venv/);
   assert.match(readme, /python verify_setup\.py/);
   assert.match(requirements, /httpx==0\.28\.1/);
@@ -218,8 +224,8 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(editor, /collectPythonDiagnostics/);
   assert.match(editor, /上一行以冒号结尾/);
   assert.match(editor, /你是不是想写/);
-  assert.match(editor, /最新版框架已载入/);
-  assert.match(editor, /恢复最新版框架/);
+  assert.match(editor, /最新版起步代码已载入/);
+  assert.match(editor, /恢复最新版起步代码/);
   assert.match(source, /course-workspace/);
   assert.match(source, /suite-topbar course-suite-topbar/);
   assert.match(courseStyles, /\.code-editor-statusbar/);
@@ -332,7 +338,7 @@ test("Python 十关在参考答案前补齐必需基础知识且答案覆盖完�
   assert.doesNotMatch(level10Support, /after_sale\.notify|client\.close/);
   assert.doesNotMatch(level10Answer, /after_sale\.notify|client\.close/);
   assert.match(level10Answer, /def validate_flow[\s\S]*def run_flow[\s\S]*SYSTEM_ERROR/);
-  assert.match(editor, /恢复最新版框架代码会替换当前编辑内容[\s\S]*恢复最新版框架/);
+  assert.match(editor, /恢复最新版起步代码会替换当前编辑内容[\s\S]*恢复最新版起步代码/);
 });
 
 test("第十关通关后解锁完整的 pytest 框架 HTML 笔记", async () => {

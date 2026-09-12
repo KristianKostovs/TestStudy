@@ -436,7 +436,7 @@ export default function PythonAnswerEditor({ levelId, courseId = "python-framewo
   function loadStarter() {
     const view = viewRef.current;
     if (!view || view.state.doc.toString() === starter) return;
-    if (view.state.doc.toString().trim() && !window.confirm("恢复最新版框架代码会替换当前编辑内容。确定继续吗？")) return;
+    if (view.state.doc.toString().trim() && !window.confirm("恢复最新版起步代码会替换当前编辑内容。确定继续吗？")) return;
     view.dispatch({
       changes: { from: 0, to: view.state.doc.length, insert: starter },
       selection: { anchor: starter.length },
@@ -455,7 +455,7 @@ export default function PythonAnswerEditor({ levelId, courseId = "python-framewo
         <header className="code-editor-toolbar">
           <div className="editor-window-dots" aria-hidden="true"><i /><i /><i /></div>
           <div className="editor-file-tab"><b>PY</b><span>{`level_${String(levelId).padStart(2, "0")}.py`}</span></div>
-          <button type="button" disabled={isStarter} onClick={loadStarter}>{isStarter ? "最新版框架已载入" : value.trim() ? "恢复最新版框架" : "载入最新版框架"}</button>
+          <button type="button" disabled={isStarter} onClick={loadStarter}>{isStarter ? "最新版起步代码已载入" : value.trim() ? "恢复最新版起步代码" : "载入最新版起步代码"}</button>
         </header>
         <div className="codemirror-host" ref={hostRef} />
         <footer className="code-editor-statusbar">
