@@ -5,9 +5,8 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import "./course-flow.css";
 import LearningStepNav from "../LearningStepNav";
 import KnowledgeDialog from "../KnowledgeDialog";
-import CourseContentEditButton from "./CourseContentEditButton";
+import { useCourseContent } from "../useCourseContent";
 import CourseNotePanel from "./CourseNotePanel";
-import type { CourseContentOverride, CourseContentValue } from "../../course-content";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
 import { referenceAnswers } from "./reference-answers";
 import {
@@ -1448,39 +1447,20 @@ export default function Home({ chapterId }: { chapterId?: number }) {
   const [ready, setReady] = useState(false);
   const [cloudSyncStatus, setCloudSyncStatus] = useState<CloudSyncStatus>("loading");
   const [cloudSyncMessage, setCloudSyncMessage] = useState("正在读取账号学习记录…");
-  const [courseContentOverrides, setCourseContentOverrides] = useState<Record<string, CourseContentOverride>>({});
-  const [canEditCourseContent, setCanEditCourseContent] = useState(false);
+  const {
+    canEdit: canEditCourseContent,
+    content: editableContent,
+    editor: renderContentEditor,
+  } = useCourseContent({
+    courseId,
+    courseTitle: "Python 框架基础",
+    enabled: Boolean(chapterId),
+    disabledOrigin: localLearningOrigin,
+  });
   const snapshotRef = useRef<LearningSyncState>(emptyLearningState());
   const taskDraftsRef = useRef<Record<number, string>>({});
   const syncRevisionRef = useRef(0);
   const syncTimerRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (!chapterId || window.location.origin === localLearningOrigin) {
-      setCanEditCourseContent(false);
-      return;
-    }
-    let active = true;
-    fetch(`/api/course-content?courseId=${encodeURIComponent(courseId)}`, { cache: "no-store" })
-      .then(async (response) => {
-        const result = await response.json() as { overrides?: CourseContentOverride[]; canEdit?: boolean; error?: string };
-        if (!response.ok) throw new Error(result.error ?? "课程内容读取失败");
-        return result;
-      })
-      .then((result) => {
-        if (!active) return;
-        setCourseContentOverrides(Object.fromEntries((result.overrides ?? []).map((item) => [item.contentKey, item])));
-        setCanEditCourseContent(result.canEdit === true);
-      })
-      .catch(() => {
-        if (active) setCanEditCourseContent(false);
-      });
-    return () => { active = false; };
-  }, [chapterId]);
-
-  function editableContent<T extends CourseContentValue>(contentKey: string, source: T): T {
-    return { ...source, ...(courseContentOverrides[contentKey]?.content ?? {}) } as T;
-  }
 
   function contentEditor(
     levelId: number,
@@ -1488,21 +1468,12 @@ export default function Home({ chapterId }: { chapterId?: number }) {
     contentKey: string,
     fields: Array<{ name: string; label: string; value: string; multiline?: boolean; code?: boolean }>,
   ) {
-    return <CourseContentEditButton
-      courseId={courseId}
-      levelId={levelId}
-      section={section}
-      contentKey={contentKey}
-      fields={fields}
-      overridden={Boolean(courseContentOverrides[contentKey])}
-      canEdit={canEditCourseContent}
-      onSaved={(record) => setCourseContentOverrides((current) => ({ ...current, [record.contentKey]: record }))}
-      onReset={(key) => setCourseContentOverrides((current) => {
-        const next = { ...current };
-        delete next[key];
-        return next;
-      })}
-    />;
+    return renderContentEditor({
+      levelId,
+      section,
+      contentKey,
+      fields,
+    });
   }
 
   const writeLocalSnapshot = useCallback((snapshot: LearningSyncState) => {

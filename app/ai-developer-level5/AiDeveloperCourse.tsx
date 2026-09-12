@@ -4,6 +4,7 @@ import { codeWithComments, walkthroughAnchors } from "../courses/code-walkthroug
 import KnowledgeDialog, { type KnowledgePoint } from "../courses/KnowledgeDialog";
 import LearningStepNav, { learningStepLabels } from "../courses/LearningStepNav";
 import CourseNotePanel from "../courses/python-framework/CourseNotePanel";
+import { useCourseContent } from "../courses/useCourseContent";
 import type { LearningStage } from "./learning-plan";
 import type { exercises as aiExercises } from "./exercises";
 import { useCourseState } from "./useCourseState";
@@ -42,6 +43,34 @@ export default function InteractiveCourse({ config, chapterId }: { config: Inter
   const chapterAvailable = !chapter || chapter.id === 1 || completed.includes(chapter.lessonIds[0] - 1) || chapter.lessonIds.some((id) => completed.includes(id));
   const visibleIds = chapter?.lessonIds ?? learningStages.map((_, index) => index + 1);
   const progress = Math.round(completed.length / learningStages.length * 100);
+  const { canEdit: canEditCourseContent, content: editableContent, editor: contentEditor } = useCourseContent({
+    courseId: aiCourseId,
+    courseTitle: config.title,
+    disabledOrigin: "http://127.0.0.1:3000",
+  });
+  const introKey = `${aiCourseId}.level-${activeId}.intro`;
+  const introContent = editableContent(introKey, {
+    prerequisite: lesson.prerequisite,
+    explanation: lesson.explanation,
+  });
+  const glossaryContent = exercise.terms.map(([term, meaning], index) => {
+    const contentKey = `${aiCourseId}.level-${activeId}.glossary-${index + 1}`;
+    return { contentKey, ...editableContent(contentKey, { term, meaning }) };
+  });
+  const walkthroughContent = exercise.walkthrough.map((text, index) => {
+    const contentKey = `${aiCourseId}.level-${activeId}.walkthrough-${index + 1}`;
+    return { contentKey, ...editableContent(contentKey, { text }) };
+  });
+  const topicContent = lesson.topics.map(([title, text], index) => {
+    const contentKey = `${aiCourseId}.level-${activeId}.topic-${index + 1}`;
+    return { contentKey, ...editableContent(contentKey, { title, text }) };
+  });
+  const taskKey = `${aiCourseId}.level-${activeId}.task`;
+  const taskContent = editableContent(taskKey, { text: exercise.task });
+  const acceptanceContent = exercise.acceptance.map((text, index) => {
+    const contentKey = `${aiCourseId}.level-${activeId}.acceptance-${index + 1}`;
+    return { contentKey, ...editableContent(contentKey, { text }) };
+  });
 
   useEffect(() => {
     function readHash() {
@@ -124,7 +153,7 @@ export default function InteractiveCourse({ config, chapterId }: { config: Inter
   }
 
   return <main className="ready course-workspace ai5-course">
-    <header className="suite-topbar course-suite-topbar"><div><strong>学习中心 · {config.title}</strong><span>{inLesson ? `第 ${activeId} 节 · 一次专注一个学习步骤` : (chapter ? `${chapter.title} · 按顺序解锁关卡` : "课程总览 · 选择章节开始学习")}</span></div><div className="suite-live"><i />{completed.length} / {learningStages.length} 节</div></header>
+    <header className="suite-topbar course-suite-topbar"><div><strong>学习中心 · {config.title}</strong><span>{inLesson ? `第 ${activeId} 节 · 一次专注一个学习步骤` : (chapter ? `${chapter.title} · 按顺序解锁关卡` : "课程总览 · 选择章节开始学习")}</span></div>{canEditCourseContent && <span className="course-editor-permission"><i />课程编辑权限已启用</span>}<div className="suite-live"><i />{completed.length} / {learningStages.length} 节</div></header>
     {!inLesson && <header className="hero">
       <nav><a className="brand" href="/learn"><i>{config.sigil}</i> {config.brand}</a><div className="nav-actions"><a className="text-button course-back" href="/learn">← 返回学习中心</a><a className="text-button" href={config.nextHref}>{config.nextTitle}</a></div></nav>
       <div className="hero-grid"><section><p className="eyebrow">{config.eyebrow} · LEVEL {activeId}</p><h1>{chapter?.title ?? config.title}</h1><p className="lead">{chapter?.subtitle ?? (config.chapters ? "从第一章开始，完成练习与小测后解锁下一关。" : "选择需要学习的关卡，按五个步骤完成练习与小测。")}</p><button type="button" className="hero-cta" disabled={!ready || !chapterAvailable} onClick={() => selectLesson(visibleIds.find((id) => !completed.includes(id)) ?? visibleIds[0])}>进入当前关卡 <span>→</span></button></section>
@@ -148,10 +177,14 @@ export default function InteractiveCourse({ config, chapterId }: { config: Inter
         <LearningStepNav active={step} unlocked={unlocked} onSelect={setStep} />
         <CourseNotePanel key={activeId} courseId={aiCourseId} chapterId={lesson.chapter ?? Math.ceil(activeId / 3)} levelId={activeId} levelTitle={lesson.title} online />
 
-        {step === 1 && <section className="stage-panel"><div className="beginner-note"><b>小白先看这里</b><p><strong>前置知识：</strong>{lesson.prerequisite}</p><p>{lesson.explanation}</p></div><div className="glossary-grid">{exercise.terms.map(([term, meaning]) => <button className="glossary-card" type="button" key={term} onClick={() => setKnowledge(exercise.knowledge?.find((point) => point.term === term) ?? { term, plain: meaning, role: lesson.explanation, example: exercise.example })}><span><b>{term}</b><i>点开解释</i></span><p>{meaning}</p></button>)}</div><button className="stage-continue" type="button" disabled={!ready} onClick={advance}>概念看懂了，进入“看数据” →</button></section>}
+        {step === 1 && <section className="stage-panel">
+          <div className="beginner-note editable-course-content"><b>小白先看这里</b><p><strong>前置知识：</strong>{introContent.prerequisite}</p><p>{introContent.explanation}</p>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "intro", contentKey: introKey, fields: [{ name: "prerequisite", label: "前置知识", value: introContent.prerequisite, multiline: true }, { name: "explanation", label: "本节解释", value: introContent.explanation, multiline: true }] })}</div>
+          <div className="glossary-grid">{glossaryContent.map(({ contentKey, term, meaning }) => <div className="editable-glossary-card" key={contentKey}><button className="glossary-card" type="button" onClick={() => setKnowledge(exercise.knowledge?.find((point) => point.term === term) ?? { term, plain: meaning, role: introContent.explanation, example: exercise.example })}><span><b>{term}</b><i>点开解释</i></span><p>{meaning}</p></button>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "glossary", contentKey, fields: [{ name: "term", label: "术语", value: term }, { name: "meaning", label: "解释", value: meaning, multiline: true }] })}</div>)}</div>
+          <button className="stage-continue" type="button" disabled={!ready} onClick={advance}>概念看懂了，进入“看数据” →</button>
+        </section>}
         {step === 2 && <section className="stage-panel"><h3>先看输入和结果长什么样</h3><pre className="ai5-code"><code>{exercise.input}</code></pre><p>先找出示例中的输入、变量和预期结果，再沿着数据流看它们如何变化。可以把自己的预测记在本节笔记中。</p><button className="stage-continue" type="button" onClick={advance}>数据看懂了，进入“逐行理解” →</button></section>}
-        {step === 3 && <section className="stage-panel"><h3>逐行理解最小示例</h3><pre className="ai5-code annotated-code"><code>{codeWithComments(exercise.example, exercise.walkthrough, walkthroughAnchors[config.id]?.[activeId - 1] ?? [])}</code></pre><details className="ai5-term compact-disclosure"><summary>继续学习这一主题需要哪些知识？</summary>{lesson.topics.map(([title, content]) => <p key={title}><strong>{title}：</strong>{content}</p>)}</details><button className="stage-continue" type="button" onClick={advance}>代码理解完成，进入“动手练” →</button></section>}
-        {step === 4 && <section className="stage-panel"><h3>通关任务</h3><p>{exercise.task}</p><ul>{exercise.acceptance.map((item) => <li key={item}>{item}</li>)}</ul>{exercise.files && <p>本节项目文件：{exercise.files.join(" · ")}</p>}<Suspense fallback={<p>正在载入课程编辑器…</p>}><PythonAnswerEditor key={activeId} courseId={aiCourseId} levelId={activeId} value={answer} starter={exercise.starter} onChange={editAnswer} /></Suspense>
+        {step === 3 && <section className="stage-panel"><h3>逐行理解最小示例</h3><pre className="ai5-code annotated-code"><code>{codeWithComments(exercise.example, walkthroughContent.map((item) => item.text), walkthroughAnchors[config.id]?.[activeId - 1] ?? [])}</code></pre><div className="course-content-inline-editors" aria-label="编辑逐行讲解">{walkthroughContent.map(({ contentKey, text }, index) => contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "walkthrough", contentKey, fields: [{ name: "text", label: `代码注释 ${index + 1}`, value: text, multiline: true }] }))}</div><details className="ai5-term compact-disclosure"><summary>继续学习这一主题需要哪些知识？</summary>{topicContent.map(({ contentKey, title, text }) => <div className="editable-course-content" key={contentKey}><p><strong>{title}：</strong>{text}</p>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "topic", contentKey, fields: [{ name: "title", label: "主题名称", value: title }, { name: "text", label: "主题说明", value: text, multiline: true }] })}</div>)}</details><button className="stage-continue" type="button" onClick={advance}>代码理解完成，进入“动手练” →</button></section>}
+        {step === 4 && <section className="stage-panel"><h3>通关任务</h3><div className="editable-course-content"><p>{taskContent.text}</p>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "task", contentKey: taskKey, fields: [{ name: "text", label: "通关任务", value: taskContent.text, multiline: true }] })}</div><ul>{acceptanceContent.map(({ contentKey, text }, index) => <li className="editable-course-content" key={contentKey}>{text}{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "acceptance", contentKey, fields: [{ name: "text", label: `通过标准 ${index + 1}`, value: text, multiline: true }] })}</li>)}</ul>{exercise.files && <p>本节项目文件：{exercise.files.join(" · ")}</p>}<Suspense fallback={<p>正在载入课程编辑器…</p>}><PythonAnswerEditor key={activeId} courseId={aiCourseId} levelId={activeId} value={answer} starter={exercise.starter} onChange={editAnswer} /></Suspense>
           <div className="local-codex-chat ai5-tutor"><header><div><i>DS</i><span><b>即时学习助教</b><small>由 DeepSeek 在线提供 · 对话随账号同步</small></span></div><em>在线</em></header><p>可以请求提示、完整参考答案，或按本节标准批改。代码运行结果请在 Python 环境验证，助教反馈不等于实际执行证明。</p><div className="codex-quick-actions"><button type="button" disabled={pending || !ready} onClick={() => void askTutor("请按本节验收标准批改我的当前答案。")}>即时批改</button><button type="button" disabled={pending || !ready} onClick={() => void askTutor("请给我一点提示，不要直接给完整答案。")}>给一点提示</button><button type="button" onClick={() => setShowAnswer(!showAnswer)}>{showAnswer ? "收起参考答案" : "查看参考答案"}</button></div>
           {showAnswer && <pre className="ai5-code"><code>{exercise.reference}</code></pre>}
           <div className="codex-chat-messages" aria-label="本节助教对话">{(state.chats[activeId] ?? []).map((item, index) => <article className={item.role} key={`${item.createdAt}-${index}`}><strong>{item.role === "user" ? "你" : "助教"}</strong><p>{item.content}</p></article>)}</div>

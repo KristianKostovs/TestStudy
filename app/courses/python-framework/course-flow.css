@@ -374,6 +374,7 @@
 .course-workspace .course-content-edit-trigger { z-index: 2; min-width: 42px; padding: 5px 7px; color: #236b55; border: 1px solid #9fc7b7; border-radius: 6px; background: #f4faf7; font: 750 8px/1.2 var(--font-geist-sans), sans-serif; cursor: pointer; }
 .course-workspace .editable-course-content > .course-content-edit-trigger { position: absolute; top: 10px; right: 10px; }
 .course-workspace .editable-glossary-card > .course-content-edit-trigger { position: absolute; right: 10px; bottom: 9px; }
+.course-workspace .course-content-inline-editors { display: flex; flex-wrap: wrap; gap: 7px; margin: 8px 0 14px; }
 .course-workspace .course-content-edit-trigger:hover, .course-workspace .course-content-edit-trigger.overridden { color: #fff; border-color: #25765f; background: #25765f; }
 .course-content-editor-backdrop { position: fixed; z-index: 1000; inset: 0; display: grid; place-items: center; padding: 24px; background: rgba(19, 31, 26, .58); backdrop-filter: blur(4px); }
 .course-content-editor { width: min(680px, 100%); max-height: min(760px, calc(100vh - 48px)); overflow: auto; padding: 22px; color: #26342e; border: 1px solid #bfd2ca; border-radius: 14px; background: #fbfcfb; box-shadow: 0 28px 80px rgba(18, 35, 28, .28); }

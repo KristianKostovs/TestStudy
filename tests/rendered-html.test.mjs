@@ -522,10 +522,12 @@ test("每关学习笔记支持账号目录、图片存储并汇总到成长档�
   assert.match(growth, /按“课程 \/ 章节 \/ 关卡”归档/);
 });
 
-test("课程说明支持有权限账号在网页内编辑并恢复源码默认值", async () => {
-  const [course, editor, route, content, schema, envExample] = await Promise.all([
+test("所有互动课程共用课程说明编辑、云端覆盖和恢复能力", async () => {
+  const [course, interactiveCourse, hook, editor, route, content, schema, envExample] = await Promise.all([
     readFile(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8"),
-    readFile(new URL("../app/courses/python-framework/CourseContentEditButton.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/ai-developer-level5/AiDeveloperCourse.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/useCourseContent.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/CourseContentEditButton.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/course-content/route.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/course-content.ts", import.meta.url), "utf8"),
     readFile(new URL("../db/schema.ts", import.meta.url), "utf8"),
@@ -533,9 +535,22 @@ test("课程说明支持有权限账号在网页内编辑并恢复源码默认�
   ]);
 
   assert.match(course, /课程编辑权限已启用/);
+  assert.match(course, /useCourseContent/);
   assert.match(course, /所有允许的查找机制都失败后必须明确报错/);
+  assert.match(interactiveCourse, /useCourseContent/);
+  assert.match(interactiveCourse, /课程编辑权限已启用/);
+  assert.match(interactiveCourse, /\.intro/);
+  assert.match(interactiveCourse, /\.glossary-/);
+  assert.match(interactiveCourse, /\.walkthrough-/);
+  assert.match(interactiveCourse, /\.topic-/);
+  assert.match(interactiveCourse, /\.task/);
+  assert.match(interactiveCourse, /\.acceptance-/);
+  assert.match(hook, /\/api\/course-content\?courseId=/);
+  assert.match(hook, /courseTitle/);
   assert.match(editor, /保存到云端/);
   assert.match(editor, /恢复源码内容/);
+  assert.match(editor, /\{courseTitle\}/);
+  assert.doesNotMatch(editor, /Python 框架基础 \/ 第/);
   assert.match(editor, /method: "POST"/);
   assert.match(editor, /action: "save"/);
   assert.match(editor, /action: "reset"/);

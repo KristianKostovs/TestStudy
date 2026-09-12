@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { CourseContentOverride, CourseContentValue } from "../../course-content";
+import type { CourseContentOverride, CourseContentValue } from "../course-content";
 
 export type CourseContentField = {
   name: string;
@@ -29,7 +29,9 @@ async function readApiResult<T>(response: Response, action: string): Promise<T> 
 
 export default function CourseContentEditButton({
   courseId,
+  courseTitle,
   levelId,
+  unitLabel,
   section,
   contentKey,
   fields,
@@ -39,7 +41,9 @@ export default function CourseContentEditButton({
   onReset,
 }: {
   courseId: string;
+  courseTitle: string;
   levelId: number;
+  unitLabel?: string;
   section: string;
   contentKey: string;
   fields: CourseContentField[];
@@ -121,7 +125,7 @@ export default function CourseContentEditButton({
     }}>
       <section className="course-content-editor" role="dialog" aria-modal="true" aria-label="编辑课程内容">
         <header><div><span>COURSE CONTENT</span><h3>编辑本段课程说明</h3></div><button type="button" aria-label="关闭编辑窗口" onClick={() => setOpen(false)}>×</button></header>
-        <p className="course-content-editor-path">Python 框架基础 / 第 {levelId} 关 / {section}</p>
+        <p className="course-content-editor-path">{courseTitle} / {unitLabel ?? `第 ${levelId} 关`} / {section}</p>
         <div className="course-content-editor-fields">
           {fields.map((field) => <label key={field.name}>
             <span>{field.label}</span>
