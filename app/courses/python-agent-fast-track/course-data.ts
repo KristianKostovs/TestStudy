@@ -477,8 +477,8 @@ assert TicketService(FakeRepository()).get("T-101").tags == ["api"]`,
     id: 8,
     chapter: 3,
     title: "虚拟环境、依赖与环境变量",
-    duration: "80–100 分钟",
-    objective: "能从零创建隔离环境、安装固定依赖，并让密钥和地址通过环境变量进入程序。",
+    duration: "20–30 分钟；本机实践可选",
+    objective: "理解虚拟环境、依赖清单和环境变量的职责，能判断解释器不一致、配置缺失和密钥提交的后果。",
     priority: "入门前必须会",
     explanation: [
       "虚拟环境隔离项目依赖；requirements.txt 或 pyproject.toml 记录可复现依赖。先激活环境，再确认 python 和 pip 指向同一环境。",
@@ -507,7 +507,7 @@ client = Client(headers={"Authorization": f"Bearer {api_key}"})`,
     pitfalls: ["不要把 .env 和真实密钥提交到 Git", "优先 python -m pip，避免 pip 指向另一个解释器", "只写依赖名不锁版本会降低复现性"],
     files: ["requirements.txt", ".env.example", ".gitignore", "ticket_assistant/settings.py", "verify_setup.py"],
     starter: String.raw`# 你不需要已有项目。下面每个 ===== 标题代表项目中的一个文件。
-# 课程已经提供目录、依赖版本和验证脚本；站内只补最后两个 TODO。
+# 课程已经提供目录、依赖版本和验证脚本；想做本机实操时可补最后两个 TODO。
 
 # ===== requirements.txt（课程已在全新 Python 3.9 环境验证） =====
 httpx==0.28.1
@@ -534,13 +534,13 @@ load_dotenv(Path.cwd() / ".env")
 # TODO（你来完成）：URL 可选且有本地默认值；API_KEY 必填
 TICKET_API_URL = ...
 TICKET_API_KEY = ...`,
-    referenceAnswer: String.raw`# 你只需要提交 ticket_assistant/settings.py 中两个 TODO 的实现
+    referenceAnswer: String.raw`# 可选本机实操：ticket_assistant/settings.py 中两个 TODO 的参考实现
 import os
 
 TICKET_API_URL = os.environ.get("TICKET_API_URL", "http://127.0.0.1:8000")
 TICKET_API_KEY = os.environ["TICKET_API_KEY"]`,
-    referenceExplanation: "requirements.txt、.gitignore、.env.example 和验证脚本都由课程提供，不属于学员提交范围。站内只批改 settings.py 的两个 TODO：URL 使用本地默认值，密钥缺失时立即失败。下载骨架后运行 verify_setup.py，才能取得真实环境的执行证明。",
-    pass: ["TICKET_API_URL 使用 os.environ.get，并提供 http://127.0.0.1:8000 默认值", "TICKET_API_KEY 使用 os.environ[...] 读取，缺少时立即抛 KeyError", "没有在 settings.py 中硬编码或打印真实密钥"],
+    referenceExplanation: "requirements.txt、.gitignore、.env.example 和验证脚本都由课程提供，不属于学员提交范围。本节是概念课，完成理解检查即可。以上代码仅供可选本机练习参考：URL 使用本地默认值，密钥缺失时立即失败。下载骨架后可运行 verify_setup.py 验证环境。",
+    pass: ["理解解释器与依赖环境需要一致", "识别可选 URL 与必填密钥的不同读取方式", "知道依赖清单可以提交，真实密钥与虚拟环境不应提交"],
   },
   {
     id: 9,

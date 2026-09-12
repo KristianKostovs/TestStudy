@@ -160,10 +160,10 @@ test("Python Agent 第 8 关无需现成项目即可站内作答或下载骨架�
   assert.match(data, /===== requirements\.txt/);
   assert.match(data, /===== \.gitignore/);
   assert.match(data, /requirements\.txt、\.gitignore、\.env\.example 和验证脚本都由课程提供，不属于学员提交范围/);
-  assert.match(data, /TICKET_API_URL 使用 os\.environ\.get/);
-  assert.match(data, /没有在 settings\.py 中硬编码或打印真实密钥/);
+  assert.match(data, /本节是概念课，完成理解检查即可/);
+  assert.match(data, /可选本机练习参考/);
   assert.match(interactive, /python-agent-level-08\.zip/);
-  assert.match(interactive, /绝对不能因为学员没有重复粘贴这些文件而扣分/);
+  assert.match(interactive, /getConceptRubric/);
   assert.match(course, /没有现成项目也可以开始/);
   assert.match(course, /# ===== 文件名 =====/);
   assert.match(course, /仍在显示旧草稿/);
@@ -419,9 +419,12 @@ test("所有学习模块都展示课题背景、固定练习契约和验收标�
 
   for (const moduleId of ["ui-automation", "api-automation", "ai-testing", "performance-testing", "quality-engineering"]) {
     const html = await (await render(`/courses/${moduleId}`)).text();
-    assert.equal((html.match(/<dt>固定契约<\/dt>/g) ?? []).length, 10, moduleId);
-    assert.equal((html.match(/<dt>验收标准<\/dt>/g) ?? []).length, 10, moduleId);
-    assert.equal((html.match(/<section class="blueprint-practice"/g) ?? []).length, 10, moduleId);
+    const concepts = moduleId === "ai-testing" ? 2 : 1;
+    assert.equal((html.match(/<dt>固定契约<\/dt>/g) ?? []).length, 10 - concepts, moduleId);
+    assert.equal((html.match(/<dt>验收标准<\/dt>/g) ?? []).length, 10 - concepts, moduleId);
+    assert.equal((html.match(/aria-label="理解检查"/g) ?? []).length, concepts, moduleId);
+    assert.equal((html.match(/<details[^>]*class="blueprint-practice"/g) ?? []).length, 10, moduleId);
+    assert.match(html, /可选：动手实践与原项目骨架/);
     assert.equal((html.match(/<div class="blueprint-editor-shell"/g) ?? []).length, 10, moduleId);
     assert.match(html, /TODO（你来完成）/);
     assert.doesNotMatch(html, /将补齐：基础解释/);

@@ -10,6 +10,9 @@ import {
 } from "../../learning-registry";
 import { blueprintStarterFor } from "../../blueprint-starters";
 import BlueprintPracticeEditor from "../BlueprintPracticeEditor";
+import { getConceptLesson } from "../lesson-format";
+import UnderstandingCheck from "../UnderstandingCheck";
+import "../../ai-developer-level5/course.css";
 
 const sourceKinds: SourceKind[] = ["foundation", "technology_radar", "local_project"];
 
@@ -60,7 +63,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
           <aside className="course-status-card">
             <span>当前建设状态</span>
             <strong>{detailedRoadmap ? "十关框架练习已备" : "路线已建立"}</strong>
-            <p>{detailedRoadmap ? "每关都已给出背景、必备知识、固定契约和可直接修改的 IDE 项目骨架；你只需完成标出的关键 TODO。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
+            <p>{detailedRoadmap ? "概念关通过例子与理解检查学习；实践关提供固定契约和 IDE 起步代码，只需补充关键 TODO。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
           </aside>
         </div>
       </header>
@@ -103,9 +106,10 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
         </div>
         <ol className="standalone-roadmap">
           {course.roadmap.map((item, index) => {
+            const concept = getConceptLesson(moduleId, index + 1);
             const starter = typeof item === "string" ? null : blueprintStarterFor(moduleId, index, item);
             return (
-            <li className={typeof item === "string" ? undefined : "detailed"} key={roadmapTitle(item)}>
+            <li id={`level-${index + 1}`} className={typeof item === "string" ? undefined : "detailed"} key={roadmapTitle(item)}>
               <b>{String(index + 1).padStart(2, "0")}</b>
               <div>
                 <span>LEVEL {String(index + 1).padStart(2, "0")}</span>
@@ -119,24 +123,25 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
                     <ul className="level-foundations">
                       {item.foundations.map((foundation) => <li key={foundation}>{foundation}</li>)}
                     </ul>
-                    <dl className="level-deliverables">
+                    {concept ? <section className="stage-panel"><h4>概念理解</h4><p>{concept.explanation}</p><pre className="ai5-code"><code>{concept.example}</code></pre><UnderstandingCheck lesson={concept} /><a href={`#level-${index + 2}`}>{index + 1 < course.roadmap.length ? "继续下一关 →" : "已到本课程最后一关"}</a></section> : <dl className="level-deliverables">
                       <div><dt>动手任务</dt><dd>{item.practice}</dd></div>
                       <div><dt>固定契约</dt><dd><ul>{item.contract.map((contract) => <li key={contract}>{contract}</li>)}</ul></dd></div>
                       <div><dt>验收标准</dt><dd><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></dd></div>
                       <div><dt>验收证据</dt><dd>{item.evidence}</dd></div>
-                    </dl>
+                    </dl>}
                     {starter ? (
-                      <section className="blueprint-practice" aria-label={`第 ${index + 1} 关默认项目框架`}>
+                      <details open={!concept} className="blueprint-practice" aria-label={`第 ${index + 1} 关默认项目框架`}>
+                        <summary>{concept ? "可选：动手实践与原项目骨架" : "动手练习"}</summary>
                         <header>
                           <div>
                             <span>DEFAULT PROJECT SCAFFOLD</span>
-                            <h4>默认项目框架已放入 IDE</h4>
+                            <h4>{concept ? "可选项目练习" : "默认项目框架已放入 IDE"}</h4>
                             <p>不需要从说明区复制代码；先阅读固定契约，再只完成带有 TODO 的关键位置。</p>
                           </div>
                           <small>{starter.files.length} 个项目文件</small>
                         </header>
                         <div className="blueprint-focus">
-                          <b>本关只需完成</b>
+                          <b>{concept ? "想实践时可以尝试" : "本关只需完成"}</b>
                           <ul>{starter.focus.map((focus) => <li key={focus}>{focus}</li>)}</ul>
                         </div>
                         <BlueprintPracticeEditor
@@ -145,7 +150,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
                           starter={starter.code}
                           files={starter.files}
                         />
-                      </section>
+                      </details>
                     ) : null}
                   </>
                 )}

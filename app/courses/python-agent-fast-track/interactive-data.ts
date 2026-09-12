@@ -1,5 +1,6 @@
 import { agentFastTrackChapters, agentFastTrackLessons } from "./course-data";
 import type { InteractiveCourseConfig } from "../../ai-developer-level5/AiDeveloperCourse";
+import { getConceptLesson, getConceptRubric } from "../lesson-format";
 import type { GradingRubric } from "../python-framework/grading-rubrics";
 
 const vocabulary: [string, string][][] = [
@@ -243,9 +244,9 @@ export const agentCourseConfig: InteractiveCourseConfig = {
       knowledge: vocabulary[index].map(([term, plain]) => ({ term, plain, ...knowledgeDetails[term] })),
       input: lesson.example, example: lesson.example, walkthrough: walkthroughs[index],
       task: lesson.id === 8
-        ? "工单查询助手 · 课程已经提供项目目录、固定依赖、.gitignore 和验证脚本。站内只完成 settings.py 中的两个 TODO；本机实操时再下载骨架运行验证。"
+        ? "理解环境、依赖与配置之间的关系，完成理解检查即可继续。本机实践可选，课程提供下载项目。"
         : `工单查询助手 · ${lesson.objective} 完成本节项目骨架中的 TODO，并逐条验证以下标准。`,
-      starter: lesson.starter, files: lesson.files, acceptance: lesson.pass,
+      starter: lesson.starter, files: lesson.files, acceptance: getConceptLesson("python-agent-fast-track", lesson.id)?.questions.map((q) => q.question) ?? lesson.pass,
       starterDownload: lesson.id === 8 ? {
         href: "/starter-projects/python-agent-level-08.zip",
         label: "下载第 8 关项目骨架",
@@ -261,11 +262,12 @@ export const agentCourseConfig: InteractiveCourseConfig = {
 export function getAgentGradingRubric(levelId: number): GradingRubric | null {
   const lesson = agentFastTrackLessons[levelId - 1];
   if (!Number.isInteger(levelId) || !lesson) return null;
+  const conceptRubric = getConceptRubric("python-agent-fast-track", levelId, lesson.title);
+  if (conceptRubric) return conceptRubric;
   return { levelId, title: lesson.title, task: `${lesson.objective}\n项目骨架：\n${lesson.starter}`, taskContract: lesson.pass, acceptance: lesson.pass, referenceAnswer: lesson.referenceAnswer,
     authoritativeNotes: [
       lesson.referenceExplanation,
       "仅按 Python → Agent 本节任务批改，不套用其他课程的同编号题目。",
       "参考答案可能只包含需要补充的函数，应结合项目骨架判断完整行为。代码审阅不代表真实运行已经通过。",
-      ...(levelId === 8 ? ["第 8 关的 requirements.txt、.gitignore、.env.example 和 verify_setup.py 是课程提供物，不属于 current_student_answer；绝对不能因为学员没有重复粘贴这些文件而扣分。只检查 settings.py 两个 TODO 及不泄露密钥。"] : []),
     ] };
 }

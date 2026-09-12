@@ -1,4 +1,5 @@
 import { learningStages } from "./learning-plan";
+import { getConceptRubric } from "../courses/lesson-format";
 import type { GradingRubric } from "../courses/python-framework/grading-rubrics";
 
 export const aiCourseId = "ai-developer-level5";
@@ -108,5 +109,7 @@ export function getAiGradingRubric(levelId: number): GradingRubric | null {
   const stage = learningStages[levelId - 1];
   const exercise = exercises[levelId - 1];
   if (!Number.isInteger(levelId) || !stage || !exercise) return null;
+  const conceptRubric = getConceptRubric(aiCourseId, levelId, stage.title);
+  if (conceptRubric) return conceptRubric;
   return { levelId, title: stage.title, task: exercise.task, taskContract: exercise.acceptance, acceptance: exercise.acceptance, referenceAnswer: exercise.reference, authoritativeNotes: ["仅按本节练习判定，不套用 Python 框架课程同编号题目。", "网页中的代码练习不代表真实部署、训练或业务项目已经完成。"] };
 }

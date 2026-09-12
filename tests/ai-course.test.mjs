@@ -5,11 +5,13 @@ import test from "node:test";
 import ts from "typescript";
 
 async function loadSource(path, replace = (source) => source) {
-  const source = replace(await readFile(new URL(path, import.meta.url), "utf8"));
+  const source = replace(await readFile(new URL(path, import.meta.url), "utf8")).replace(/^import \{ (.+) \} from "[^"]*lesson-format";$/gm, "const { $1 } = globalThis.__lessonFormats;");
   const { outputText } = ts.transpileModule(source, { compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ES2022 } });
   return import(`data:text/javascript;base64,${Buffer.from(outputText).toString("base64")}#${Math.random()}`);
 }
 
+const formats = await loadSource("../app/courses/lesson-format.ts");
+globalThis.__lessonFormats = formats;
 const agentData = await loadSource("../app/courses/python-agent-fast-track/course-data.ts");
 globalThis.__agentCourseData = agentData;
 const agentInteractive = await loadSource("../app/courses/python-agent-fast-track/interactive-data.ts", (source) => source.replace('import { agentFastTrackChapters, agentFastTrackLessons } from "./course-data";', 'const { agentFastTrackChapters, agentFastTrackLessons } = globalThis.__agentCourseData;'));
@@ -131,7 +133,7 @@ test("在线助教依据课程选择服务端题目，概念提问不强制先�
     getGradingRubric: () => ({ levelId: 1, title: "旧课数据访问", task: "get_by_path", taskContract: [], acceptance: [], referenceAnswer: "old reference" }),
     requestDeepSeekJson: async ({ prompt }) => { calls += 1; capturedPrompt = prompt; return { data: { reply: "练习反馈", grade: null }, model: "test-double" }; },
   };
-  const api = await loadSource("../app/api/learning-chat/route.ts", (source) => 'const { getChatGPTUser, getAgentGradingRubric, getAiGradingRubric, getGradingRubric, requestDeepSeekJson } = globalThis.__aiChatTest;\n' + source.replace(/^import .+;$/gm, ""));
+  const api = await loadSource("../app/api/learning-chat/route.ts", (source) => 'const { getChatGPTUser, getAgentGradingRubric, getAiGradingRubric, getGradingRubric, requestDeepSeekJson } = globalThis.__aiChatTest; const { getConceptLesson } = globalThis.__lessonFormats;\n' + source.replace(/^import .+;$/gm, ""));
   const ask = (body) => api.POST(new Request("https://example.test/api/learning-chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }));
   assert.equal((await ask({ courseId: "ai-developer-level5", level: { id: 1 }, message: "什么是字典？", answer: "" })).status, 200);
   assert.match(capturedPrompt, /find_records/);
@@ -175,17 +177,12 @@ test("Agent 十六节小测匹配诊断，旧进度迁移与冲突合并不丢�
     assert.ok(exercise.terms.length >= 2 && exercise.walkthrough.length >= 3);
   }
   const level8 = agentInteractive.getAgentGradingRubric(8);
-  assert.deepEqual(level8.acceptance, [
-    "TICKET_API_URL 使用 os.environ.get，并提供 http://127.0.0.1:8000 默认值",
-    "TICKET_API_KEY 使用 os.environ[...] 读取，缺少时立即抛 KeyError",
-    "没有在 settings.py 中硬编码或打印真实密钥",
-  ]);
-  assert.match(level8.authoritativeNotes.join("\n"), /不属于 current_student_answer/);
-  assert.match(level8.authoritativeNotes.join("\n"), /绝对不能因为学员没有重复粘贴这些文件而扣分/);
+  assert.deepEqual(level8.acceptance, formats.getConceptLesson("python-agent-fast-track", 8).questions.map(q => q.question));
+  assert.match(level8.authoritativeNotes.join("\n"), /概念|理解检查/);
   assert.equal(agentInteractive.getAgentGradingRubric(17), null);
 });
 
-test("全部 35 关批改契约不要求概念解释，正确代码可通过、实现不达标仍失败", async () => {
+test("35 关区分概念检查和代码批改，技能练习仍需证据", async () => {
   globalThis.__frameworkReferences = await loadSource("../app/courses/python-framework/reference-answers.ts");
   const framework = await loadSource("../app/courses/python-framework/grading-rubrics.ts", source => source.replace(/^import .+;$/gm, 'const { referenceAnswers } = globalThis.__frameworkReferences;'));
   let activeRubric;
@@ -210,7 +207,7 @@ test("全部 35 关批改契约不要求概念解释，正确代码可通过、�
       } } };
     },
   };
-  const api = await loadSource("../app/api/learning-chat/route.ts", source => 'const { getChatGPTUser, getAgentGradingRubric, getAiGradingRubric, getGradingRubric, requestDeepSeekJson } = globalThis.__allCourseGrade;\n' + source.replace(/^import .+;$/gm, ""));
+  const api = await loadSource("../app/api/learning-chat/route.ts", source => 'const { getChatGPTUser, getAgentGradingRubric, getAiGradingRubric, getGradingRubric, requestDeepSeekJson } = globalThis.__allCourseGrade; const { getConceptLesson } = globalThis.__lessonFormats;\n' + source.replace(/^import .+;$/gm, ""));
   const ask = (courseId, id) => api.POST(new Request("https://example.test/api/learning-chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ courseId, level: { id }, answer: activeRubric.referenceAnswer, message: "请重新批改", history: [{ role: "assistant", content: "以前要求写明概念解释，没解释就不能通过。" }] }) }));
   for (const [courseId, count, rubricFor] of courses) {
     for (let id = 1; id <= count; id++) {
@@ -219,6 +216,7 @@ test("全部 35 关批改契约不要求概念解释，正确代码可通过、�
       const response = await ask(courseId, id);
       assert.equal(response.status, 200);
       const result = await response.json();
+      if (formats.getConceptLesson(courseId, id)) { assert.equal(result.grade, null); assert.match(result.reply, /理解检查/); continue; }
       assert.equal(result.grade.passed, true, `${courseId} ${id}`);
       assert.deepEqual(result.grade.criteria.map(item => item.criterion), activeRubric.acceptance);
     }
@@ -247,4 +245,42 @@ assert second["history"] == ["escalated"]
   assert.ok(!code.includes('#'));
   const result = spawnSync("python3", ["-c", code], { encoding: "utf8" });
   assert.equal(result.status, 0, result.stderr);
+});
+
+test("概念课没有代码也不受旧批改限制，模型误报分数被丢弃", async () => {
+  let calls = 0;
+  let prompt = "";
+  globalThis.__conceptChat = {
+    getChatGPTUser: async () => ({ userId: "test" }),
+    getConceptLesson: formats.getConceptLesson,
+    getAgentGradingRubric: agentInteractive.getAgentGradingRubric,
+    getAiGradingRubric: exerciseModule.getAiGradingRubric,
+    getGradingRubric: () => null,
+    requestDeepSeekJson: async (input) => { calls++; prompt = input.prompt; return { model: "fake", data: { reply: "环境变量解释", grade: { score: 0, summary: "缺文件", criteria: [] } } }; },
+  };
+  const api = await loadSource("../app/api/learning-chat/route.ts", source => 'const { getChatGPTUser, getConceptLesson, getAgentGradingRubric, getAiGradingRubric, getGradingRubric, requestDeepSeekJson } = globalThis.__conceptChat;\n' + source.replace(/^import .+;$/gm, ""));
+  const ask = message => api.POST(new Request("https://example.test/api/learning-chat", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ courseId: "python-agent-fast-track", level: { id: 8 }, answer: "", message, history: [{ role: "assistant", content: "缺少 requirements.txt，不通过" }] }) }));
+  const obsolete = await (await ask("请批改")).json();
+  assert.equal(obsolete.grade, null);
+  assert.equal(calls, 0);
+  const explained = await (await ask("解释 get 和 []")).json();
+  assert.equal(explained.grade, null);
+  assert.equal(calls, 1);
+  assert.match(prompt, /本节是概念课/);
+  assert.doesNotMatch(prompt.split("<canonical_reference_answer>")[1].split("</canonical_reference_answer>")[0], /TODO|can_schedule/);
+});
+
+test("概念与实践的通关条件不同，概念导航跳过动手练", () => {
+  assert.deepEqual(formats.lessonStepIds(true), [1, 2, 3, 5]);
+  assert.deepEqual(formats.lessonStepIds(false), [1, 2, 3, 4, 5]);
+  assert.equal(formats.lessonCompleted(true, true, false), true);
+  assert.equal(formats.lessonCompleted(true, false, true), false);
+  assert.equal(formats.lessonCompleted(false, true, false), false);
+  assert.equal(formats.lessonCompleted(false, true, true), true);
+  for (const [course, id] of [["python-agent-fast-track",8], ["ai-developer-level5",9], ["ui-automation",1], ["api-automation",1], ["performance-testing",1], ["quality-engineering",1], ["ai-testing",1], ["ai-testing",2]]) {
+    const lesson = formats.getConceptLesson(course, id);
+    assert.equal(lesson.questions.length, 3);
+    for (const q of lesson.questions) assert.ok(q.options[q.correct] && q.explanation);
+  }
+  for (let id = 1; id <= 10; id++) assert.equal(formats.getConceptLesson("python-framework", id), undefined);
 });
