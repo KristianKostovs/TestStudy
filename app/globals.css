@@ -169,6 +169,7 @@ h1 em { color: #f4c752; font-style: normal; }
 .glossary-card i { color: #8c6840; font-size: 10px; font-style: normal; font-weight: 700; }
 .glossary-card b { color: #1f4c3b; font: 700 13px "SFMono-Regular", Consolas, monospace; }
 .glossary-card p { margin: 7px 0 0; color: #556159; font-size: 13px; line-height: 1.65; }
+.glossary-origin { display: inline-block; margin-top: 8px; padding: 3px 7px; border: 1px solid #c8d7ce; color: #295b48; background: #e8f1e9; font-size: 11px; font-style: normal; font-weight: 700; }
 .compact-disclosure { margin-top: 12px; border: 1px solid #d8ceb9; background: #fffdf7; }
 .compact-disclosure > summary { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 17px; cursor: pointer; list-style: none; }
 .compact-disclosure > summary::-webkit-details-marker { display: none; }
@@ -260,6 +261,8 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .knowledge-close { position: absolute; top: 13px; right: 14px; z-index: 1; width: 34px; height: 34px; border: 1px solid #d7c8aa; color: #8a3427; background: #fffdf8; font-size: 24px; line-height: 1; cursor: pointer; }
 .knowledge-kicker { color: var(--red); font-size: 11px; font-weight: 900; letter-spacing: .15em; }
 .knowledge-modal h2 { position: relative; margin: 10px 45px 24px 0; font: 800 31px Georgia, "Songti SC", serif; }
+.knowledge-origin { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: -8px 0 20px; color: #544d40; font-size: 13px; }
+.knowledge-origin span { padding: 5px 9px; border: 1px solid #bfd2c4; color: #1e503b; background: #e8f1e9; font-weight: 700; }
 .knowledge-answer { padding: 17px 18px; border-left: 4px solid var(--gold); background: #f7efdD; }
 .knowledge-answer + .knowledge-answer { margin-top: 12px; }
 .knowledge-answer b, .knowledge-example > b { color: #8a5d20; font-size: 12px; letter-spacing: .1em; }
