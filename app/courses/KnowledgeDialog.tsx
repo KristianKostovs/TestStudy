@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef } from "react";
+import { knowledgeOrigin } from "./knowledge-origin";
 
 export type KnowledgePoint = { term: string; plain: string; role: string; example?: string };
 
@@ -26,6 +27,7 @@ export default function KnowledgeDialog({ knowledge, onClose }: { knowledge: Kno
     <section ref={panel} className="knowledge-modal" role="dialog" aria-modal="true" aria-labelledby="knowledge-title">
       <button className="knowledge-close" type="button" aria-label="关闭基础知识弹窗" onClick={onClose}>×</button>
       <span className="knowledge-kicker">基础知识 · 随点随查</span><h2 id="knowledge-title">{knowledge.term}</h2>
+      <p className="knowledge-origin"><b>这个词属于</b><span>{knowledgeOrigin(knowledge.term)}</span></p>
       <div className="knowledge-answer"><b>先用一句话理解</b><p>{knowledge.plain}</p></div>
       <div className="knowledge-answer role-answer"><b>它在当前代码里做什么</b><p>{knowledge.role}</p></div>
       {knowledge.example && <div className="knowledge-example"><b>最小例子</b><pre><code>{knowledge.example}</code></pre></div>}

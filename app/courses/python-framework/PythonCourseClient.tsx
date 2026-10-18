@@ -5,6 +5,7 @@ import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } fro
 import "./course-flow.css";
 import LearningStepNav from "../LearningStepNav";
 import KnowledgeDialog from "../KnowledgeDialog";
+import { knowledgeOrigin } from "../knowledge-origin";
 import { useCourseContent } from "../useCourseContent";
 import CourseNotePanel from "./CourseNotePanel";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
@@ -2138,6 +2139,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                                   })}
                                 >
                                   <span><b>{item.term}</b><i>点开解释</i></span>
+                                  <em className="glossary-origin">{knowledgeOrigin(item.term)}</em>
                                   <p>{item.meaning}</p>
                                 </button>
                                 {contentEditor(level.id, "glossary", contentKey, [

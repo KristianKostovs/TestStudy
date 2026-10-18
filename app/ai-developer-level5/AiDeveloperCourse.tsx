@@ -2,6 +2,7 @@
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { codeWithComments, walkthroughAnchors } from "../courses/code-walkthrough";
 import KnowledgeDialog, { type KnowledgePoint } from "../courses/KnowledgeDialog";
+import { knowledgeOrigin } from "../courses/knowledge-origin";
 import LearningStepNav, { learningStepLabels } from "../courses/LearningStepNav";
 import CourseNotePanel from "../courses/python-framework/CourseNotePanel";
 import { useCourseContent } from "../courses/useCourseContent";
@@ -192,7 +193,7 @@ export default function InteractiveCourse({ config, chapterId }: { config: Inter
 
         {step === 1 && <section className="stage-panel">
           <div className="beginner-note editable-course-content"><b>小白先看这里</b><p><strong>前置知识：</strong>{introContent.prerequisite}</p><p>{introContent.explanation}</p>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "intro", contentKey: introKey, fields: [{ name: "prerequisite", label: "前置知识", value: introContent.prerequisite, multiline: true }, { name: "explanation", label: "本节解释", value: introContent.explanation, multiline: true }] })}</div>
-          <div className="glossary-grid">{glossaryContent.map(({ contentKey, term, meaning }) => <div className="editable-glossary-card" key={contentKey}><button className="glossary-card" type="button" onClick={() => setKnowledge(exercise.knowledge?.find((point) => point.term === term) ?? { term, plain: meaning, role: introContent.explanation, example: exercise.example })}><span><b>{term}</b><i>点开解释</i></span><p>{meaning}</p></button>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "glossary", contentKey, fields: [{ name: "term", label: "术语", value: term }, { name: "meaning", label: "解释", value: meaning, multiline: true }] })}</div>)}</div>
+          <div className="glossary-grid">{glossaryContent.map(({ contentKey, term, meaning }) => <div className="editable-glossary-card" key={contentKey}><button className="glossary-card" type="button" onClick={() => setKnowledge(exercise.knowledge?.find((point) => point.term === term) ?? { term, plain: meaning, role: introContent.explanation, example: exercise.example })}><span><b>{term}</b><i>点开解释</i></span><em className="glossary-origin">{knowledgeOrigin(term)}</em><p>{meaning}</p></button>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "glossary", contentKey, fields: [{ name: "term", label: "术语", value: term }, { name: "meaning", label: "解释", value: meaning, multiline: true }] })}</div>)}</div>
           <button className="stage-continue" type="button" disabled={!ready} onClick={advance}>{concept ? "概念看懂了，进入“看例子” →" : "概念看懂了，进入“看数据” →"}</button>
         </section>}
         {step === 2 && <section className="stage-panel"><h3>{concept ? "从例子理解概念" : "先看输入和结果长什么样"}</h3>{concept && <p>{concept.explanation}</p>}<pre className="ai5-code"><code>{concept?.example ?? exercise.input}</code></pre><p>先找出示例中的输入、变量和预期结果，再沿着数据流看它们如何变化。可以把自己的预测记在本节笔记中。</p><button className="stage-continue" type="button" onClick={advance}>{concept ? "例子看懂了，继续理解关系 →" : "数据看懂了，进入“逐行理解” →"}</button></section>}
