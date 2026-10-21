@@ -11,6 +11,8 @@ import type { exercises as aiExercises } from "./exercises";
 import { useCourseState } from "./useCourseState";
 import { getConceptLesson, lessonCompleted, lessonStepIds } from "../courses/lesson-format";
 import UnderstandingCheck from "../courses/UnderstandingCheck";
+import WorkspacePractice, { type WorkspacePracticeConfig } from "../courses/WorkspacePractice";
+import ProjectTrackLink from "../courses/ProjectTrackLink";
 
 const PythonAnswerEditor = lazy(() => import("../courses/python-framework/PythonAnswerEditor"));
 
@@ -18,7 +20,7 @@ export type InteractiveCourseConfig = {
   baseHref?: string; chapters?: { id: number; title: string; subtitle: string; lessonIds: number[] }[];
   id: string; title: string; brand: string; sigil: string; eyebrow: string; mapTitle: string;
   nextHref: string; nextTitle: string; resources?: { title: string; href: string }[]; stages: (LearningStage & { chapter?: number })[];
-  exercises: (typeof aiExercises[number] & { quizCode?: string; files?: string[]; knowledge?: KnowledgePoint[]; starterDownload?: { href: string; label: string; help: string } })[];
+  exercises: (typeof aiExercises[number] & { quizCode?: string; files?: string[]; knowledge?: KnowledgePoint[]; starterDownload?: { href: string; label: string; help: string }; workspace?: WorkspacePracticeConfig })[];
 };
 
 export default function InteractiveCourse({ config, chapterId }: { config: InteractiveCourseConfig; chapterId?: number }) {
@@ -190,6 +192,7 @@ export default function InteractiveCourse({ config, chapterId }: { config: Inter
           <div className="level-copy"><header className="level-header"><div><span className="level-no">LEVEL {String(activeId).padStart(2, "0")} · {stepLabels[step - 1]}</span><h3>{lesson.title}</h3><p>{lesson.mapping}</p></div></header><div className="level-body">
         <LearningStepNav active={step} unlocked={unlocked} onSelect={setStep} steps={steps} labels={stepLabels} />
         <CourseNotePanel key={activeId} courseId={aiCourseId} chapterId={lesson.chapter ?? Math.ceil(activeId / 3)} levelId={activeId} levelTitle={lesson.title} online />
+        <ProjectTrackLink courseId={aiCourseId} levelId={activeId} lessonTitle={lesson.title} compact />
 
         {step === 1 && <section className="stage-panel">
           <div className="beginner-note editable-course-content"><b>小白先看这里</b><p><strong>前置知识：</strong>{introContent.prerequisite}</p><p>{introContent.explanation}</p>{contentEditor({ levelId: activeId, unitLabel: `第 ${activeId} 节`, section: "intro", contentKey: introKey, fields: [{ name: "prerequisite", label: "前置知识", value: introContent.prerequisite, multiline: true }, { name: "explanation", label: "本节解释", value: introContent.explanation, multiline: true }] })}</div>
@@ -203,7 +206,8 @@ export default function InteractiveCourse({ config, chapterId }: { config: Inter
         {step === 5 && !concept && <section className="stage-panel"><h3>自动小测</h3>{exercise.quizCode && <pre className="ai5-code"><code>{exercise.quizCode}</code></pre>}<fieldset className="ai5-quiz"><legend>{exercise.quiz.question}</legend>{exercise.quiz.options.map((option, index) => <label key={option}><input type="radio" name={`quiz-${activeId}`} checked={choice === index} onChange={() => { setChoice(index); setQuizFeedback(""); }} />{option}</label>)}</fieldset><button className="stage-continue" type="button" onClick={checkQuiz}>检查答案</button><p role="status">{quizFeedback}</p><div className="ai5-grade"><strong>{completed.includes(activeId) ? (grade?.passed ? "本节练习与小测已通过" : "已保留旧版完成记录，可继续复习") : "完成条件"}</strong><p>{state.progress.quizPassed.includes(activeId) ? "✓ 小测已通过" : "小测待通过"} · {grade?.passed ? "✓ 练习批改已通过" : "练习待批改通过"}</p><p>完整项目还需保存：{lesson.evidence}</p>{!grade?.passed && <button type="button" onClick={() => setStep(4)}>回到动手练并批改</button>}</div></section>}
         {step === 5 && concept && <>
           <UnderstandingCheck key={activeId} lesson={concept} passed={state.progress.quizPassed.includes(activeId)} onPass={completeUnderstanding} />
-          {exercise.starterDownload && <details className="stage-panel"><summary>可选：下载项目，在本机实践</summary><p>理解检查通过即可继续。准备好本机环境后，可以下载完整项目，按 README 操作并运行验证脚本。</p><a href={exercise.starterDownload.href} download>{exercise.starterDownload.label}</a><pre className="ai5-code"><code>{exercise.reference}</code></pre></details>}
+          {exercise.workspace && <WorkspacePractice config={exercise.workspace} downloadHref={exercise.starterDownload?.href} />}
+          {exercise.starterDownload && !exercise.workspace && <details className="stage-panel"><summary>可选：下载项目，在本机实践</summary><p>理解检查通过即可继续。准备好本机环境后，可以下载完整项目，按 README 操作并运行验证脚本。</p><a href={exercise.starterDownload.href} download>{exercise.starterDownload.label}</a><pre className="ai5-code"><code>{exercise.reference}</code></pre></details>}
         </>}
         {((step === 4 && !concept) || (step === 5 && concept)) && <>          <div className="local-codex-chat ai5-tutor"><header><div><i>DS</i><span><b>即时学习助教</b><small>由 DeepSeek 在线提供 · 对话随账号同步</small></span></div><em>在线</em></header><p>{concept ? "可以就本节概念提问。通关由理解检查决定，无需提交代码。" : "可以请求提示、完整参考答案，或按本节标准批改。代码运行结果请在 Python 环境验证，助教反馈不等于实际执行证明。"}</p><div className="codex-quick-actions">{!concept && <button type="button" disabled={pending || !ready} onClick={() => void askTutor("请按本节验收标准批改我的当前答案。")}>即时批改</button>}<button type="button" disabled={pending || !ready} onClick={() => void askTutor("请给我一点提示，不要直接给完整答案。")}>给一点提示</button><button type="button" onClick={() => setShowAnswer(!showAnswer)}>{showAnswer ? "收起参考答案" : "查看参考答案"}</button></div>
           {showAnswer && <pre className="ai5-code"><code>{concept ? concept.questions.map((q) => `${q.question}\n${q.options[q.correct]}：${q.explanation}`).join("\n\n") : exercise.reference}</code></pre>}

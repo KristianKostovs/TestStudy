@@ -8,6 +8,7 @@ import KnowledgeDialog from "../KnowledgeDialog";
 import { knowledgeOrigin } from "../knowledge-origin";
 import { useCourseContent } from "../useCourseContent";
 import CourseNotePanel from "./CourseNotePanel";
+import ProjectTrackLink from "../ProjectTrackLink";
 import { getChapterForLevel, getPythonCourseChapter, pythonCourseChapters } from "./chapter-data";
 import { referenceAnswers } from "./reference-answers";
 import {
@@ -2122,6 +2123,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           levelTitle={level.title}
                           online={cloudSyncStatus !== "local"}
                         />
+                        <ProjectTrackLink courseId={courseId} levelId={level.id} lessonTitle={level.title} compact />
                         {stage === 1 && <section className="stage-panel">
                           <div className="beginner-note editable-course-content"><b>小白先看这里</b><p>{beginnerContent.text}</p>{contentEditor(level.id, "before-you-start", beginnerKey, [{ name: "text", label: "入门说明", value: beginnerContent.text, multiline: true }])}</div>
                           <div className="glossary-grid">
