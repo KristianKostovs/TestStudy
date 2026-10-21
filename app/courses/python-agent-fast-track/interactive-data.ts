@@ -250,7 +250,12 @@ export const agentCourseConfig: InteractiveCourseConfig = {
       starterDownload: lesson.id === 8 ? {
         href: "/starter-projects/python-agent-level-08.zip",
         label: "下载第 8 关项目骨架",
-        help: "解压后从创建虚拟环境开始练习",
+        help: "无法使用本地连接器时的备用方式",
+      } : undefined,
+      workspace: lesson.id === 8 ? {
+        exerciseId: "python-agent-level-08",
+        title: "工单查询客户端必须安全加载部署配置",
+        requirement: "本地开发允许使用默认接口地址，但 TICKET_API_KEY 缺失时必须立即失败；HTTP 行为用 MockTransport 验证，不能访问真实网络。",
       } : undefined,
       reference: `${lesson.referenceAnswer}\n\n# 参考解释\n${lesson.referenceExplanation.split("\n").map((line) => `# ${line}`).join("\n")}`,
       quizCode: lesson.diagnostic.code,

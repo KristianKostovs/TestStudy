@@ -143,39 +143,44 @@ test("Python Agent 快速通道提供完整十六节学习内容和连续工单�
   assert.doesNotMatch(html, /agent-course-layout|agent-lesson-nav/);
 });
 
-test("Python Agent 第 8 关无需现成项目即可站内作答或下载骨架实操", async () => {
-  const [data, interactive, course, editor, readme, requirements, settings, verify, archive] = await Promise.all([
+test("Python Agent 第 8 关无需现成项目即可进入 VS Code 并运行真实测试", async () => {
+  const [data, interactive, course, editor, workspace, readme, requirements, project, settings, tests, archive] = await Promise.all([
     readFile(new URL("../app/courses/python-agent-fast-track/course-data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/python-agent-fast-track/interactive-data.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/ai-developer-level5/AiDeveloperCourse.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/python-framework/PythonAnswerEditor.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/WorkspacePractice.tsx", import.meta.url), "utf8"),
     readFile(new URL("../course-starters/python-agent-level-08/README.md", import.meta.url), "utf8"),
     readFile(new URL("../course-starters/python-agent-level-08/requirements.txt", import.meta.url), "utf8"),
-    readFile(new URL("../course-starters/python-agent-level-08/ticket_assistant/settings.py", import.meta.url), "utf8"),
-    readFile(new URL("../course-starters/python-agent-level-08/verify_setup.py", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-agent-level-08/pyproject.toml", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-agent-level-08/src/ticket_assistant/settings.py", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-agent-level-08/tests/test_client.py", import.meta.url), "utf8"),
     readFile(new URL("../public/starter-projects/python-agent-level-08.zip", import.meta.url)),
   ]);
 
   assert.match(data, /你不需要已有项目/);
   assert.match(data, /===== requirements\.txt/);
   assert.match(data, /===== \.gitignore/);
-  assert.match(data, /requirements\.txt、\.gitignore、\.env\.example 和验证脚本都由课程提供，不属于学员提交范围/);
+  assert.match(data, /pyproject\.toml、requirements\.txt、\.gitignore、\.env\.example、pytest 和 VS Code 配置都由课程提供/);
   assert.match(data, /本节是概念课，完成理解检查即可/);
-  assert.match(data, /可选本机练习参考/);
+  assert.match(data, /可选技术样板只要求补配置读取/);
   assert.match(interactive, /python-agent-level-08\.zip/);
+  assert.match(interactive, /exerciseId: "python-agent-level-08"/);
   assert.match(interactive, /getConceptRubric/);
   assert.match(course, /没有现成项目也可以开始/);
   assert.match(course, /# ===== 文件名 =====/);
   assert.match(course, /仍在显示旧草稿/);
   assert.match(editor, /恢复最新版起步代码/);
+  assert.match(workspace, /在 VS Code 中打开/);
+  assert.match(workspace, /运行本关验证/);
   assert.match(readme, /python3 -m venv \.venv/);
-  assert.match(readme, /python verify_setup\.py/);
-  assert.match(requirements, /httpx==0\.28\.1/);
-  assert.match(requirements, /pydantic==2\.11\.7/);
-  assert.match(requirements, /python-dotenv==1\.1\.1/);
-  assert.match(settings, /TICKET_API_URL = \.\.\./);
-  assert.match(settings, /TICKET_API_KEY = \.\.\./);
-  assert.match(verify, /第 8 关环境验证通过/);
+  assert.match(readme, /python -m pytest -q/);
+  assert.match(requirements, /-e \.\[dev\]/);
+  assert.match(project, /httpx==0\.28\.1/);
+  assert.match(project, /pytest==8\.4\.1/);
+  assert.match(settings, /api_url = \.\.\./);
+  assert.match(settings, /api_key = \.\.\./);
+  assert.match(tests, /MockTransport/);
   assert.equal(archive.subarray(0, 2).toString(), "PK");
 });
 

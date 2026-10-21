@@ -505,7 +505,7 @@ client = Client(headers={"Authorization": f"Bearer {api_key}"})`,
       why: "密钥是必需配置时使用 os.environ[...] 可立即抛 KeyError，启动阶段就暴露问题；可选配置才适合 get(default)。",
     },
     pitfalls: ["不要把 .env 和真实密钥提交到 Git", "优先 python -m pip，避免 pip 指向另一个解释器", "只写依赖名不锁版本会降低复现性"],
-    files: ["requirements.txt", ".env.example", ".gitignore", "ticket_assistant/settings.py", "verify_setup.py"],
+    files: ["pyproject.toml", "requirements.txt", ".env.example", ".gitignore", "src/ticket_assistant/settings.py", "tests/", ".vscode/"],
     starter: String.raw`# 你不需要已有项目。下面每个 ===== 标题代表项目中的一个文件。
 # 课程已经提供目录、依赖版本和验证脚本；想做本机实操时可补最后两个 TODO。
 
@@ -524,7 +524,7 @@ TICKET_API_KEY=replace-me
 __pycache__/
 *.pyc
 
-# ===== ticket_assistant/settings.py =====
+# ===== src/ticket_assistant/settings.py =====
 import os
 from pathlib import Path
 from dotenv import load_dotenv
@@ -534,12 +534,12 @@ load_dotenv(Path.cwd() / ".env")
 # TODO（你来完成）：URL 可选且有本地默认值；API_KEY 必填
 TICKET_API_URL = ...
 TICKET_API_KEY = ...`,
-    referenceAnswer: String.raw`# 可选本机实操：ticket_assistant/settings.py 中两个 TODO 的参考实现
+    referenceAnswer: String.raw`# 可选本机实操：src/ticket_assistant/settings.py 中两个 TODO 的参考实现
 import os
 
 TICKET_API_URL = os.environ.get("TICKET_API_URL", "http://127.0.0.1:8000")
 TICKET_API_KEY = os.environ["TICKET_API_KEY"]`,
-    referenceExplanation: "requirements.txt、.gitignore、.env.example 和验证脚本都由课程提供，不属于学员提交范围。本节是概念课，完成理解检查即可。以上代码仅供可选本机练习参考：URL 使用本地默认值，密钥缺失时立即失败。下载骨架后可运行 verify_setup.py 验证环境。",
+    referenceExplanation: "pyproject.toml、requirements.txt、.gitignore、.env.example、pytest 和 VS Code 配置都由课程提供，不属于学员提交范围。本节是概念课，完成理解检查即可。可选技术样板只要求补配置读取：URL 使用本地默认值，密钥缺失时立即失败；随后运行 python -m pytest -q 取得执行证据。",
     pass: ["理解解释器与依赖环境需要一致", "识别可选 URL 与必填密钥的不同读取方式", "知道依赖清单可以提交，真实密钥与虚拟环境不应提交"],
   },
   {

@@ -12,6 +12,7 @@ import { blueprintStarterFor } from "../../blueprint-starters";
 import BlueprintPracticeEditor from "../BlueprintPracticeEditor";
 import { getConceptLesson } from "../lesson-format";
 import UnderstandingCheck from "../UnderstandingCheck";
+import ProjectTrackLink from "../ProjectTrackLink";
 import "../../ai-developer-level5/course.css";
 
 const sourceKinds: SourceKind[] = ["foundation", "technology_radar", "local_project"];
@@ -114,6 +115,7 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
               <div>
                 <span>LEVEL {String(index + 1).padStart(2, "0")}</span>
                 <h3>{roadmapTitle(item)}</h3>
+                <ProjectTrackLink courseId={moduleId} levelId={index + 1} lessonTitle={roadmapTitle(item)} compact />
                 {typeof item === "string" ? (
                   <p>将补齐：基础解释 → 最小例子 → 项目练习 → 自动验收。</p>
                 ) : (

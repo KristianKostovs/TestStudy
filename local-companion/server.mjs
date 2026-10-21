@@ -4,6 +4,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { openExercise, runExerciseVerification, workspaceHealth } from "./workspace-manager.mjs";
 
 const companionDir = dirname(fileURLToPath(import.meta.url));
 const projectDir = resolve(companionDir, "..");
@@ -161,8 +162,32 @@ const server = http.createServer(async (request, response) => {
       ok: codexReady,
       mode: "local_codex",
       login: codexReady ? "ChatGPT" : "not_ready",
+      workspaceBridge: true,
       message: codexReady ? "本机 Codex 已连接" : (loginMessage || "Codex 尚未登录"),
     }, origin);
+  }
+
+  if (request.method === "GET" && url.pathname === "/workspace/status") {
+    if (!origin || !allowedOrigins.has(origin)) return sendJson(response, 403, { error: "请从学习网页访问课程项目" });
+    try {
+      return sendJson(response, 200, workspaceHealth(cleanText(url.searchParams.get("exerciseId"), 100)), origin);
+    } catch (error) {
+      return sendJson(response, 400, { error: error instanceof Error ? error.message : "无法读取课程项目" }, origin);
+    }
+  }
+
+  if (request.method === "POST" && (url.pathname === "/workspace/open" || url.pathname === "/workspace/run")) {
+    if (!origin || !allowedOrigins.has(origin)) return sendJson(response, 403, { error: "请从学习网页操作课程项目" });
+    try {
+      const payload = await readBody(request);
+      const exerciseId = cleanText(payload.exerciseId, 100);
+      const result = url.pathname === "/workspace/open"
+        ? openExercise(exerciseId)
+        : runExerciseVerification(exerciseId);
+      return sendJson(response, 200, result, origin);
+    } catch (error) {
+      return sendJson(response, 400, { error: error instanceof Error ? error.message : "课程项目操作失败" }, origin);
+    }
   }
 
   if (request.method === "POST" && url.pathname === "/chat") {
