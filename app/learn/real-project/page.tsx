@@ -3,7 +3,7 @@ import { firstProjectCourseMappings, firstRealProject } from "../../real-project
 
 export const metadata: Metadata = {
   title: "首个真实需求项目 | 测试能力修炼场",
-  description: "查看固定源码的脱敏需求、验收场景与课程映射。",
+  description: "查看脱敏需求、验收场景和独立生成的测试项目。",
   openGraph: { images: [] },
   twitter: { card: "summary", images: [] },
 };
@@ -19,7 +19,7 @@ export default function RealProjectPage() {
     <section className="real-project-flow" aria-label="真实项目学习链路">
       <article><b>01</b><h2>固定需求与来源</h2><p>已核对需求范围和本机源码的固定提交。原始仓库、路径及校验信息只保存在本机来源映射中。</p></article>
       <article><b>02</b><h2>提取脱敏契约</h2><p>页面只展示通用业务规则、合成场景和验收条件，不发布原始源码、接口地址或真实人员数据。</p></article>
-      <article><b>03</b><h2>映射课程能力</h2><p>只关联能从该案例学习的关卡。可运行练习、测试日志和通关证据将在下一阶段接入。</p></article>
+      <article><b>03</b><h2>自生成测试项目</h2><p>依据验收场景编写独立的 Python 测试代码，使用合成数据和内存替身；真实后端运行证据仍需单独采集。</p></article>
     </section>
 
     <section className="real-project-contract" aria-labelledby="first-project-title">
@@ -59,9 +59,15 @@ export default function RealProjectPage() {
       </div>
     </section>
 
+    <section className="real-project-contract" aria-labelledby="project-test-title">
+      <h2 id="project-test-title">自生成测试项目</h2>
+      <p>项目中的示例实现、假人员查询、假账单存储和 A1–A6 测试均为独立编写。运行通过只说明示例符合公开契约，不能证明真实后端或 SIT 已通过。</p>
+      <p>目录：<code>course-starters/active-worker-bill-contract</code>。在该目录运行 <code>python3 -m pytest -q</code>。</p>
+    </section>
+
     <section className="real-project-status" aria-label="证据与下一阶段">
       <div><span>已核对的证据</span><p>{firstRealProject.evidence}</p></div>
-      <div><span>下一阶段</span><p>制作获准使用的脱敏可运行快照，登记固定测试命令，再用退出码、日志和代码差异验证关卡结果。</p></div>
+      <div><span>下一阶段</span><p>把自生成测试项目接入本地课程连接器，记录运行日志与退出码；真实系统的接口和数据库验证仍在私有环境单独开展。</p></div>
     </section>
     <nav><a href="/learn">← 返回学习中心</a><a href="https://github.com/KristianKostovs/TestStudy/blob/main/docs/REAL_REPOSITORY_LEARNING_PLAN.md" target="_blank" rel="noreferrer">查看项目改造计划 ↗</a></nav>
   </main>;
