@@ -14,7 +14,8 @@
     "db:generate": "drizzle-kit generate",
     "publish:site": "node scripts/one-click-publish.mjs",
     "knowledge:scan": "node scripts/scan-learning-sources.mjs --json",
-    "knowledge:ack": "node scripts/scan-learning-sources.mjs --ack --json"
+    "knowledge:ack": "node scripts/scan-learning-sources.mjs --ack --json",
+    "project:verify-source": "node scripts/verify-real-project-source.mjs"
   },
   "dependencies": {
     "@codemirror/autocomplete": "^6.20.3",

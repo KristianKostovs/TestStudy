@@ -299,6 +299,15 @@ export const sourceAdapters: SourceAdapter[] = [
     location: "内部授权资料（只沉淀脱敏后的可迁移知识，不公开原文入口）",
     checkedAt: "2026-08-31",
   },
+  {
+    id: "project.active_worker_bill",
+    kind: "local_project",
+    title: "员工状态过滤与新账单生成",
+    provider: "固定版本的本地项目",
+    description: "已核对需求和源码分支；公开课程仅展示脱敏规则与能力映射，运行证据待补。",
+    location: "私有来源映射仅保存在本机 .local/，不公开源码与业务数据",
+    checkedAt: "2026-11-04",
+  },
 ];
 
 export const learningModules: LearningModule[] = [
@@ -355,7 +364,7 @@ export const learningModules: LearningModule[] = [
     title: "API 自动化",
     subtitle: "从 HTTP 契约，走到声明式接口链、造数、清理与证据治理。",
     status: "blueprint",
-    sourceIds: ["foundation.python", "foundation.pytest", "foundation.http", "radar.pytest_changelog", "project.api_automation"],
+    sourceIds: ["foundation.python", "foundation.pytest", "foundation.http", "radar.pytest_changelog", "project.api_automation", "project.active_worker_bill"],
     roadmap: apiAutomationRoadmap,
     updateRule: "EWMS/MOM 和生成 Skill 提供实战；HTTP、契约和 pytest 官方知识保持通用性。",
   },
@@ -466,7 +475,7 @@ export const learningModules: LearningModule[] = [
     title: "质量工程与保障",
     subtitle: "从测试策略与白盒测试，走到代码质量、CI/CD 门禁、发布准入与线上质量闭环。",
     status: "blueprint",
-    sourceIds: ["foundation.python", "foundation.pytest", "foundation.quality_engineering", "radar.quality_devops", "radar.coverage_py", "radar.owasp_asvs", "project.python_framework", "project.api_automation"],
+    sourceIds: ["foundation.python", "foundation.pytest", "foundation.quality_engineering", "radar.quality_devops", "radar.coverage_py", "radar.owasp_asvs", "project.python_framework", "project.api_automation", "project.active_worker_bill"],
     roadmap: qualityEngineeringRoadmap,
     updateRule: "ISTQB 基础与 Quality in DevOps 提供通用体系，coverage.py 和本地质量门禁资产提供工程实践。",
   },

@@ -987,4 +987,20 @@ footer span { color: #9aafa3; font-size: 12px; }
 .real-project-status span { color: #168264; font-size: 11px; font-weight: 850; }
 .real-project-page > nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 24px; }
 .real-project-page > nav a { color: #176d54; font-size: 11px; font-weight: 800; text-decoration: none; }
+.real-project-kicker { margin: 0; color: #168264; font-size: 12px; font-weight: 800; }
+.real-project-contract > p, .real-project-contract h3, .real-project-contract dd, .real-project-mappings p, .real-project-acceptance p { font-size: 14px; line-height: 1.65; }
+.real-project-contract h3 { margin: 20px 0 8px; }
+.real-project-facts { display: grid; gap: 12px; margin: 20px 0; }
+.real-project-facts div { display: grid; grid-template-columns: 50px 1fr; gap: 12px; }
+.real-project-facts dt { color: #168264; font-weight: 800; }
+.real-project-facts dd { margin: 0; }
+.real-project-acceptance, .real-project-mappings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
+.real-project-acceptance article, .real-project-mappings article { padding: 18px; border: 1px solid #d9ddd8; border-radius: 10px; background: #f8faf8; }
+.real-project-acceptance article { display: grid; grid-template-columns: 34px 1fr; gap: 10px; }
+.real-project-acceptance b, .real-project-mappings span { color: #168264; font-size: 12px; font-weight: 800; }
+.real-project-acceptance h3, .real-project-mappings h3 { margin: 0 0 6px; }
+.real-project-acceptance p, .real-project-mappings p { margin: 0 0 10px; color: #4e6157; }
+.real-project-mappings article { scroll-margin-top: 24px; }
+.real-project-mappings a { color: #176d54; font-weight: 800; }
 @media (max-width: 760px) { .requirement-project-link, .requirement-project-link.compact, .real-project-flow, .real-project-status { grid-template-columns: 1fr; } .requirement-project-link a { text-align: center; } .real-project-page > header { padding: 26px; } }
+@media (max-width: 760px) { .real-project-acceptance, .real-project-mappings { grid-template-columns: 1fr; } .real-project-page { padding: 28px 16px; } .real-project-flow p, .real-project-contract li, .real-project-status p { font-size: 14px; } }

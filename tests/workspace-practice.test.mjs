@@ -48,19 +48,21 @@ test("网页提供 VS Code 打开与固定测试证据入口", () => {
   assert.doesNotMatch(server, /payload\.(?:path|command|args)/);
 });
 
-test("整个学习中心都提供待绑定的真实需求项目入口", () => {
+test("学习中心提供首个真实项目入口并仅映射相关关卡", () => {
   const home = readFileSync(new URL("../app/LearningHome.tsx", import.meta.url), "utf8");
   const interactiveCourse = readFileSync(new URL("../app/ai-developer-level5/AiDeveloperCourse.tsx", import.meta.url), "utf8");
   const pythonFramework = readFileSync(new URL("../app/courses/python-framework/PythonCourseClient.tsx", import.meta.url), "utf8");
   const blueprintCourse = readFileSync(new URL("../app/courses/[moduleId]/page.tsx", import.meta.url), "utf8");
   const projectLink = readFileSync(new URL("../app/courses/ProjectTrackLink.tsx", import.meta.url), "utf8");
   const projectPage = readFileSync(new URL("../app/learn/real-project/page.tsx", import.meta.url), "utf8");
+  const projectData = readFileSync(new URL("../app/real-projects/first-project.ts", import.meta.url), "utf8");
 
   assert.match(home, /真实需求项目入口/);
   assert.match(interactiveCourse, /<ProjectTrackLink/);
   assert.match(pythonFramework, /<ProjectTrackLink/);
   assert.match(blueprintCourse, /<ProjectTrackLink/);
+  assert.match(projectLink, /firstProjectMappingFor/);
   assert.match(projectLink, /真实需求项目待绑定/);
-  assert.match(projectPage, /等待绑定具体需求与代码库/);
-  assert.match(projectPage, /平台不会把教学示例标成真实项目/);
+  assert.match(projectPage, /firstProjectCourseMappings/);
+  assert.match(projectData, /运行证据待补/);
 });

@@ -92,6 +92,24 @@ test("各方向拥有可独立访问的课程页面", async () => {
   }
 });
 
+test("首个真实需求项目只展示脱敏契约和已映射关卡", async () => {
+  const project = await render("/learn/real-project");
+  assert.equal(project.status, 200);
+  const html = await project.text();
+  assert.match(html, /员工状态过滤与新账单生成/);
+  assert.match(html, /可证伪的验收场景/);
+  assert.match(html, /部分批次或全部查询失败/);
+  assert.match(html, /mapping-api-automation-3/);
+  assert.match(html, /mapping-quality-engineering-4/);
+  assert.match(html, /运行证据待补/);
+  assert.doesNotMatch(html, /esg-mscp|sf-express|\/Users\/baiyi|SF001/);
+
+  const apiCourse = await (await render("/courses/api-automation")).text();
+  assert.match(apiCourse, /员工状态过滤与新账单生成/);
+  const uiCourse = await (await render("/courses/ui-automation")).text();
+  assert.match(uiCourse, /真实需求项目待绑定/);
+});
+
 test("Python Agent 快速通道提供完整十六节学习内容和连续工单项目", async () => {
   const [data, client, registry, interactive] = await Promise.all([
     readFile(new URL("../app/courses/python-agent-fast-track/course-data.ts", import.meta.url), "utf8"),
