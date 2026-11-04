@@ -12,7 +12,7 @@ export default function ProjectLearningTemplate({ project, tasks, starter }: Pro
   return <main className="ready real-project-page">
     <header className="real-project-hero">
       <a href="/learn">← 学习中心</a>
-      <span>真实项目 · 学习样例</span>
+      <span>案例练习 · 关联 {tasks.length} 个关卡</span>
       <h1>{project.title}</h1>
       <p>{project.problem}</p>
       <nav><a href="#project-practice">开始任务 ↓</a><a href="#project-validation">查看验收</a></nav>

@@ -58,7 +58,8 @@ test("学习中心提供首个真实项目入口并仅映射相关关卡", () =>
   const projectTemplate = readFileSync(new URL("../app/real-projects/ProjectLearningTemplate.tsx", import.meta.url), "utf8");
   const projectData = readFileSync(new URL("../app/real-projects/first-project.ts", import.meta.url), "utf8");
 
-  assert.match(home, /真实需求项目入口/);
+  assert.match(home, /能力构成主线/);
+  assert.match(home, /查看案例练习/);
   assert.match(interactiveCourse, /<ProjectTrackLink/);
   assert.match(pythonFramework, /<ProjectTrackLink/);
   assert.match(blueprintCourse, /<ProjectTrackLink/);

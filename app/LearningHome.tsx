@@ -19,8 +19,8 @@ export default function LearningHome() {
           <section>
             <p className="eyebrow">YOUR LEARNING MAP</p>
             <h1>先选方向，<br /><em>再进入专属修炼场</em></h1>
-            <p className="lead">每个方向都是独立课程。你可以随时回到学习中心切换路线，每条路线单独生长自己的关卡、知识来源与学习进度。</p>
-            <div className="learning-home-actions"><a className="hero-cta" href="#modules">选择修炼方向 <span>↓</span></a><a href="/learn/real-project">真实需求项目入口 →</a></div>
+            <p className="lead">先学可迁移能力，再用真实项目练习验证。每条课程路线独立维护。</p>
+            <div className="learning-home-actions"><a className="hero-cta" href="#modules">选择修炼方向 <span>↓</span></a><a href="/learn/real-project">查看案例练习 →</a></div>
           </section>
           <aside className="platform-summary">
             <span>当前课程地图</span>
@@ -36,9 +36,9 @@ export default function LearningHome() {
       </header>
 
       <section className="principles" aria-label="学习平台原则">
-        <article><b>01</b><div><h2>需求作为起点</h2><p>先明确真实问题、边界和验收标准，再选择需要学习的能力。</p></div></article>
-        <article><b>02</b><div><h2>项目作为输出</h2><p>概念和练习都落在同一个实际测试项目中，不用孤立代码片段代替工程。</p></div></article>
-        <article><b>03</b><div><h2>课程推进进度</h2><p>测试、日志和代码差异证明能力增长，课程负责解释和安排台阶。</p></div></article>
+        <article><b>01</b><div><h2>能力构成主线</h2><p>按通用知识、前置依赖和客观验收组织课程。</p></div></article>
+        <article><b>02</b><div><h2>需求提供案例</h2><p>一个需求只进入适合的关卡，不代表整门课程。</p></div></article>
+        <article><b>03</b><div><h2>持续查漏补缺</h2><p>用权威更新和不同项目补知识、练习与证据。</p></div></article>
       </section>
 
       <section className="module-section home-module-section" id="modules">
