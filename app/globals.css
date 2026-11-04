@@ -300,6 +300,9 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 
 .course-hero { min-height: 560px; padding: 24px max(6vw, 28px) 92px; color: #f8f2df; background: radial-gradient(circle at 82% 34%, rgba(93,145,113,.67), transparent 27%), linear-gradient(135deg, #10271f, #1e4637 60%, #142e25); }
 .course-hero-grid { display: grid; grid-template-columns: 1.4fr .7fr; gap: 65px; align-items: end; max-width: 1180px; margin: 90px auto 0; }
+.blueprint-course .course-hero { min-height: 0; padding-bottom: 64px; }
+.blueprint-course .course-hero-grid { display: block; max-width: 1060px; margin-top: 56px; }
+.blueprint-course .course-hero-grid section { max-width: 760px; }
 .course-status-card { padding: 27px; border: 1px solid rgba(255,255,255,.18); background: rgba(255,255,255,.08); }
 .course-status-card strong { display: block; margin: 14px 0; color: #ffd15b; font: 800 30px Georgia, "Songti SC", serif; }
 .course-status-card p { margin: 0; color: #cfdbd2; font-size: 13px; line-height: 1.8; }
@@ -309,10 +312,11 @@ code { font: 13px/1.7 "SFMono-Regular", Consolas, monospace; white-space: pre; }
 .blueprint-intro b { color: var(--red); font-size: 12px; letter-spacing: .12em; }
 .blueprint-intro p { margin: 13px 0 0; color: #5d6b62; font-size: 13px; line-height: 1.75; }
 .blueprint-roadmap { max-width: 1060px; margin: auto; padding: 100px 28px 55px; }
-.standalone-roadmap { display: grid; grid-template-columns: 1fr 1fr; gap: 13px; margin: 0; padding: 0; list-style: none; }
-.standalone-roadmap > li { display: grid; grid-template-columns: 64px 1fr; min-height: 145px; border: 1px solid #d9ceb9; background: #fffdf7; box-shadow: 4px 4px 0 #e1d7c2; }
+.blueprint-course .blueprint-roadmap { padding-top: 60px; }
+.standalone-roadmap { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 13px; margin: 0; padding: 0; list-style: none; }
+.standalone-roadmap > li { display: grid; grid-template-columns: 64px minmax(0, 1fr); min-width: 0; min-height: 145px; border: 1px solid #d9ceb9; background: #fffdf7; box-shadow: 4px 4px 0 #e1d7c2; }
 .standalone-roadmap > li > b { display: grid; place-items: center; color: #f5e7c1; background: var(--green); font: 800 19px Georgia; }
-.standalone-roadmap > li > div { padding: 20px; }
+.standalone-roadmap > li > div { min-width: 0; padding: 20px; }
 .standalone-roadmap div > span { color: var(--red); font-size: 9px; font-weight: 900; letter-spacing: .14em; }
 .standalone-roadmap h3 { margin: 8px 0 7px; font: 800 19px Georgia, "Songti SC", serif; }
 .standalone-roadmap p { margin: 0; color: #6c776f; font-size: 11px; line-height: 1.65; }
@@ -389,7 +393,7 @@ footer span { color: #9aafa3; font-size: 12px; }
   .source-principle-grid { grid-template-columns: 1fr; }
   .blueprint-intro { grid-template-columns: 1fr; }
   .blueprint-intro article { min-height: auto; border-right: 0; border-bottom: 1px solid var(--line); }
-  .standalone-roadmap { grid-template-columns: 1fr; }
+  .standalone-roadmap { grid-template-columns: minmax(0, 1fr); }
   .gap-review-grid { grid-template-columns: 1fr; }
   .lesson-grid { grid-template-columns: 1fr; }
   .learning-steps { grid-template-columns: repeat(3, 1fr); }
@@ -414,7 +418,7 @@ footer span { color: #9aafa3; font-size: 12px; }
   .module-card { min-height: 0; }
   .module-card p { min-height: 0; }
   .blueprint-intro, .blueprint-roadmap { padding-left: 14px; padding-right: 14px; }
-  .standalone-roadmap > li { grid-template-columns: 52px 1fr; }
+  .standalone-roadmap > li { grid-template-columns: 52px minmax(0, 1fr); }
   .course-gap-review { padding-left: 14px; padding-right: 14px; }
   .gap-review-head { align-items: flex-start; flex-direction: column; gap: 8px; }
   .gap-review-head span { text-align: left; }
@@ -964,43 +968,53 @@ footer span { color: #9aafa3; font-size: 12px; }
 }
 .learning-home-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 16px; }
 .learning-home-actions > a:last-child { color: #d4eee5; font-size: 11px; font-weight: 750; text-decoration: none; }
-.requirement-project-link { display: grid; grid-template-columns: minmax(190px, .7fr) minmax(240px, 1.5fr) auto; align-items: center; gap: 18px; margin: 18px 0; padding: 16px 18px; color: #dce9e3; border: 1px solid #41695b; border-radius: 11px; background: #17382d; }
-.requirement-project-link > div { display: grid; gap: 4px; }
-.requirement-project-link span { color: #6ed3ad; font: 800 8px/1.2 var(--font-geist-mono), monospace; letter-spacing: .12em; }
-.requirement-project-link strong { color: #fff; font-size: 12px; }
-.requirement-project-link p { margin: 0; color: #c4d4cd; font-size: 10px; line-height: 1.65; }
-.requirement-project-link a { color: #17382d; padding: 9px 12px; border-radius: 7px; background: #8bd8ba; font-size: 9px; font-weight: 850; text-decoration: none; white-space: nowrap; }
-.requirement-project-link.compact { grid-template-columns: minmax(170px, .7fr) minmax(220px, 1.5fr) auto; margin: 12px 0 16px; padding: 13px 15px; }
-.real-project-page { min-height: 100vh; padding: 72px max(24px, calc((100vw - 1080px) / 2)); color: #21352d; background: #f5f2e9; }
-.real-project-page > header { padding: 44px; color: #f4f7f5; border-radius: 18px; background: #17382d; }
-.real-project-page > header p { color: #62cba4; font: 800 10px var(--font-geist-mono), monospace; letter-spacing: .14em; }
-.real-project-page > header h1 { margin: 14px 0; font-size: clamp(34px, 5vw, 62px); line-height: 1.12; }
-.real-project-page > header span { color: #c4d4cd; font-size: 13px; }
-.real-project-flow { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin: 24px 0; }
-.real-project-flow article, .real-project-contract, .real-project-status > div { padding: 24px; border: 1px solid #d9ddd8; border-radius: 13px; background: #fff; }
-.real-project-flow b { color: #168264; font: 800 12px var(--font-geist-mono), monospace; }
-.real-project-flow h2, .real-project-contract h2 { margin: 10px 0; font-size: 19px; }
-.real-project-flow p, .real-project-contract li, .real-project-status p { color: #5f6c66; font-size: 11px; line-height: 1.8; }
-.real-project-contract { margin-bottom: 14px; }
-.real-project-contract li + li { margin-top: 6px; }
-.real-project-status { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
-.real-project-status span { color: #168264; font-size: 11px; font-weight: 850; }
-.real-project-page > nav { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; margin-top: 24px; }
-.real-project-page > nav a { color: #176d54; font-size: 11px; font-weight: 800; text-decoration: none; }
-.real-project-kicker { margin: 0; color: #168264; font-size: 12px; font-weight: 800; }
-.real-project-contract > p, .real-project-contract h3, .real-project-contract dd, .real-project-mappings p, .real-project-acceptance p { font-size: 14px; line-height: 1.65; }
-.real-project-contract h3 { margin: 20px 0 8px; }
-.real-project-facts { display: grid; gap: 12px; margin: 20px 0; }
-.real-project-facts div { display: grid; grid-template-columns: 50px 1fr; gap: 12px; }
-.real-project-facts dt { color: #168264; font-weight: 800; }
-.real-project-facts dd { margin: 0; }
-.real-project-acceptance, .real-project-mappings { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-top: 16px; }
-.real-project-acceptance article, .real-project-mappings article { padding: 18px; border: 1px solid #d9ddd8; border-radius: 10px; background: #f8faf8; }
-.real-project-acceptance article { display: grid; grid-template-columns: 34px 1fr; gap: 10px; }
-.real-project-acceptance b, .real-project-mappings span { color: #168264; font-size: 12px; font-weight: 800; }
-.real-project-acceptance h3, .real-project-mappings h3 { margin: 0 0 6px; }
-.real-project-acceptance p, .real-project-mappings p { margin: 0 0 10px; color: #4e6157; }
-.real-project-mappings article { scroll-margin-top: 24px; }
-.real-project-mappings a { color: #176d54; font-weight: 800; }
-@media (max-width: 760px) { .requirement-project-link, .requirement-project-link.compact, .real-project-flow, .real-project-status { grid-template-columns: 1fr; } .requirement-project-link a { text-align: center; } .real-project-page > header { padding: 26px; } }
-@media (max-width: 760px) { .real-project-acceptance, .real-project-mappings { grid-template-columns: 1fr; } .real-project-page { padding: 28px 16px; } .real-project-flow p, .real-project-contract li, .real-project-status p { font-size: 14px; } }
+.requirement-project-link { display: grid; grid-template-columns: minmax(150px, .7fr) minmax(220px, 1.5fr) auto; align-items: center; gap: 14px; margin: 14px 0; padding: 14px 16px; color: #17382d; border: 1px solid #cbded3; border-left: 4px solid #168264; border-radius: 10px; background: #f7fbf8; }
+.requirement-project-link > div { display: grid; gap: 3px; }
+.requirement-project-link span { color: #168264; font-size: 11px; font-weight: 800; }
+.requirement-project-link strong { color: #17382d; font-size: 14px; }
+.requirement-project-link p { margin: 0; color: #40594b; font-size: 13px; line-height: 1.55; }
+.requirement-project-link a { color: #176d54; font-size: 13px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.requirement-project-link.compact { margin: 12px 0 16px; }
+.real-project-page { min-height: 100vh; padding: 44px max(24px, calc((100vw - 1040px) / 2)); color: #21352d; background: #f5f2e9; }
+.real-project-hero { padding: 34px 38px; color: #f4f7f5; border-radius: 16px; background: #17382d; }
+.real-project-hero > a { color: #a7d7c0; font-size: 13px; text-decoration: none; }
+.real-project-hero > span { display: block; margin-top: 28px; color: #8bd8ba; font-size: 12px; font-weight: 800; }
+.real-project-hero h1 { margin: 8px 0 10px; font-size: clamp(30px, 4vw, 48px); line-height: 1.15; }
+.real-project-hero p { max-width: 680px; margin: 0; color: #d5e4dc; font-size: 15px; line-height: 1.7; }
+.real-project-hero nav { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px; }
+.real-project-hero nav a { padding: 10px 16px; border-radius: 8px; background: #8bd8ba; color: #17382d; font-size: 13px; font-weight: 800; text-decoration: none; }
+.real-project-hero nav a + a { border: 1px solid #7ba791; background: transparent; color: #eff7f1; }
+.project-lesson-standard { display: grid; gap: 14px; margin: 20px 0; }
+.project-lesson-section { padding: 24px 28px; border: 1px solid #d9ddd8; border-radius: 13px; background: #fff; scroll-margin-top: 24px; }
+.project-lesson-section > header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 15px; }
+.project-lesson-section > header span { color: #168264; font: 800 13px var(--font-geist-mono), monospace; }
+.project-lesson-section h2 { margin: 0; font-size: 22px; }
+.project-goal-text { margin: 0; font-size: 17px; line-height: 1.6; }
+.project-prerequisites { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.project-prerequisites li { padding: 8px 12px; border-radius: 8px; background: #edf5ef; color: #315744; font-size: 14px; }
+.project-io { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.project-io p { margin: 0; padding: 14px 16px; border-radius: 9px; background: #f4f7f4; font-size: 14px; line-height: 1.6; }
+.project-io b, .project-task-list p b { display: block; margin-bottom: 4px; color: #168264; font-size: 12px; }
+.project-rules { margin: 14px 0 0; padding-left: 20px; color: #4e6157; font-size: 14px; line-height: 1.75; }
+.project-rules li + li { margin-top: 5px; }
+.project-task-list { display: grid; gap: 10px; margin: 0; padding: 0; list-style: none; }
+.project-task-list li { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 14px; padding: 17px; border: 1px solid #dce5dd; border-radius: 10px; background: #f9fbf9; scroll-margin-top: 24px; }
+.project-task-list li > span { color: #168264; font: 800 15px var(--font-geist-mono), monospace; }
+.project-task-list small { color: #168264; font-size: 12px; font-weight: 800; }
+.project-task-list h3 { margin: 3px 0 5px; font-size: 17px; }
+.project-task-list p { margin: 0; color: #4e6157; font-size: 14px; line-height: 1.6; }
+.project-task-list p + p { margin-top: 7px; }
+.project-task-list p b { display: inline; margin-right: 8px; }
+.project-task-list a { padding: 9px 12px; color: #176d54; border: 1px solid #bcd8c8; border-radius: 7px; font-size: 13px; font-weight: 800; text-decoration: none; white-space: nowrap; }
+.project-run-sample { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; margin-top: 14px; padding: 14px 16px; border-radius: 9px; background: #eaf3ed; color: #315744; font-size: 13px; }
+.project-run-sample code { overflow-wrap: anywhere; }
+.project-acceptance-list { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.project-acceptance-list article { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 15px; border: 1px solid #dce5dd; border-radius: 9px; background: #f9fbf9; }
+.project-acceptance-list article > b { color: #168264; font-size: 13px; }
+.project-acceptance-list h3 { margin: 0 0 5px; font-size: 15px; }
+.project-acceptance-list p { margin: 0; color: #4e6157; font-size: 13px; line-height: 1.6; }
+.project-evidence-boundary { padding: 16px 20px; border: 1px solid #d9ddd8; border-radius: 10px; background: #fff; color: #4e6157; font-size: 13px; line-height: 1.65; }
+.project-evidence-boundary summary { color: #176d54; font-weight: 800; cursor: pointer; }
+.project-footer-nav { display: flex; justify-content: space-between; gap: 12px; margin-top: 18px; }
+.project-footer-nav a { color: #176d54; font-size: 13px; font-weight: 800; text-decoration: none; }
+@media (max-width: 760px) { .real-project-page { padding: 20px 14px; } .real-project-hero { padding: 26px 22px; } .project-lesson-section { padding: 20px 18px; } .project-io, .project-acceptance-list { grid-template-columns: 1fr; } .project-task-list li { grid-template-columns: 30px 1fr; } .project-task-list a { grid-column: 2; justify-self: start; } .requirement-project-link { grid-template-columns: 1fr; } }

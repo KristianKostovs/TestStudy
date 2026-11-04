@@ -97,7 +97,9 @@ test("首个真实需求项目只展示脱敏契约和已映射关卡", async ()
   assert.equal(project.status, 200);
   const html = await project.text();
   assert.match(html, /员工状态过滤与新账单生成/);
-  assert.match(html, /可证伪的验收场景/);
+  for (const heading of ["目标", "前置知识", "简明讲解", "动手任务", "客观验收"]) {
+    assert.match(html, new RegExp(`<h2>${heading}<\\/h2>`));
+  }
   assert.match(html, /部分批次或全部查询失败/);
   assert.match(html, /mapping-api-automation-3/);
   assert.match(html, /mapping-quality-engineering-4/);
@@ -107,7 +109,7 @@ test("首个真实需求项目只展示脱敏契约和已映射关卡", async ()
   const apiCourse = await (await render("/courses/api-automation")).text();
   assert.match(apiCourse, /员工状态过滤与新账单生成/);
   const uiCourse = await (await render("/courses/ui-automation")).text();
-  assert.match(uiCourse, /真实需求项目待绑定/);
+  assert.doesNotMatch(uiCourse, /真实需求项目待绑定/);
 });
 
 test("Python Agent 快速通道提供完整十六节学习内容和连续工单项目", async () => {
@@ -408,7 +410,7 @@ test("第十关通关后解锁完整的 pytest 框架 HTML 笔记", async () => 
   assert.match(html, /配置数据库的完整依赖链/);
 });
 
-test("所有学习模块都展示课题背景、固定练习契约和验收标准", async () => {
+test("所有学习模块都展示统一关卡结构与固定练习契约", async () => {
   const [roadmaps, registry, page, starters, editor, chatRoute, gradeRoute] = await Promise.all([
     readFile(new URL("../app/blueprint-roadmaps.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
@@ -420,11 +422,12 @@ test("所有学习模块都展示课题背景、固定练习契约和验收标�
   ]);
 
   assert.match(registry, /缺少背景、任务、契约或验收标准/);
-  assert.match(page, /课题背景/);
+  assert.match(page, /目标/);
+  assert.match(page, /前置知识/);
+  assert.match(page, /简明讲解/);
+  assert.match(page, /动手任务/);
+  assert.match(page, /客观验收/);
   assert.match(page, /固定契约/);
-  assert.match(page, /验收标准/);
-  assert.match(page, /项目练习默认方式/);
-  assert.match(page, /目录、字段、函数签名、固定样例和测试入口/);
   assert.match(page, /默认项目框架已放入 IDE/);
   assert.match(page, /<BlueprintPracticeEditor/);
   assert.match(editor, /learning-blueprint-draft-v1/);
@@ -444,7 +447,7 @@ test("所有学习模块都展示课题背景、固定练习契约和验收标�
     const html = await (await render(`/courses/${moduleId}`)).text();
     const concepts = moduleId === "ai-testing" ? 2 : 1;
     assert.equal((html.match(/<dt>固定契约<\/dt>/g) ?? []).length, 10 - concepts, moduleId);
-    assert.equal((html.match(/<dt>验收标准<\/dt>/g) ?? []).length, 10 - concepts, moduleId);
+    assert.equal((html.match(/<dt>客观验收<\/dt>/g) ?? []).length, 10 - concepts, moduleId);
     assert.equal((html.match(/aria-label="理解检查"/g) ?? []).length, concepts, moduleId);
     assert.equal((html.match(/<details[^>]*class="blueprint-practice"/g) ?? []).length, 10, moduleId);
     assert.match(html, /可选：动手实践与原项目骨架/);

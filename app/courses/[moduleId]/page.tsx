@@ -45,7 +45,6 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
   const course = findBlueprint(moduleId);
   if (!course) notFound();
   const sources = sourcesForModule(course);
-  const detailedRoadmap = course.roadmap.some((item) => typeof item !== "string");
 
   return (
     <main className="ready blueprint-course">
@@ -61,20 +60,8 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
             <p className="lead">{course.subtitle}</p>
             <a className="hero-cta" href="#roadmap">查看十关路线 <span>↓</span></a>
           </section>
-          <aside className="course-status-card">
-            <span>当前建设状态</span>
-            <strong>{detailedRoadmap ? "十关框架练习已备" : "路线已建立"}</strong>
-            <p>{detailedRoadmap ? "概念关通过例子与理解检查学习；实践关提供固定契约和 IDE 起步代码，只需补充关键 TODO。" : "这已经是独立课程页。后续会从第 1 关开始，逐关补齐小白讲解、动手任务和客观验证。"}</p>
-          </aside>
         </div>
       </header>
-
-      <section className="blueprint-intro">
-        <article><b>学习目标</b><p>{course.subtitle}</p></article>
-        <article><b>内容更新规则</b><p>{course.updateRule}</p></article>
-        <article><b>关卡准入标准</b><p>只有出现新的可迁移能力或必要前置知识，才新增主关卡；新增案例只更新练习。</p></article>
-        <article><b>项目练习默认方式</b><p>目录、字段、函数签名、固定样例和测试入口已直接放入每关 IDE，只要求完成明确标记的关键逻辑。</p></article>
-      </section>
 
       {course.gapReview ? (
         <section className="course-gap-review" aria-labelledby="gap-review-title">
@@ -103,7 +90,6 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
         <div className="section-heading">
           <p>THE ROADMAP</p>
           <h2>{course.title}十关地图</h2>
-          <span>每一关是一个能力台阶，而不是某个页面或某条需求的临时教程。</span>
         </div>
         <ol className="standalone-roadmap">
           {course.roadmap.map((item, index) => {
@@ -120,16 +106,16 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
                   <p>将补齐：基础解释 → 最小例子 → 项目练习 → 自动验收。</p>
                 ) : (
                   <>
-                    <p className="level-question"><b>课题背景</b>{item.question}</p>
-                    <strong className="level-section-label">必备知识</strong>
+                    <p className="level-question"><b>目标</b>{concept?.goal ?? item.practice}</p>
+                    <strong className="level-section-label">前置知识</strong>
                     <ul className="level-foundations">
                       {item.foundations.map((foundation) => <li key={foundation}>{foundation}</li>)}
                     </ul>
-                    {concept ? <section className="stage-panel"><h4>概念理解</h4><p>{concept.explanation}</p><pre className="ai5-code"><code>{concept.example}</code></pre><UnderstandingCheck lesson={concept} /><a href={`#level-${index + 2}`}>{index + 1 < course.roadmap.length ? "继续下一关 →" : "已到本课程最后一关"}</a></section> : <dl className="level-deliverables">
+                    {concept ? <section className="stage-panel"><h4>简明讲解</h4><p>{concept.explanation}</p><pre className="ai5-code"><code>{concept.example}</code></pre><h4>动手任务与客观验收</h4><UnderstandingCheck lesson={concept} /><a href={`#level-${index + 2}`}>{index + 1 < course.roadmap.length ? "继续下一关 →" : "已到本课程最后一关"}</a></section> : <dl className="level-deliverables">
+                      <div><dt>简明讲解</dt><dd>{item.question}</dd></div>
                       <div><dt>动手任务</dt><dd>{item.practice}</dd></div>
                       <div><dt>固定契约</dt><dd><ul>{item.contract.map((contract) => <li key={contract}>{contract}</li>)}</ul></dd></div>
-                      <div><dt>验收标准</dt><dd><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></dd></div>
-                      <div><dt>验收证据</dt><dd>{item.evidence}</dd></div>
+                      <div><dt>客观验收</dt><dd><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul><p>{item.evidence}</p></dd></div>
                     </dl>}
                     {starter ? (
                       <details open={!concept} className="blueprint-practice" aria-label={`第 ${index + 1} 关默认项目框架`}>
@@ -191,7 +177,6 @@ export default async function BlueprintCoursePage({ params }: CoursePageProps) {
 
       <footer>
         <p>{course.title.toUpperCase()} QUEST</p>
-        <h2>路线已经独立，下一步是把每一关做成真正可学、可练、可验证。</h2>
         <a className="footer-link" href="/learn">← 返回全部学习方向</a>
       </footer>
     </main>

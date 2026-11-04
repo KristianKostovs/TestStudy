@@ -55,6 +55,7 @@ test("学习中心提供首个真实项目入口并仅映射相关关卡", () =>
   const blueprintCourse = readFileSync(new URL("../app/courses/[moduleId]/page.tsx", import.meta.url), "utf8");
   const projectLink = readFileSync(new URL("../app/courses/ProjectTrackLink.tsx", import.meta.url), "utf8");
   const projectPage = readFileSync(new URL("../app/learn/real-project/page.tsx", import.meta.url), "utf8");
+  const projectTemplate = readFileSync(new URL("../app/real-projects/ProjectLearningTemplate.tsx", import.meta.url), "utf8");
   const projectData = readFileSync(new URL("../app/real-projects/first-project.ts", import.meta.url), "utf8");
 
   assert.match(home, /真实需求项目入口/);
@@ -62,7 +63,10 @@ test("学习中心提供首个真实项目入口并仅映射相关关卡", () =>
   assert.match(pythonFramework, /<ProjectTrackLink/);
   assert.match(blueprintCourse, /<ProjectTrackLink/);
   assert.match(projectLink, /firstProjectMappingFor/);
-  assert.match(projectLink, /真实需求项目待绑定/);
+  assert.match(projectLink, /if \(!mapping\) return null/);
   assert.match(projectPage, /firstProjectCourseMappings/);
+  for (const heading of ["目标", "前置知识", "简明讲解", "动手任务", "客观验收"]) {
+    assert.match(projectTemplate, new RegExp(`<h2>${heading}<\\/h2>`));
+  }
   assert.match(projectData, /运行证据待补/);
 });
