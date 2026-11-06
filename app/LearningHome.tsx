@@ -28,7 +28,7 @@ export default function LearningHome() {
             <p>个独立学习方向</p>
             <ul>
               <li><b>{learningModules.filter((module) => module.status === "active").length}</b> 条路线已有完整互动课程</li>
-              <li><b>{learningModules.filter((module) => module.status === "blueprint").length}</b> 条路线已备十关 IDE 框架练习</li>
+              <li><b>{learningModules.filter((module) => module.status === "blueprint").length}</b> 条路线已备分章 IDE 框架练习</li>
               <li><b>3</b> 类知识来源持续供给内容</li>
             </ul>
           </aside>
@@ -53,7 +53,7 @@ export default function LearningHome() {
             return (
               <a className="module-card route-card" href={`/courses/${module.id}`} key={module.id}>
                 <span className="module-sigil">{module.sigil}</span>
-                <span className="module-state">{module.id === "ai-developer-level5" ? "9 节已开放" : module.id === "python-agent-fast-track" ? "16 节已开放" : module.status === "active" ? "十关已开放" : "十关框架已备"}</span>
+                <span className="module-state">{module.status === "active" ? `${module.roadmap.length} 节已开放` : `${module.roadmap.length} 关框架已备`}</span>
                 <h3>{module.title}</h3>
                 <p>{module.subtitle}</p>
                 <span className="module-source-badges">

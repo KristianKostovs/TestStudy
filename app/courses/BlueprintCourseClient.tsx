@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { LearningModule, SourceAdapter } from "../learning-registry";
 import { roadmapTitle, sourceKindMeta } from "../learning-registry";
 import { blueprintStarterFor } from "../blueprint-starters";
@@ -25,7 +25,7 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
   sources: SourceAdapter[];
   chapterId?: number;
 }) {
-  const chapters = blueprintChapters(course);
+  const chapters = useMemo(() => blueprintChapters(course), [course]);
   const chapter = chapterId ? chapters.find((item) => item.id === chapterId) : undefined;
   const [ready, setReady] = useState(false);
   const [openId, setOpenId] = useState(chapter?.levelIds[0] ?? 0);
@@ -44,12 +44,11 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
         }
       } catch { /* Keep the course usable if an old browser draft is malformed. */ }
       const deepLink = Number(window.location.hash.match(/^#level-(\d+)$/)?.[1]);
-      const deepChapter = deepLink <= 3 ? 1 : deepLink <= 6 ? 2 : deepLink <= 9 ? 3 : 4;
-      if (chapterId && deepLink >= 1 && deepChapter === chapterId) setOpenId(deepLink);
+      if (chapterId && chapter?.levelIds.includes(deepLink)) setOpenId(deepLink);
       setReady(true);
     });
     return () => window.cancelAnimationFrame(frame);
-  }, [course.id, chapterId]);
+  }, [course.id, chapterId, chapter]);
 
   function saveProgress(next: Progress) {
     setProgress(next);
@@ -70,7 +69,7 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
 
   return <main className={`course-workspace blueprint-workspace ${ready ? "ready" : ""}`}>
     <header className="suite-topbar course-suite-topbar">
-      <div><strong>学习中心 · {course.title}</strong><span>{chapter ? `${chapter.title} · 一次专注一个学习步骤` : "四章十关，按能力逐步学习"}</span></div>
+      <div><strong>学习中心 · {course.title}</strong><span>{chapter ? `${chapter.title} · 一次专注一个学习步骤` : "按课程内容分章，逐关学习"}</span></div>
       <div className="suite-live"><i />{completed} / {course.roadmap.length} 关已验证</div>
     </header>
     <header className="hero">
@@ -81,7 +80,7 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
       <div className="hero-grid">
         <section>
           <p className="eyebrow">{chapter ? `${course.title.toUpperCase()} · CHAPTER ${chapter.id}` : `${course.title.toUpperCase()} QUEST`}</p>
-          <h1>{chapter ? chapter.title : <>{course.title}<br /><em>四章十关</em></>}</h1>
+          <h1>{chapter ? chapter.title : <>{course.title}<br /><em>{chapters.length} 章 · {course.roadmap.length} 关</em></>}</h1>
           <p className="lead">{chapter?.subtitle ?? course.subtitle}</p>
           <a className="hero-cta" href={chapter ? `#level-${chapter.levelIds[0]}` : `#chapters`}>{chapter ? "进入本章关卡" : "选择学习章节"} <span>→</span></a>
         </section>
@@ -96,7 +95,7 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
     </header>
 
     <section className="map-section" id={chapter ? "roadmap" : "chapters"}>
-      <div className="section-heading"><p>{chapter ? "CHAPTER LEVELS" : "THE ROADMAP"}</p><h2>{chapter ? `${chapter.shortTitle} · 本章关卡` : "四章修炼地图"}</h2><span>{chapter ? "每关一次只显示一个学习步骤。" : "先选章节，再进入关卡；案例练习会出现在对应关卡内。"}</span></div>
+      <div className="section-heading"><p>{chapter ? "CHAPTER LEVELS" : "THE ROADMAP"}</p><h2>{chapter ? `${chapter.shortTitle} · 本章关卡` : "课程修炼地图"}</h2><span>{chapter ? "每关一次只显示一个学习步骤。" : "先选章节，再进入关卡；案例练习会出现在对应关卡内。"}</span></div>
       {!chapter ? <div className="chapter-grid">{chapters.map((item) => <article className="chapter-card" key={item.id}>
         <span>CHAPTER {String(item.id).padStart(2, "0")}</span><h3>{item.title}</h3><p>{item.subtitle}</p>
         <div><b>{item.levelIds.filter((id) => progress.completed.includes(id)).length} / {item.levelIds.length} 关已验证</b><i>{item.levelIds.map((id) => `L${id}`).join(" · ")}</i></div>
@@ -124,13 +123,13 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
                 {stage === 2 && <section className="stage-panel blueprint-step"><div className="stage-intro"><span>先看它长什么样</span><h4>本关固定契约</h4></div><ul className="blueprint-contract-list">{item.contract.map((part) => <li key={part}>{part}</li>)}</ul>{concept && <pre className="blueprint-example"><code>{concept.example}</code></pre>}<p className="blueprint-step-note">预期产出：{item.evidence}</p><button type="button" className="stage-continue" onClick={() => advance(levelId, 3)}>看懂输入输出，进入“逐行理解” →</button></section>}
                 {stage === 3 && <section className="stage-panel blueprint-step"><div className="objective"><b>本关目标</b><p>{concept?.goal ?? item.question}</p></div><div className="blueprint-explanation"><h4>简明讲解</h4><p>{concept?.explanation ?? item.question}</p>{concept && <pre className="blueprint-example"><code>{concept.example}</code></pre>}</div><button type="button" className="stage-continue" onClick={() => advance(levelId, 4)}>理解完成，进入“动手练” →</button></section>}
                 {stage === 4 && <section className="stage-panel blueprint-step"><div className="task"><div className="task-title"><span>通关任务</span><b>{concept ? "理解后可选做" : "实践关"}</b></div><p>{item.practice}</p><p>交付物：{item.evidence}</p></div>{starter && <details className="blueprint-practice"><summary>{concept ? "可选项目练习" : "打开项目练习区"}</summary><div className="blueprint-focus"><b>本关只需完成</b><ul>{starter.focus.map((focus) => <li key={focus}>{focus}</li>)}</ul></div><BlueprintPracticeEditor courseId={course.id} levelId={levelId} starter={starter.code} files={starter.files} /></details>}<button type="button" className="stage-continue" onClick={() => advance(levelId, 5)}>查看“客观验收” →</button></section>}
-                {stage === 5 && <section className="stage-panel blueprint-step"><div className="verify-card"><b>客观验收</b><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></div>{concept ? <UnderstandingCheck lesson={concept} passed={done} onPass={() => passConcept(levelId)} /> : <p className="blueprint-evidence-note">练习代码保存在当前浏览器；通过记录需要实际运行结果。当前关卡尚未接通自动运行，不能仅凭阅读或编辑标记通过。</p>}<a className="blueprint-next-level" href={levelId < course.roadmap.length ? blueprintLevelHref(course.id, levelId + 1) : `/courses/${course.id}`}>{levelId < course.roadmap.length ? "继续下一关 →" : "返回四章总览 →"}</a></section>}
+                {stage === 5 && <section className="stage-panel blueprint-step"><div className="verify-card"><b>客观验收</b><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></div>{concept ? <UnderstandingCheck lesson={concept} passed={done} onPass={() => passConcept(levelId)} /> : <p className="blueprint-evidence-note">练习代码保存在当前浏览器；通过记录需要实际运行结果。当前关卡尚未接通自动运行，不能仅凭阅读或编辑标记通过。</p>}<a className="blueprint-next-level" href={levelId < course.roadmap.length ? blueprintLevelHref(course.id, levelId + 1) : `/courses/${course.id}`}>{levelId < course.roadmap.length ? "继续下一关 →" : "返回课程总览 →"}</a></section>}
               </>}
             </div>}
           </div>
         </article>;
       })}</div>}
-      {chapter && <nav className="chapter-pager"><span>{chapter.id > 1 ? <a href={`/courses/${course.id}/chapters/${chapter.id - 1}`}>← 上一章</a> : null}</span><a href={`/courses/${course.id}`}>四章总览</a><span>{chapter.id < chapters.length ? <a href={`/courses/${course.id}/chapters/${chapter.id + 1}`}>下一章 →</a> : null}</span></nav>}
+      {chapter && <nav className="chapter-pager"><span>{chapter.id > 1 ? <a href={`/courses/${course.id}/chapters/${chapter.id - 1}`}>← 上一章</a> : null}</span><a href={`/courses/${course.id}`}>课程总览</a><span>{chapter.id < chapters.length ? <a href={`/courses/${course.id}/chapters/${chapter.id + 1}`}>下一章 →</a> : null}</span></nav>}
     </section>
 
     {!chapter && <details className="blueprint-sources"><summary>查看课程知识来源与更新说明</summary><div className="blueprint-source-grid">{sources.map((source) => <article key={source.id}><small>{sourceKindMeta[source.kind].label}</small><h3>{source.title}</h3><p>{source.description}</p>{source.href ? <a href={source.href} target="_blank" rel="noreferrer">查看来源 ↗</a> : null}</article>)}</div>{course.gapReview && <p>最近补充：{course.gapReview.summary}</p>}</details>}

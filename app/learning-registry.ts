@@ -505,7 +505,7 @@ for (const learningModule of learningModules) {
   moduleIds.add(learningModule.id);
   sourcesForModule(learningModule);
   if (learningModule.status === "blueprint") {
-    if (learningModule.roadmap.length !== 10) throw new Error(`模块 ${learningModule.id} 必须恰好包含十关`);
+    if (learningModule.roadmap.length === 0) throw new Error(`模块 ${learningModule.id} 至少需要一关`);
     for (const [index, item] of learningModule.roadmap.entries()) {
       if (typeof item === "string") throw new Error(`模块 ${learningModule.id} 第 ${index + 1} 关缺少完整课程契约`);
       if (!item.question || !item.practice || !item.evidence || !item.contract.length || !item.acceptance.length) {

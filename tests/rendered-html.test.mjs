@@ -407,7 +407,7 @@ test("第十关通关后解锁完整的 pytest 框架 HTML 笔记", async () => 
   assert.match(html, /配置数据库的完整依赖链/);
 });
 
-test("蓝图课程沿用 Python 基础的四章关卡与分步学习结构", async () => {
+test("蓝图课程沿用 Python 基础的分步学习结构，按各自主题分章", async () => {
   const [roadmaps, registry, page, chapterPage, client, starters, editor, chatRoute, gradeRoute] = await Promise.all([
     readFile(new URL("../app/blueprint-roadmaps.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
@@ -421,6 +421,7 @@ test("蓝图课程沿用 Python 基础的四章关卡与分步学习结构", asy
   ]);
 
   assert.match(registry, /缺少背景、任务、契约或验收标准/);
+  assert.doesNotMatch(registry, /roadmap\.length !== 10/);
   assert.match(page, /<BlueprintCourseClient/);
   assert.match(chapterPage, /<BlueprintCourseClient/);
   assert.match(client, /<LearningStepNav/);
@@ -444,13 +445,24 @@ test("蓝图课程沿用 Python 基础的四章关卡与分步学习结构", asy
     assert.match(roadmaps, new RegExp(topic));
   }
 
-  for (const moduleId of ["ui-automation", "api-automation", "ai-testing", "performance-testing", "quality-engineering"]) {
+  const expectedChapters = {
+    "ui-automation": [2, 4, 4],
+    "api-automation": [2, 2, 4, 2],
+    "ai-testing": [2, 3, 3, 2],
+    "performance-testing": [3, 4, 3],
+    "quality-engineering": [3, 5, 2],
+  };
+  for (const [moduleId, levelCounts] of Object.entries(expectedChapters)) {
     const html = await (await render(`/courses/${moduleId}`)).text();
-    assert.equal((html.match(/class="chapter-card"/g) ?? []).length, 4, moduleId);
+    assert.equal((html.match(/class="chapter-card"/g) ?? []).length, levelCounts.length, moduleId);
+    assert.match(html.replaceAll("<!-- -->", ""), new RegExp(`${levelCounts.length} 章 · 10 关`), moduleId);
+    assert.doesNotMatch(html, /四章十关/);
     assert.doesNotMatch(html, /standalone-roadmap/);
-    const chapterHtml = await (await render(`/courses/${moduleId}/chapters/1`)).text();
-    assert.equal((chapterHtml.match(/class="level [^"]*"/g) ?? []).length, 3, moduleId);
-    assert.match(chapterHtml, /aria-label="本关学习步骤"/);
+    for (const [index, count] of levelCounts.entries()) {
+      const chapterHtml = await (await render(`/courses/${moduleId}/chapters/${index + 1}`)).text();
+      assert.equal((chapterHtml.match(/class="level [^"]*"/g) ?? []).length, count, `${moduleId} chapter ${index + 1}`);
+      assert.match(chapterHtml, /aria-label="本关学习步骤"/);
+    }
   }
 });
 
