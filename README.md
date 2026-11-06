@@ -4,6 +4,15 @@ A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
 Drizzle support.
 
+## Python 框架积木复盘
+
+用同一个库存例子，从普通计算、函数和断言开始，逐步拼成动作表、上下文、失败收尾和文件驱动的 Runner。
+
+- [直接阅读完整讲解](docs/PYTHON_FRAMEWORK_BUILDING_BLOCKS_GUIDE.md)
+- [下载可运行例子与练习包](public/downloads/python-framework-blocks.zip)
+- [查看页面源码](app/courses/python-framework/building-blocks/FrameworkBlocksClient.tsx)
+- [查看岗位能力学习路线](docs/CAREER_LEARNING_PATH.md)
+
 ## Prerequisites
 
 - Node.js `>=22.13.0`

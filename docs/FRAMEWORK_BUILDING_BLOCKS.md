@@ -1,5 +1,7 @@
 # Python 框架积木复盘
 
+直接阅读：[从底层积木到完整框架的逐步讲解](PYTHON_FRAMEWORK_BUILDING_BLOCKS_GUIDE.md)。
+
 面向已学完框架基础、仍觉得抽象的学习者，在 Python 框架基础中新增独立复盘入口：
 
 `/courses/python-framework/building-blocks`
