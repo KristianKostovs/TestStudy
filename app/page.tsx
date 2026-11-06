@@ -23,7 +23,7 @@ export default function Home() {
         <aside>
           <small>本周建议</small>
           <strong>先完成一个可验证任务，再用面试题检验是否真正理解。</strong>
-          <a href="/courses/python-framework">进入 Python 当前路线 →</a>
+          <a href="/learn#career-path">查看岗位能力学习顺序 →</a>
         </aside>
       </section>
 

@@ -90,6 +90,7 @@ export function blueprintStarterFor(
   levelIndex: number,
   detail: LearningRoadmapDetail,
 ): BlueprintStarter | null {
+  if (detail.starter) return detail.starter;
   const seed = seedsByModule[moduleId]?.[levelIndex];
   if (!seed) return null;
   const fixedContract = detail.contract.map((item) => `# - ${item}`).join("\n");

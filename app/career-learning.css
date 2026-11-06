@@ -1,0 +1,9 @@
+.career-stage-grid { list-style: none; padding: 0; margin: 28px 0 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+.career-stage-grid li { border: 1px solid #dce5df; background: #fff; border-radius: 16px; padding: 24px; }
+.career-stage-grid li > span { font-size: 12px; color: #098a68; font-weight: 700; }
+.career-stage-grid h3 { font-size: 21px; margin: 12px 0 16px; }
+.career-stage-grid li > div { display: flex; flex-direction: column; gap: 10px; }
+.career-stage-grid a { color: #08765a; text-decoration: none; font-size: 14px; font-weight: 600; }
+.career-stage-grid p { color: #66716b; line-height: 1.7; font-size: 13px; margin: 18px 0 0; }
+@media (max-width: 1000px) { .career-stage-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 620px) { .career-stage-grid { grid-template-columns: 1fr; } }

@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { LearningModule, SourceAdapter } from "../learning-registry";
-import { roadmapTitle, sourceKindMeta } from "../learning-registry";
+import { learningModules, roadmapTitle, sourceKindMeta } from "../learning-registry";
+import { coursePreparation, labCourses } from "../career-curriculum";
 import { blueprintStarterFor } from "../blueprint-starters";
 import { blueprintChapters, blueprintLevelHref } from "./blueprint-chapters";
 import { getConceptLesson } from "./lesson-format";
@@ -82,6 +83,8 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
           <p className="eyebrow">{chapter ? `${course.title.toUpperCase()} · CHAPTER ${chapter.id}` : `${course.title.toUpperCase()} QUEST`}</p>
           <h1>{chapter ? chapter.title : course.title}</h1>
           <p className="lead">{chapter?.subtitle ?? course.subtitle}</p>
+          {!chapter && coursePreparation[course.id]?.length > 0 && <p className="course-prerequisites">建议先学：{coursePreparation[course.id].map((id) => <a href={`/courses/${id}`} key={id}>{learningModules.find((item) => item.id === id)?.title}</a>)}</p>}
+          {!chapter && labCourses.has(course.id) && <p className="course-prerequisites"><a href="/downloads/quality-engineering-lab.zip" download>下载离线练习包 · 5 项任务 ↓</a></p>}
           <a className="hero-cta" href={chapter ? `#level-${chapter.levelIds[0]}` : `#chapters`}>{chapter ? "进入本章关卡" : "选择学习章节"} <span>→</span></a>
         </section>
         <aside className="progress-card">
@@ -120,8 +123,8 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
               <ProjectTrackLink courseId={course.id} levelId={levelId} compact />
               {typeof item === "string" ? <div className="stage-panel"><p>这一关仍在补充知识、练习和验收材料。</p></div> : <>
                 {stage === 1 && <section className="stage-panel blueprint-step"><div className="beginner-note"><b>小白先看这里</b><p>先理解本关要用到的概念，再看固定输入与输出。</p></div><div className="blueprint-concept-grid">{item.foundations.map((foundation) => <article key={foundation}><b>{foundation}</b></article>)}</div><button type="button" className="stage-continue" onClick={() => advance(levelId, 2)}>概念看懂了，进入“看数据” →</button></section>}
-                {stage === 2 && <section className="stage-panel blueprint-step"><div className="stage-intro"><span>先看它长什么样</span><h4>本关固定契约</h4></div><ul className="blueprint-contract-list">{item.contract.map((part) => <li key={part}>{part}</li>)}</ul>{concept && <pre className="blueprint-example"><code>{concept.example}</code></pre>}<p className="blueprint-step-note">预期产出：{item.evidence}</p><button type="button" className="stage-continue" onClick={() => advance(levelId, 3)}>看懂输入输出，进入“逐行理解” →</button></section>}
-                {stage === 3 && <section className="stage-panel blueprint-step"><div className="objective"><b>本关目标</b><p>{concept?.goal ?? item.question}</p></div><div className="blueprint-explanation"><h4>简明讲解</h4><p>{concept?.explanation ?? item.question}</p>{concept && <pre className="blueprint-example"><code>{concept.example}</code></pre>}</div><button type="button" className="stage-continue" onClick={() => advance(levelId, 4)}>理解完成，进入“动手练” →</button></section>}
+                {stage === 2 && <section className="stage-panel blueprint-step"><div className="stage-intro"><span>先看它长什么样</span><h4>本关固定契约</h4></div><ul className="blueprint-contract-list">{item.contract.filter((part) => part !== item.example).map((part) => <li key={part}>{part}</li>)}</ul>{(concept?.example ?? item.example) && <pre className="blueprint-example"><code>{concept?.example ?? item.example}</code></pre>}<p className="blueprint-step-note">预期产出：{item.evidence}</p><button type="button" className="stage-continue" onClick={() => advance(levelId, 3)}>看懂输入输出，进入“逐行理解” →</button></section>}
+                {stage === 3 && <section className="stage-panel blueprint-step"><div className="objective"><b>本关目标</b><p>{concept?.goal ?? item.goal ?? item.question}</p></div><div className="blueprint-explanation"><h4>简明讲解</h4><p>{concept?.explanation ?? item.explanation ?? item.question}</p>{(concept?.example ?? item.example) && <pre className="blueprint-example"><code>{concept?.example ?? item.example}</code></pre>}</div><button type="button" className="stage-continue" onClick={() => advance(levelId, 4)}>理解完成，进入“动手练” →</button></section>}
                 {stage === 4 && <section className="stage-panel blueprint-step"><div className="task"><div className="task-title"><span>通关任务</span><b>{concept ? "理解后可选做" : "实践关"}</b></div><p>{item.practice}</p><p>交付物：{item.evidence}</p></div>{starter && <details className="blueprint-practice"><summary>{concept ? "可选项目练习" : "打开项目练习区"}</summary><div className="blueprint-focus"><b>本关只需完成</b><ul>{starter.focus.map((focus) => <li key={focus}>{focus}</li>)}</ul></div><BlueprintPracticeEditor courseId={course.id} levelId={levelId} starter={starter.code} files={starter.files} /></details>}<button type="button" className="stage-continue" onClick={() => advance(levelId, 5)}>查看“客观验收” →</button></section>}
                 {stage === 5 && <section className="stage-panel blueprint-step"><div className="verify-card"><b>客观验收</b><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul></div>{concept ? <UnderstandingCheck lesson={concept} passed={done} onPass={() => passConcept(levelId)} /> : <p className="blueprint-evidence-note">练习代码保存在当前浏览器；通过记录需要实际运行结果。当前关卡尚未接通自动运行，不能仅凭阅读或编辑标记通过。</p>}<a className="blueprint-next-level" href={levelId < course.roadmap.length ? blueprintLevelHref(course.id, levelId + 1) : `/courses/${course.id}`}>{levelId < course.roadmap.length ? "继续下一关 →" : "返回课程总览 →"}</a></section>}
               </>}

@@ -4,6 +4,7 @@ import {
   qualityEngineeringRoadmap,
   uiAutomationRoadmap,
 } from "./blueprint-roadmaps";
+import { careerModules, apiCareerExtensions, aiCareerExtensions, qualityCareerExtensions, withCareerSupport } from "./career-curriculum";
 
 export type SourceKind = "foundation" | "technology_radar" | "local_project";
 export type ModuleStatus = "active" | "blueprint";
@@ -39,6 +40,10 @@ export type LearningRoadmapDetail = {
   evidence: string;
   contract: string[];
   acceptance: string[];
+  goal?: string;
+  explanation?: string;
+  example?: string;
+  starter?: { files: string[]; code: string; focus: string[] };
 };
 
 export type LearningRoadmapItem = string | LearningRoadmapDetail;
@@ -74,6 +79,10 @@ export const sourceKindMeta: Record<SourceKind, { label: string; short: string }
 };
 
 export const sourceAdapters: SourceAdapter[] = [
+  { id: "foundation.git", kind: "foundation", title: "Git 工程协作", provider: "Git", description: "提交、差异审阅、分支和版本追踪。", href: "https://git-scm.com/docs/gittutorial", checkedAt: "2026-11-06" },
+  { id: "foundation.mysql", kind: "foundation", title: "MySQL 事务与并发", provider: "Oracle MySQL", description: "事务、隔离、锁与数据一致性。", href: "https://dev.mysql.com/doc/refman/8.4/en/innodb-transaction-model.html", checkedAt: "2026-11-06" },
+  { id: "foundation.docker", kind: "foundation", title: "Docker 容器基础", provider: "Docker", description: "镜像、隔离进程、配置与运行环境。", href: "https://docs.docker.com/get-started/docker-concepts/the-basics/what-is-a-container/", checkedAt: "2026-11-06" },
+  { id: "foundation.ci", kind: "foundation", title: "GitHub Actions 持续集成", provider: "GitHub", description: "事件、任务、执行环境与测试流水线。", href: "https://docs.github.com/en/actions/get-started/understand-github-actions", checkedAt: "2026-11-06" },
   {
     id: "foundation.python",
     kind: "foundation",
@@ -311,6 +320,7 @@ export const sourceAdapters: SourceAdapter[] = [
 ];
 
 export const learningModules: LearningModule[] = [
+  ...careerModules,
   {
     id: "python-framework",
     sigil: "PY",
@@ -365,7 +375,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从 HTTP 契约，走到声明式接口链、造数、清理与证据治理。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.pytest", "foundation.http", "radar.pytest_changelog", "project.api_automation", "project.active_worker_bill"],
-    roadmap: apiAutomationRoadmap,
+    roadmap: [...withCareerSupport("api-automation", apiAutomationRoadmap), ...apiCareerExtensions],
     updateRule: "EWMS/MOM 和生成 Skill 提供实战；HTTP、契约和 pytest 官方知识保持通用性。",
   },
   {
@@ -375,7 +385,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从评测数据集和 grader，走到幻觉、鲁棒性、安全与 Agent 评估。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.ai_tevv", "foundation.opentelemetry", "radar.openai_evals", "radar.openai_agents", "radar.owasp_asvs", "project.agent_testing_practice"],
-    roadmap: standardizeRoadmap([
+    roadmap: [...withCareerSupport("ai-testing", standardizeRoadmap([
       {
         title: "为什么智能体不能只按传统接口测",
         question: "同一输入可能得到不同表达，怎样证明它仍持续交付可信结果？",
@@ -446,7 +456,7 @@ export const learningModules: LearningModule[] = [
         practice: "完成一份智能体测试方案：能力声明、评测集、指标、门禁、trace、失败归因和回流策略。",
         evidence: "结论可复现、可追溯、能解释是否上线以及失败后如何修复和回归。",
       },
-    ]),
+    ])), ...aiCareerExtensions],
     updateRule: "以 NIST、OpenAI、OWASP 与 OpenTelemetry 作为稳定知识骨架；内部实践补充企业落地方法，具体阈值只作模板，必须由业务风险、体验和基线验证。",
     gapReview: {
       sourceTitle: "《智能体测试与质量保障实践》课程差异复核",
@@ -476,7 +486,7 @@ export const learningModules: LearningModule[] = [
     subtitle: "从测试策略与白盒测试，走到代码质量、CI/CD 门禁、发布准入与线上质量闭环。",
     status: "blueprint",
     sourceIds: ["foundation.python", "foundation.pytest", "foundation.quality_engineering", "radar.quality_devops", "radar.coverage_py", "radar.owasp_asvs", "project.python_framework", "project.api_automation", "project.active_worker_bill"],
-    roadmap: qualityEngineeringRoadmap,
+    roadmap: [...withCareerSupport("quality-engineering", qualityEngineeringRoadmap), ...qualityCareerExtensions],
     updateRule: "ISTQB 基础与 Quality in DevOps 提供通用体系，coverage.py 和本地质量门禁资产提供工程实践。",
   },
   {

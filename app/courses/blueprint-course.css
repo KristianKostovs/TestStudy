@@ -31,3 +31,5 @@
 .blueprint-workspace .blueprint-source-grid a { color: #25765f; font-size: 10px; }
 .blueprint-workspace .chapter-pager > span:last-child { text-align: right; }
 @media (max-width: 700px) { .blueprint-workspace .blueprint-concept-grid, .blueprint-workspace .blueprint-source-grid { grid-template-columns: 1fr; } .blueprint-workspace .blueprint-sources { width: calc(100% - 28px); } }
+.course-prerequisites { font-size: 13px; line-height: 1.9; color: #68756e; margin: 10px 0; }
+.course-prerequisites a { color: #08765a; display: inline-block; margin-right: 14px; text-decoration: none; }

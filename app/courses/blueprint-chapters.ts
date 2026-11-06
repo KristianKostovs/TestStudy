@@ -1,4 +1,5 @@
 import type { LearningModule } from "../learning-registry";
+import { careerChapterPlans } from "../career-curriculum";
 
 export type BlueprintChapter = {
   id: number;
@@ -12,6 +13,7 @@ type ChapterPlan = { title: string; levelIds: number[] };
 
 // Chapter boundaries follow each course's topics, rather than the Python course's 3/3/3/1 split.
 const chapterPlans: Record<string, ChapterPlan[]> = {
+  ...careerChapterPlans,
   "ui-automation": [
     { title: "页面与定位", levelIds: [1, 2] },
     { title: "组件交互与状态", levelIds: [3, 4, 5, 6] },
@@ -22,12 +24,14 @@ const chapterPlans: Record<string, ChapterPlan[]> = {
     { title: "客户端与结果封装", levelIds: [3, 4] },
     { title: "声明式流程与数据", levelIds: [5, 6, 7, 8] },
     { title: "断言、清理与完整链路", levelIds: [9, 10] },
+    { title: "变更兼容与回放", levelIds: [11, 12] },
   ],
   "ai-testing": [
     { title: "对象与能力边界", levelIds: [1, 2] },
     { title: "评测集、指标与稳定性", levelIds: [3, 4, 5] },
     { title: "专项风险与过程归因", levelIds: [6, 7, 8] },
     { title: "性能成本与质量门禁", levelIds: [9, 10] },
+    { title: "测试提效与评测可信度", levelIds: [11, 12, 13] },
   ],
   "performance-testing": [
     { title: "指标与负载模型", levelIds: [1, 2, 3] },
@@ -37,7 +41,7 @@ const chapterPlans: Record<string, ChapterPlan[]> = {
   "quality-engineering": [
     { title: "质量策略与测试视角", levelIds: [1, 2, 3] },
     { title: "代码验证与质量发现", levelIds: [4, 5, 6, 7, 8] },
-    { title: "发布门禁与保障闭环", levelIds: [9, 10] },
+    { title: "发布门禁与保障闭环", levelIds: [9, 10, 11] },
   ],
 };
 

@@ -4,8 +4,12 @@ import {
   sourcesForModule,
   type SourceKind,
 } from "./learning-registry";
+import { careerStages } from "./career-curriculum";
+import "./career-learning.css";
 
 const sourceKinds: SourceKind[] = ["foundation", "technology_radar", "local_project"];
+const mainCourseIds = careerStages.flatMap((stage) => stage.courseIds);
+const orderedModules = [...mainCourseIds.map((id) => learningModules.find((module) => module.id === id)!), ...learningModules.filter((module) => !mainCourseIds.includes(module.id))];
 
 export default function LearningHome() {
   return (
@@ -18,22 +22,31 @@ export default function LearningHome() {
         <div className="hero-grid">
           <section>
             <p className="eyebrow">YOUR LEARNING MAP</p>
-            <h1>先选方向，<br /><em>再进入专属修炼场</em></h1>
-            <p className="lead">先学可迁移能力，再用真实项目练习验证。每条课程路线独立维护。</p>
-            <div className="learning-home-actions"><a className="hero-cta" href="#modules">选择修炼方向 <span>↓</span></a><a href="/learn/real-project">查看案例练习 →</a></div>
+            <h1>从独立编码，<br /><em>走向质量工程</em></h1>
+            <p className="lead">服务端测试开发为主线，AI 测试与评测为特色。按能力依赖学习，用项目结果验收。</p>
+            <div className="learning-home-actions"><a className="hero-cta" href="#career-path">查看学习顺序 <span>↓</span></a><a href="/learn/real-project">查看案例练习 →</a></div>
           </section>
           <aside className="platform-summary">
             <span>当前课程地图</span>
             <strong>{learningModules.length}</strong>
             <p>个独立学习方向</p>
             <ul>
-              <li><b>{learningModules.filter((module) => module.status === "active").length}</b> 条路线已有完整互动课程</li>
-              <li><b>{learningModules.filter((module) => module.status === "blueprint").length}</b> 条路线已备分章 IDE 框架练习</li>
+              <li><b>{learningModules.filter((module) => module.status === "active").length}</b> 条路线已有分步互动课程</li>
+              <li><b>{learningModules.filter((module) => module.status === "blueprint").length}</b> 条路线已备讲解与实践任务</li>
               <li><b>3</b> 类知识来源持续供给内容</li>
             </ul>
           </aside>
         </div>
       </header>
+
+      <section className="module-section career-path-section" id="career-path">
+        <div className="section-heading"><p>CAREER LEARNING PATH</p><h2>先补基础，再形成工程能力</h2><span>已掌握的内容可直接用任务自测；每阶段以产出决定下一步。</span></div>
+        <ol className="career-stage-grid">{careerStages.map((stage, index) => <li key={stage.title}>
+          <span>{String(index + 1).padStart(2, "0")} · {stage.priority}</span><h3>{stage.title}</h3>
+          <div>{stage.courseIds.map((id) => <a href={`/courses/${id}`} key={id}>{learningModules.find((module) => module.id === id)?.title} →</a>)}</div>
+          <p>{stage.output}</p>
+        </li>)}</ol>
+      </section>
 
       <section className="principles" aria-label="学习平台原则">
         <article><b>01</b><div><h2>能力构成主线</h2><p>按通用知识、前置依赖和客观验收组织课程。</p></div></article>
@@ -44,16 +57,16 @@ export default function LearningHome() {
       <section className="module-section home-module-section" id="modules">
         <div className="section-heading">
           <p>LEARNING DIRECTIONS</p>
-          <h2>你想先修炼哪一种能力？</h2>
-          <span>选择后进入独立课程页面；左侧平台导航随时可以切换方向。</span>
+          <h2>按能力选择课程</h2>
+          <span>课程按建议顺序排列；UI 自动化与 AI 开发扩展作为专项选修。</span>
         </div>
         <div className="module-grid">
-          {learningModules.map((module) => {
+          {orderedModules.map((module) => {
             const sourceKindsInModule = new Set(sourcesForModule(module).map((source) => source.kind));
             return (
               <a className="module-card route-card" href={`/courses/${module.id}`} key={module.id}>
                 <span className="module-sigil">{module.sigil}</span>
-                <span className="module-state">{module.status === "active" ? `${module.roadmap.length} 节已开放` : "课程蓝图"}</span>
+                <span className="module-state">{mainCourseIds.includes(module.id) ? "职业主线" : "专项选修"} · {module.status === "active" ? "互动课程" : "讲解与任务"}</span>
                 <h3>{module.title}</h3>
                 <p>{module.subtitle}</p>
                 <span className="module-source-badges">

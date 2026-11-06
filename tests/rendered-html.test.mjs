@@ -30,7 +30,7 @@ test("AI 开发专区复用 Python 分步课程，项目指南独立保留", asy
   assert.match(guide, /不是公司新增门槛/);
   const learningHome = await (await render("/learn")).text();
   assert.match(learningHome, /class="module-card route-card" href="\/courses\/ai-developer-level5"/);
-  assert.match(learningHome, /9 节已开放/);
+  assert.match(learningHome, /职业主线/);
   assert.doesNotMatch(learningHome, /career-path-entry|进入 AI 开发专区/);
   const course = await render("/courses/ai-developer-level5");
   assert.equal(course.status, 200);
@@ -57,7 +57,7 @@ test("学习中心只负责选择独立课程方向", async () => {
   const html = await response.text();
 
   assert.match(html, /<title>学习中心 \| 测试能力修炼场<\/title>/);
-  assert.match(html, /先选方向/);
+  assert.match(html, /从独立编码/);
   for (const moduleId of [
     "python-framework",
     "python-agent-fast-track",
@@ -447,10 +447,13 @@ test("蓝图课程沿用 Python 基础的分步学习结构，按各自主题分
 
   const expectedChapters = {
     "ui-automation": [2, 4, 4],
-    "api-automation": [2, 2, 4, 2],
-    "ai-testing": [2, 3, 3, 2],
+    "api-automation": [2, 2, 4, 2, 2],
+    "ai-testing": [2, 3, 3, 2, 3],
     "performance-testing": [3, 4, 3],
-    "quality-engineering": [3, 5, 2],
+    "quality-engineering": [3, 5, 3],
+    "coding-debugging": [3, 3, 2],
+    "backend-foundations": [3, 4, 3, 2],
+    "delivery-debugging": [3, 4, 2],
   };
   for (const [moduleId, levelCounts] of Object.entries(expectedChapters)) {
     const html = await (await render(`/courses/${moduleId}`)).text();
