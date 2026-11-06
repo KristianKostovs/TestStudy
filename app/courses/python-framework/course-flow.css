@@ -497,3 +497,4 @@
 
 /* Keep explanatory comments readable on narrow lesson panels. */
 .stage-panel pre.annotated-code { white-space: pre-wrap; overflow-wrap: anywhere; }
+.framework-blocks-entry { display: block; margin-top: 18px; font-weight: 700; color: #087455; text-decoration: none; }

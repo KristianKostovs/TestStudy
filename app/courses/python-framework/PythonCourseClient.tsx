@@ -2025,6 +2025,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             <h1>{currentChapter ? currentChapter.title : <>过关斩将，<br /><em>练成框架判断力</em></>}</h1>
             <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；在线助教可以直接对话、提示和即时批改。"}</p>
             <a className="hero-cta" href={currentChapter ? `#level-${currentChapter.levelIds.find((id) => !completed.includes(id)) ?? currentChapter.levelIds[0]}` : nextLevelHref}>{currentChapter ? "进入本章关卡" : nextLevel ? `继续第 ${nextLevel.id} 关` : "回看四章"} <span>→</span></a>
+            <a className="framework-blocks-entry" href="/courses/python-framework/building-blocks">觉得框架晦涩？从一条普通测试重新拼一遍 →</a>
           </section>
           <aside className="progress-card">
             <div className="progress-top"><span>Python 当前进度</span><strong>{progress}%</strong></div>

@@ -210,6 +210,22 @@ test("详情页不会错误继承首页分享图", async () => {
   assert.doesNotMatch(uiHtml, /og-platform\.png|og\.png/);
 });
 
+test("Python 框架复盘可从积木进入，原课程继续保留", async () => {
+  const overview = await (await render("/courses/python-framework")).text();
+  assert.match(overview, /href="\/courses\/python-framework\/building-blocks"/);
+  const response = await render("/courses/python-framework/building-blocks");
+  assert.equal(response.status, 200);
+  const html = await response.text();
+  assert.match(html, /先看懂积木/);
+  assert.match(html, /积木拼装步骤/);
+  assert.match(html, /普通计算|先写一次普通计算/);
+  assert.match(html, /动作表|用名字选一个动作/);
+  assert.match(html, /下载完整例子与练习/);
+  assert.match(html, /不会修改原课程的通关记录/);
+  assert.doesNotMatch(html, /id="framework-names"/);
+  assert.doesNotMatch(html, /重置进度/);
+});
+
 test("Python 课程拆成总览与四个独立章节页面", async () => {
   const overview = await (await render("/courses/python-framework")).text();
   assert.match(overview, /第一章 · 筑基/);
