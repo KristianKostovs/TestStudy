@@ -1,184 +1,20 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import {
-  learningModules,
-  roadmapTitle,
-  sourceKindMeta,
-  sourcesForModule,
-  type LearningModule,
-  type SourceKind,
-} from "../../learning-registry";
-import { blueprintStarterFor } from "../../blueprint-starters";
-import BlueprintPracticeEditor from "../BlueprintPracticeEditor";
-import { getConceptLesson } from "../lesson-format";
-import UnderstandingCheck from "../UnderstandingCheck";
-import ProjectTrackLink from "../ProjectTrackLink";
-import "../../ai-developer-level5/course.css";
+import { learningModules, sourcesForModule } from "../../learning-registry";
+import BlueprintCourseClient from "../BlueprintCourseClient";
 
-const sourceKinds: SourceKind[] = ["foundation", "technology_radar", "local_project"];
+type Props = { params: Promise<{ moduleId: string }> };
 
-type CoursePageProps = {
-  params: Promise<{ moduleId: string }>;
-};
-
-function findBlueprint(moduleId: string): LearningModule | undefined {
-  return learningModules.find((module) => module.id === moduleId && module.status === "blueprint");
-}
-
-export async function generateMetadata({ params }: CoursePageProps): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { moduleId } = await params;
-  const course = findBlueprint(moduleId);
+  const course = learningModules.find((item) => item.id === moduleId && item.status === "blueprint");
   if (!course) return { title: "课程不存在 | 测试能力修炼场" };
-
-  const title = `${course.title}十关路线 | 测试能力修炼场`;
-  const description = `${course.subtitle} 当前已建立可持续扩展的十关学习蓝图。`;
-  return {
-    title,
-    description,
-    openGraph: { title, description, type: "website", images: [] },
-    twitter: { card: "summary", title, description, images: [] },
-  };
+  return { title: `${course.title} | 测试能力修炼场`, description: course.subtitle, openGraph: { images: [] }, twitter: { card: "summary", images: [] } };
 }
 
-export default async function BlueprintCoursePage({ params }: CoursePageProps) {
+export default async function BlueprintCoursePage({ params }: Props) {
   const { moduleId } = await params;
-  const course = findBlueprint(moduleId);
+  const course = learningModules.find((item) => item.id === moduleId && item.status === "blueprint");
   if (!course) notFound();
-  const sources = sourcesForModule(course);
-
-  return (
-    <main className="ready blueprint-course">
-      <header className="course-hero">
-        <nav>
-          <a className="brand" href="/learn"><i>{course.sigil}</i> {course.title}</a>
-          <a className="text-button course-back" href="/learn">← 返回学习中心</a>
-        </nav>
-        <div className="course-hero-grid">
-          <section>
-            <p className="eyebrow">INDEPENDENT LEARNING PATH</p>
-            <h1>{course.title}<br /><em>十关修炼路线</em></h1>
-            <p className="lead">{course.subtitle}</p>
-            <a className="hero-cta" href="#roadmap">查看十关路线 <span>↓</span></a>
-          </section>
-        </div>
-      </header>
-
-      {course.gapReview ? (
-        <section className="course-gap-review" aria-labelledby="gap-review-title">
-          <div className="section-heading">
-            <p>KNOWLEDGE GAP REVIEW</p>
-            <h2 id="gap-review-title">这次查漏补缺改了什么</h2>
-            <span>{course.gapReview.summary}</span>
-          </div>
-          <div className="gap-review-head">
-            <b>本次补充来源</b>
-            <span>{course.gapReview.sourceTitle}</span>
-          </div>
-          <div className="gap-review-grid">
-            {course.gapReview.items.map((item) => (
-              <article className={`gap-review-card ${item.kind}`} key={item.title}>
-                <span>{item.kind === "added" ? "补入" : item.kind === "retained" ? "保留" : "边界"}</span>
-                <h3>{item.title}</h3>
-                <p>{item.description}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
-      <section className="blueprint-roadmap" id="roadmap">
-        <div className="section-heading">
-          <p>THE ROADMAP</p>
-          <h2>{course.title}十关地图</h2>
-        </div>
-        <ol className="standalone-roadmap">
-          {course.roadmap.map((item, index) => {
-            const concept = getConceptLesson(moduleId, index + 1);
-            const starter = typeof item === "string" ? null : blueprintStarterFor(moduleId, index, item);
-            return (
-            <li id={`level-${index + 1}`} className={typeof item === "string" ? undefined : "detailed"} key={roadmapTitle(item)}>
-              <b>{String(index + 1).padStart(2, "0")}</b>
-              <div>
-                <span>LEVEL {String(index + 1).padStart(2, "0")}</span>
-                <h3>{roadmapTitle(item)}</h3>
-                <ProjectTrackLink courseId={moduleId} levelId={index + 1} lessonTitle={roadmapTitle(item)} compact />
-                {typeof item === "string" ? (
-                  <p>将补齐：基础解释 → 最小例子 → 项目练习 → 自动验收。</p>
-                ) : (
-                  <>
-                    <p className="level-question"><b>目标</b>{concept?.goal ?? item.practice}</p>
-                    <strong className="level-section-label">前置知识</strong>
-                    <ul className="level-foundations">
-                      {item.foundations.map((foundation) => <li key={foundation}>{foundation}</li>)}
-                    </ul>
-                    {concept ? <section className="stage-panel"><h4>简明讲解</h4><p>{concept.explanation}</p><pre className="ai5-code"><code>{concept.example}</code></pre><h4>动手任务与客观验收</h4><UnderstandingCheck lesson={concept} /><a href={`#level-${index + 2}`}>{index + 1 < course.roadmap.length ? "继续下一关 →" : "已到本课程最后一关"}</a></section> : <dl className="level-deliverables">
-                      <div><dt>简明讲解</dt><dd>{item.question}</dd></div>
-                      <div><dt>动手任务</dt><dd>{item.practice}</dd></div>
-                      <div><dt>固定契约</dt><dd><ul>{item.contract.map((contract) => <li key={contract}>{contract}</li>)}</ul></dd></div>
-                      <div><dt>客观验收</dt><dd><ul>{item.acceptance.map((criterion) => <li key={criterion}>{criterion}</li>)}</ul><p>{item.evidence}</p></dd></div>
-                    </dl>}
-                    {starter ? (
-                      <details open={!concept} className="blueprint-practice" aria-label={`第 ${index + 1} 关默认项目框架`}>
-                        <summary>{concept ? "可选：动手实践与原项目骨架" : "动手练习"}</summary>
-                        <header>
-                          <div>
-                            <span>DEFAULT PROJECT SCAFFOLD</span>
-                            <h4>{concept ? "可选项目练习" : "默认项目框架已放入 IDE"}</h4>
-                            <p>不需要从说明区复制代码；先阅读固定契约，再只完成带有 TODO 的关键位置。</p>
-                          </div>
-                          <small>{starter.files.length} 个项目文件</small>
-                        </header>
-                        <div className="blueprint-focus">
-                          <b>{concept ? "想实践时可以尝试" : "本关只需完成"}</b>
-                          <ul>{starter.focus.map((focus) => <li key={focus}>{focus}</li>)}</ul>
-                        </div>
-                        <BlueprintPracticeEditor
-                          courseId={moduleId}
-                          levelId={index + 1}
-                          starter={starter.code}
-                          files={starter.files}
-                        />
-                      </details>
-                    ) : null}
-                  </>
-                )}
-              </div>
-            </li>
-            );
-          })}
-        </ol>
-      </section>
-
-      <section className="source-section course-source-section" aria-labelledby="course-source-title">
-        <div className="section-heading">
-          <p>KNOWLEDGE SOURCES</p>
-          <h2 id="course-source-title">这门课程的知识从哪里来</h2>
-          <span>项目来源是实战材料；没有本地项目时，公认基础与官方技术雷达仍能独立支撑课程。</span>
-        </div>
-        <div className="source-columns">
-          {sourceKinds.map((kind) => {
-            const kindSources = sources.filter((source) => source.kind === kind);
-            return (
-              <section className={`source-column ${kind}`} key={kind}>
-                <header><span>{sourceKindMeta[kind].short}</span><div><h3>{sourceKindMeta[kind].label}</h3><p>{kind === "foundation" ? "课程长期骨架" : kind === "technology_radar" ? "官方变化候选" : "真实案例与证据"}</p></div></header>
-                {kindSources.length ? kindSources.map((source) => (
-                  <article className="source-card" key={source.id}>
-                    <div><b>{source.title}</b><small>{source.provider}</small></div>
-                    <p>{source.description}</p>
-                    {source.href ? <a href={source.href} target="_blank" rel="noreferrer">查看官方来源 ↗</a> : <span>{source.location}</span>}
-                    <time>最近核对 {source.checkedAt}</time>
-                  </article>
-                )) : <div className="source-empty">当前没有本地或内部实践来源，不影响这门课程继续建设。</div>}
-              </section>
-            );
-          })}
-        </div>
-      </section>
-
-      <footer>
-        <p>{course.title.toUpperCase()} QUEST</p>
-        <a className="footer-link" href="/learn">← 返回全部学习方向</a>
-      </footer>
-    </main>
-  );
+  return <BlueprintCourseClient course={course} sources={sourcesForModule(course)} />;
 }

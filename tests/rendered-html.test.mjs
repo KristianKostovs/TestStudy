@@ -76,11 +76,11 @@ test("各方向拥有可独立访问的课程页面", async () => {
   const cases = [
     ["/courses/python-framework", "Python 框架基础十关"],
     ["/courses/python-agent-fast-track", "Python 基础 Agent 快速通道"],
-    ["/courses/ui-automation", "UI 自动化十关路线"],
-    ["/courses/api-automation", "API 自动化十关路线"],
-    ["/courses/ai-testing", "AI 测试十关路线"],
-    ["/courses/performance-testing", "性能测试十关路线"],
-    ["/courses/quality-engineering", "质量工程与保障十关路线"],
+    ["/courses/ui-automation", "UI 自动化"],
+    ["/courses/api-automation", "API 自动化"],
+    ["/courses/ai-testing", "AI 测试"],
+    ["/courses/performance-testing", "性能测试"],
+    ["/courses/quality-engineering", "质量工程与保障"],
   ];
 
   for (const [pathname, expectedTitle] of cases) {
@@ -92,24 +92,21 @@ test("各方向拥有可独立访问的课程页面", async () => {
   }
 });
 
-test("首个真实需求项目只展示脱敏契约和已映射关卡", async () => {
+test("首个真实需求案例沿用分步学习布局且只保留脱敏材料", async () => {
   const project = await render("/learn/real-project");
   assert.equal(project.status, 200);
   const html = await project.text();
+  const template = await readFile(new URL("../app/real-projects/ProjectLearningTemplate.tsx", import.meta.url), "utf8");
+  const mappings = await readFile(new URL("../app/real-projects/first-project.ts", import.meta.url), "utf8");
   assert.match(html, /员工状态过滤与新账单生成/);
-  for (const heading of ["目标", "前置知识", "简明讲解", "动手任务", "客观验收"]) {
-    assert.match(html, new RegExp(`<h2>${heading}<\\/h2>`));
-  }
-  assert.match(html, /部分批次或全部查询失败/);
-  assert.match(html, /mapping-api-automation-3/);
-  assert.match(html, /mapping-quality-engineering-4/);
-  assert.match(html, /运行证据待补/);
+  assert.match(html, /案例练习 · 五步查看/);
+  assert.match(html, /本关学习步骤/);
+  for (const heading of ["目标", "前置知识", "简明讲解", "动手任务", "客观验收"]) assert.match(template, new RegExp(heading));
+  assert.match(template, /blueprintLevelHref/);
+  assert.match(mappings, /levelId: 3/);
+  assert.match(mappings, /levelId: 4/);
+  assert.match(mappings, /levelId: 9/);
   assert.doesNotMatch(html, /esg-mscp|sf-express|\/Users\/baiyi|SF001/);
-
-  const apiCourse = await (await render("/courses/api-automation")).text();
-  assert.match(apiCourse, /员工状态过滤与新账单生成/);
-  const uiCourse = await (await render("/courses/ui-automation")).text();
-  assert.doesNotMatch(uiCourse, /真实需求项目待绑定/);
 });
 
 test("Python Agent 快速通道提供完整十六节学习内容和连续工单项目", async () => {
@@ -410,11 +407,13 @@ test("第十关通关后解锁完整的 pytest 框架 HTML 笔记", async () => 
   assert.match(html, /配置数据库的完整依赖链/);
 });
 
-test("所有学习模块都展示统一关卡结构与固定练习契约", async () => {
-  const [roadmaps, registry, page, starters, editor, chatRoute, gradeRoute] = await Promise.all([
+test("蓝图课程沿用 Python 基础的四章关卡与分步学习结构", async () => {
+  const [roadmaps, registry, page, chapterPage, client, starters, editor, chatRoute, gradeRoute] = await Promise.all([
     readFile(new URL("../app/blueprint-roadmaps.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/learning-registry.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/[moduleId]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/[moduleId]/chapters/[chapterId]/page.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../app/courses/BlueprintCourseClient.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/blueprint-starters.ts", import.meta.url), "utf8"),
     readFile(new URL("../app/courses/BlueprintPracticeEditor.tsx", import.meta.url), "utf8"),
     readFile(new URL("../app/api/learning-chat/route.ts", import.meta.url), "utf8"),
@@ -422,14 +421,16 @@ test("所有学习模块都展示统一关卡结构与固定练习契约", async
   ]);
 
   assert.match(registry, /缺少背景、任务、契约或验收标准/);
-  assert.match(page, /目标/);
-  assert.match(page, /前置知识/);
-  assert.match(page, /简明讲解/);
-  assert.match(page, /动手任务/);
-  assert.match(page, /客观验收/);
-  assert.match(page, /固定契约/);
-  assert.match(page, /默认项目框架已放入 IDE/);
-  assert.match(page, /<BlueprintPracticeEditor/);
+  assert.match(page, /<BlueprintCourseClient/);
+  assert.match(chapterPage, /<BlueprintCourseClient/);
+  assert.match(client, /<LearningStepNav/);
+  assert.match(client, /<BlueprintPracticeEditor/);
+  assert.match(client, /<UnderstandingCheck/);
+  assert.match(client, /本关目标/);
+  assert.match(client, /简明讲解/);
+  assert.match(client, /通关任务/);
+  assert.match(client, /客观验收/);
+  assert.match(client, /实际运行结果/);
   assert.match(editor, /learning-blueprint-draft-v1/);
   assert.match(editor, /window\.localStorage\.setItem/);
   assert.match(editor, /恢复默认框架/);
@@ -445,15 +446,11 @@ test("所有学习模块都展示统一关卡结构与固定练习契约", async
 
   for (const moduleId of ["ui-automation", "api-automation", "ai-testing", "performance-testing", "quality-engineering"]) {
     const html = await (await render(`/courses/${moduleId}`)).text();
-    const concepts = moduleId === "ai-testing" ? 2 : 1;
-    assert.equal((html.match(/<dt>固定契约<\/dt>/g) ?? []).length, 10 - concepts, moduleId);
-    assert.equal((html.match(/<dt>客观验收<\/dt>/g) ?? []).length, 10 - concepts, moduleId);
-    assert.equal((html.match(/aria-label="理解检查"/g) ?? []).length, concepts, moduleId);
-    assert.equal((html.match(/<details[^>]*class="blueprint-practice"/g) ?? []).length, 10, moduleId);
-    assert.match(html, /可选：动手实践与原项目骨架/);
-    assert.equal((html.match(/<div class="blueprint-editor-shell"/g) ?? []).length, 10, moduleId);
-    assert.match(html, /TODO（你来完成）/);
-    assert.doesNotMatch(html, /将补齐：基础解释/);
+    assert.equal((html.match(/class="chapter-card"/g) ?? []).length, 4, moduleId);
+    assert.doesNotMatch(html, /standalone-roadmap/);
+    const chapterHtml = await (await render(`/courses/${moduleId}/chapters/1`)).text();
+    assert.equal((chapterHtml.match(/class="level [^"]*"/g) ?? []).length, 3, moduleId);
+    assert.match(chapterHtml, /aria-label="本关学习步骤"/);
   }
 });
 

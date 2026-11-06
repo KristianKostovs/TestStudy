@@ -2,7 +2,6 @@
 import { codeWithComments, walkthroughAnchors } from "../code-walkthrough";
 
 import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react";
-import "./course-flow.css";
 import LearningStepNav from "../LearningStepNav";
 import KnowledgeDialog from "../KnowledgeDialog";
 import { knowledgeOrigin } from "../knowledge-origin";

@@ -1,0 +1,33 @@
+.blueprint-workspace .blueprint-concept-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.blueprint-workspace .blueprint-concept-grid article { padding: 16px 18px; border: 1px solid #dce7e0; border-radius: 10px; background: #f7faf8; }
+.blueprint-workspace .blueprint-concept-grid b { color: #255744; font-size: 12px; }
+.blueprint-workspace .blueprint-step { min-width: 0; padding: 8px 0 14px; }
+.blueprint-workspace .blueprint-step .stage-intro { padding: 17px 19px; border-radius: 10px 10px 0 0; background: #17352a; }
+.blueprint-workspace .blueprint-step .stage-intro span { color: #80d5af; font-size: 9px; }
+.blueprint-workspace .blueprint-step .stage-intro h4 { margin: 5px 0 0; font: 700 17px var(--font-geist-sans), sans-serif; }
+.blueprint-workspace .blueprint-contract-list { margin: 0; padding: 18px 20px 18px 37px; border: 1px solid #dce7e0; border-top: 0; border-radius: 0 0 10px 10px; background: #f7faf8; }
+.blueprint-workspace .blueprint-contract-list li, .blueprint-workspace .verify-card li { margin: 7px 0; color: #4c6257; font-size: 11px; line-height: 1.7; }
+.blueprint-workspace .blueprint-example { max-width: 100%; margin: 16px 0; padding: 18px; overflow-x: auto; color: #dceae2; border-radius: 10px; background: #17352a; font: 11px/1.7 var(--font-geist-mono), monospace; }
+.blueprint-workspace .blueprint-step-note, .blueprint-workspace .blueprint-evidence-note { color: #6a756d; font-size: 11px; line-height: 1.8; }
+.blueprint-workspace .blueprint-explanation { margin-top: 16px; padding: 20px; border: 1px solid #dce7e0; border-radius: 10px; background: #fff; }
+.blueprint-workspace .blueprint-explanation h4 { margin: 0 0 8px; color: #244f3e; font-size: 14px; }
+.blueprint-workspace .blueprint-explanation p { margin: 0; color: #53635b; font-size: 11px; line-height: 1.8; }
+.blueprint-workspace .blueprint-practice { margin-top: 16px; border: 1px solid #dce7e0; border-radius: 10px; background: #f7faf8; }
+.blueprint-workspace .blueprint-practice > summary { padding: 15px 18px; color: #245f49; font-size: 11px; font-weight: 800; cursor: pointer; }
+.blueprint-workspace .blueprint-focus { padding: 0 18px 14px; color: #4e6358; font-size: 11px; }
+.blueprint-workspace .blueprint-focus ul { margin: 8px 0 0; padding-left: 18px; }
+.blueprint-workspace .blueprint-practice .blueprint-editor-shell { margin: 0 14px 14px; }
+.blueprint-workspace .verify-card { padding: 18px 20px; }
+.blueprint-workspace .verify-card > b { color: #245f49; font-size: 13px; }
+.blueprint-workspace .verify-card ul { margin: 10px 0 0; padding-left: 19px; }
+.blueprint-workspace .blueprint-next-level { display: inline-block; margin-top: 16px; color: #25765f; font-size: 11px; font-weight: 800; text-decoration: none; }
+.blueprint-workspace .blueprint-sources { width: min(1080px, calc(100% - 56px)); margin: -40px auto 70px; padding: 17px 20px; border: 1px solid #dce7e0; border-radius: 12px; background: #fff; }
+.blueprint-workspace .blueprint-sources > summary { color: #245f49; font-size: 11px; font-weight: 800; cursor: pointer; }
+.blueprint-workspace .blueprint-source-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-top: 20px; }
+.blueprint-workspace .blueprint-source-grid article { min-width: 0; padding: 15px; border: 1px solid #e3e9e4; border-radius: 9px; }
+.blueprint-workspace .blueprint-source-grid small { color: #258264; font-size: 9px; }
+.blueprint-workspace .blueprint-source-grid h3 { margin: 7px 0; color: #233d30; font-size: 12px; }
+.blueprint-workspace .blueprint-source-grid p { color: #65756a; font-size: 10px; line-height: 1.6; }
+.blueprint-workspace .blueprint-source-grid a { color: #25765f; font-size: 10px; }
+.blueprint-workspace .chapter-pager > span:last-child { text-align: right; }
+@media (max-width: 700px) { .blueprint-workspace .blueprint-concept-grid, .blueprint-workspace .blueprint-source-grid { grid-template-columns: 1fr; } .blueprint-workspace .blueprint-sources { width: calc(100% - 28px); } }
