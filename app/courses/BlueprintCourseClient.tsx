@@ -70,7 +70,7 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
   return <main className={`course-workspace blueprint-workspace ${ready ? "ready" : ""}`}>
     <header className="suite-topbar course-suite-topbar">
       <div><strong>学习中心 · {course.title}</strong><span>{chapter ? `${chapter.title} · 一次专注一个学习步骤` : "按课程内容分章，逐关学习"}</span></div>
-      <div className="suite-live"><i />{completed} / {course.roadmap.length} 关已验证</div>
+      <div className="suite-live"><i />已验证 {completed} 关</div>
     </header>
     <header className="hero">
       <nav>
@@ -80,14 +80,14 @@ export default function BlueprintCourseClient({ course, sources, chapterId }: {
       <div className="hero-grid">
         <section>
           <p className="eyebrow">{chapter ? `${course.title.toUpperCase()} · CHAPTER ${chapter.id}` : `${course.title.toUpperCase()} QUEST`}</p>
-          <h1>{chapter ? chapter.title : <>{course.title}<br /><em>{chapters.length} 章 · {course.roadmap.length} 关</em></>}</h1>
+          <h1>{chapter ? chapter.title : course.title}</h1>
           <p className="lead">{chapter?.subtitle ?? course.subtitle}</p>
           <a className="hero-cta" href={chapter ? `#level-${chapter.levelIds[0]}` : `#chapters`}>{chapter ? "进入本章关卡" : "选择学习章节"} <span>→</span></a>
         </section>
         <aside className="progress-card">
           <div className="progress-top"><span>当前验证进度</span><strong>{progressPercent}%</strong></div>
           <div className="bar"><i style={{ width: `${progressPercent}%` }} /></div>
-          <p>{completed} / {course.roadmap.length} 关有客观通过记录</p>
+          <p>已有 {completed} 关通过客观验收</p>
           <div className="course-sync-state local"><i /><span>当前浏览器保存步骤；实践关仍需运行证据</span></div>
           <ol>{course.roadmap.map((item, index) => <li className={progress.completed.includes(index + 1) ? "lit" : ""} key={roadmapTitle(item)} title={roadmapTitle(item)}>{index + 1}</li>)}</ol>
         </aside>

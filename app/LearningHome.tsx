@@ -53,7 +53,7 @@ export default function LearningHome() {
             return (
               <a className="module-card route-card" href={`/courses/${module.id}`} key={module.id}>
                 <span className="module-sigil">{module.sigil}</span>
-                <span className="module-state">{module.status === "active" ? `${module.roadmap.length} 节已开放` : `${module.roadmap.length} 关框架已备`}</span>
+                <span className="module-state">{module.status === "active" ? `${module.roadmap.length} 节已开放` : "课程蓝图"}</span>
                 <h3>{module.title}</h3>
                 <p>{module.subtitle}</p>
                 <span className="module-source-badges">

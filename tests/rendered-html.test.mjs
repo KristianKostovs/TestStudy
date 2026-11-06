@@ -455,7 +455,9 @@ test("蓝图课程沿用 Python 基础的分步学习结构，按各自主题分
   for (const [moduleId, levelCounts] of Object.entries(expectedChapters)) {
     const html = await (await render(`/courses/${moduleId}`)).text();
     assert.equal((html.match(/class="chapter-card"/g) ?? []).length, levelCounts.length, moduleId);
-    assert.match(html.replaceAll("<!-- -->", ""), new RegExp(`${levelCounts.length} 章 · 10 关`), moduleId);
+    assert.doesNotMatch(html, /<h1>[^<]*<br\/>/);
+    assert.doesNotMatch(html, /<em>[^<]*章/);
+    assert.doesNotMatch(html, /10<!-- --> 关已验证|10<!-- --> 关有客观通过记录/);
     assert.doesNotMatch(html, /四章十关/);
     assert.doesNotMatch(html, /standalone-roadmap/);
     for (const [index, count] of levelCounts.entries()) {
