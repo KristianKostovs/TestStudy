@@ -4,9 +4,9 @@ A clean full-stack starter running on
 [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
 Drizzle support.
 
-## Python 框架积木复盘
+## Python 框架课前积木
 
-用同一个库存例子，从普通计算、函数和断言开始，逐步拼成动作表、上下文、失败收尾和文件驱动的 Runner。
+正式框架课程前先完成八块积木：用同一个库存例子，从普通计算、函数和断言开始，逐步拼成动作表、上下文、失败收尾和文件驱动的 Runner。
 
 - [直接阅读完整讲解](docs/PYTHON_FRAMEWORK_BUILDING_BLOCKS_GUIDE.md)
 - [下载可运行例子与练习包](public/downloads/python-framework-blocks.zip)

@@ -29,19 +29,19 @@ export default function FrameworkBlocksClient() {
   }
 
   return <main className="course-workspace blocks-workspace ready">
-    <header className="suite-topbar course-suite-topbar"><div><strong>Python 框架基础 · 积木复盘</strong><span>同一个例子，每次只解决一个新问题</span></div><div className="suite-live"><i />可自由回看</div></header>
+    <header className="suite-topbar course-suite-topbar"><div><strong>Python 框架基础 · 课前积木</strong><span>建议先完成 8 块，再进入正式框架课程</span></div><div className="suite-live"><i />课前预备</div></header>
     <header className="hero">
-      <nav><a className="brand" href="/courses/python-framework"><i>PY</i> Python 框架基础</a><a className="text-button" href="/courses/python-framework">← 返回原课程</a></nav>
+      <nav><a className="brand" href="/courses/python-framework"><i>PY</i> Python 框架基础</a><a className="text-button" href="/courses/python-framework">← 返回框架课程</a></nav>
       <div className="hero-grid"><section>
         <p className="eyebrow">BUILD A FRAMEWORK FROM SMALL PIECES</p>
         <h1>先看懂积木，<br /><em>再拼出框架</em></h1>
-        <p className="lead">始终只做一件事：调整库存并检查结果。每次遇到一个具体问题，再增加一小块代码。</p>
-        <a className="hero-cta" href="#assembly">从当前积木开始 <span>↓</span></a>
+        <p className="lead">这是正式框架课程前的预备桥梁。先用库存例子看懂值、函数、断言和 Runner 怎样一步步出现，再学习 pytest、YAML、Context 与完整框架。</p>
+        <a className="hero-cta" href="#assembly">从第 1 块开始 <span>↓</span></a>
       </section><aside className="progress-card blocks-summary">
         <span>整条主线</span><h2>10 → 减 2 → 加 5 → 13</h2>
         <p>先把这条流程写对，再让它可重复、可检查、可换数据。</p>
         <a href="/downloads/python-framework-blocks.zip" download>下载完整例子与练习 ↓</a>
-        <small>独立复盘路径；浏览步骤不会修改原课程的通关记录。</small>
+        <small>建议完成 8 块后再进入正式框架课程；这里的练习不会修改正式课程的通关记录。</small>
       </aside></div>
     </header>
 
@@ -94,8 +94,8 @@ export default function FrameworkBlocksClient() {
     {block.id === 8 && stage === 5 && <section className="map-section blocks-connections" id="framework-names">
       <div className="section-heading"><p>CONNECT THE NAMES</p><h2>现在再看框架里的名字</h2><span>先知道这块代码做什么，再认识它在框架里的名字。</span></div>
       <div className="blocks-table-wrap"><table><thead><tr><th>刚刚已经理解的做法</th><th>框架里的名字</th><th>它解决什么问题</th></tr></thead><tbody>{frameworkConnections.map((item) => <tr key={item.name}><td>{item.plain}</td><td><a href={item.href}>{item.name} →</a></td><td>{item.role}</td></tr>)}</tbody></table></div>
-      <p className="blocks-note">这个小框架用内存数字和本地 JSON 演示编排。数据库、真实 HTTP、Schema 校验、并发和复杂清理分别需要后续学习与验证。</p>
+      <p className="blocks-note">这个小框架用内存数字和本地 JSON 演示编排。完成后进入正式框架课程，继续学习数据库、真实 HTTP、Schema 校验、并发和复杂清理。</p>
     </section>}
-    <footer><p>PYTHON FRAMEWORK · BUILDING BLOCKS</p><h2>框架里的每一层，都应解决一个已经看见的问题。</h2><a href="/courses/python-framework">回到原课程逐块对照 →</a></footer>
+    <footer><p>PYTHON FRAMEWORK · BUILDING BLOCKS</p><h2>框架里的每一层，都应解决一个已经看见的问题。</h2><a href="/courses/python-framework">进入正式框架课程逐块对应 →</a></footer>
   </main>;
 }
