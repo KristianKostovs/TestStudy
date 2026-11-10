@@ -213,7 +213,10 @@ test("详情页不会错误继承首页分享图", async () => {
 test("Python 框架课前积木明确先学八块再进入正式课程", async () => {
   const overview = await (await render("/courses/python-framework")).text();
   assert.match(overview, /href="\/courses\/python-framework\/building-blocks"/);
-  assert.match(overview, /先完成 8 块课前积木，再进入正式课程/);
+  assert.match(overview, /START HERE · STEP 00/);
+  assert.match(overview, /先完成 8 块课前积木/);
+  assert.match(overview, /再进入四章正式课程/);
+  assert.ok(overview.indexOf("START HERE · STEP 00") < overview.indexOf("四章修炼地图"));
   const response = await render("/courses/python-framework/building-blocks");
   assert.equal(response.status, 200);
   const html = await response.text();

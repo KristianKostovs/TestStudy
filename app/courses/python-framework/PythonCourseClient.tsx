@@ -2025,7 +2025,6 @@ export default function Home({ chapterId }: { chapterId?: number }) {
             <h1>{currentChapter ? currentChapter.title : <>过关斩将，<br /><em>练成框架判断力</em></>}</h1>
             <p className="lead">{currentChapter?.subtitle ?? "从 Python 数据、函数与 pytest 出发，逐步理解 YAML、Runner、Adapter、HTTP 与架构边界；在线助教可以直接对话、提示和即时批改。"}</p>
             <a className="hero-cta" href={currentChapter ? `#level-${currentChapter.levelIds.find((id) => !completed.includes(id)) ?? currentChapter.levelIds[0]}` : nextLevelHref}>{currentChapter ? "进入本章关卡" : nextLevel ? `继续第 ${nextLevel.id} 关` : "回看四章"} <span>→</span></a>
-            <a className="framework-blocks-entry" href="/courses/python-framework/building-blocks">第一次学框架？先完成 8 块课前积木，再进入正式课程 →</a>
           </section>
           <aside className="progress-card">
             <div className="progress-top"><span>Python 当前进度</span><strong>{progress}%</strong></div>
@@ -2047,6 +2046,19 @@ export default function Home({ chapterId }: { chapterId?: number }) {
         <article><b>01</b><div><h2>先认识概念</h2><p>每关先解释术语和数据长什么样，再进入代码。</p></div></article>
         <article><b>02</b><div><h2>再逐行理解</h2><p>用真实接口自动化片段说明每一行为什么存在。</p></div></article>
         <article><b>03</b><div><h2>最后完成任务</h2><p>小测自动判定，练习有验收标准、提示和参考答案。</p></div></article>
+      </section>}
+
+      {!currentChapter && <section className="framework-prelude" aria-labelledby="framework-prelude-title">
+        <div className="framework-prelude-copy">
+          <p>START HERE · STEP 00</p>
+          <h2 id="framework-prelude-title">先完成 8 块课前积木</h2>
+          <span>用同一个库存例子，看懂普通代码怎样逐步变成 Runner。完成这里，再进入四章正式课程，pytest、Context、Registry 和 YAML 就不再是突然出现的抽象名词。</span>
+          <small>课前预备 · 8 个可运行例子 · 不计入正式课程进度</small>
+        </div>
+        <div className="framework-prelude-flow" aria-label="课前积木学习顺序">
+          <span>普通计算</span><i>→</i><span>函数</span><i>→</i><span>断言</span><i>→</i><span>多组数据</span><i>→</i><span>Runner</span>
+        </div>
+        <a href="/courses/python-framework/building-blocks">从第 1 块开始 <b>→</b></a>
       </section>}
 
       <section className="map-section" id="roadmap">
