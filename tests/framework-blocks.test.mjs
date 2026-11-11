@@ -48,3 +48,20 @@ test("下载包内的参考修改、待完成任务与 Runner 失败行为分别
     assert.equal(runner.status, 0, runner.stderr);
   } finally { await rm(directory, { recursive: true, force: true }); }
 });
+
+test("课前积木同时提供网页快速检查、VS Code 项目和 ZIP 备用入口", async () => {
+  const [component, launch, tasks, readme] = await Promise.all([
+    readFile(new URL("../app/courses/python-framework/building-blocks/FrameworkBlocksClient.tsx", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-framework-blocks/.vscode/launch.json", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-framework-blocks/.vscode/tasks.json", import.meta.url), "utf8"),
+    readFile(new URL("../course-starters/python-framework-blocks/README.md", import.meta.url), "utf8"),
+  ]);
+  assert.match(component, /网页快速检查/);
+  assert.match(component, /不执行任意 Python/);
+  assert.match(component, /<WorkspacePractice/);
+  assert.match(component, /python-framework-block-/);
+  assert.match(component, /downloads\/python-framework-blocks\.zip/);
+  assert.match(launch, /debugpy/);
+  assert.match(tasks, /verify\.py/);
+  assert.match(readme, /按 F5/);
+});

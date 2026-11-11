@@ -1,0 +1,25 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "调试当前积木验证",
+      "type": "debugpy",
+      "request": "launch",
+      "program": "${workspaceFolder}/verify.py",
+      "args": [
+        "--block",
+        "${input:blockNumber}"
+      ],
+      "console": "integratedTerminal",
+      "justMyCode": false
+    }
+  ],
+  "inputs": [
+    {
+      "id": "blockNumber",
+      "type": "promptString",
+      "description": "输入积木编号 1-8",
+      "default": "1"
+    }
+  ]
+}

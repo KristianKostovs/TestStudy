@@ -1,0 +1,50 @@
+[
+  {
+    "id": 1,
+    "file": "01_values.py",
+    "output": "7\n",
+    "error": null
+  },
+  {
+    "id": 2,
+    "file": "02_function.py",
+    "output": "8\n15\n",
+    "error": null
+  },
+  {
+    "id": 3,
+    "file": "03_assertion.py",
+    "output": "两项检查通过\n",
+    "error": null
+  },
+  {
+    "id": 4,
+    "file": "04_cases.py",
+    "output": "通过 3 组\n",
+    "error": null
+  },
+  {
+    "id": 5,
+    "file": "05_actions.py",
+    "output": "10\n",
+    "error": null
+  },
+  {
+    "id": 6,
+    "file": "06_context.py",
+    "output": "最终库存 10\n",
+    "error": null
+  },
+  {
+    "id": 7,
+    "file": "07_cleanup.py",
+    "output": "收尾\n",
+    "error": "AssertionError"
+  },
+  {
+    "id": 8,
+    "file": "08_runner.py",
+    "output": "收尾\n最终库存 15\n步骤 3\n",
+    "error": null
+  }
+]

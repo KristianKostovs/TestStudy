@@ -13,7 +13,17 @@ import {
 test("本地项目桥只创建登记过的课程项目，并保留已有练习", () => {
   const root = mkdtempSync(join(tmpdir(), "python-quest-workspace-test-"));
   try {
-    assert.deepEqual(registeredExerciseIds, ["python-agent-level-08"]);
+    assert.deepEqual(registeredExerciseIds, [
+      "python-framework-block-01",
+      "python-framework-block-02",
+      "python-framework-block-03",
+      "python-framework-block-04",
+      "python-framework-block-05",
+      "python-framework-block-06",
+      "python-framework-block-07",
+      "python-framework-block-08",
+      "python-agent-level-08",
+    ]);
     assert.throws(() => materializeExercise("../../private", root), /未登记/);
     const first = materializeExercise("python-agent-level-08", root);
     assert.equal(first.created, true);
@@ -30,6 +40,17 @@ test("本地项目桥只创建登记过的课程项目，并保留已有练习",
     assert.equal(second.created, false);
     assert.equal(second.workspacePath, first.workspacePath);
     assert.equal(workspaceHealth("python-agent-level-08", root).created, true);
+
+    const block = materializeExercise("python-framework-block-01", root);
+    assert.ok(block.workspacePath.startsWith(root));
+    for (const relative of [
+      "verify.py",
+      "exercises/01_values.py",
+      "examples/08_runner.py",
+      ".vscode/launch.json",
+      ".vscode/tasks.json",
+    ]) assert.ok(existsSync(join(block.workspacePath, relative)), relative);
+    assert.equal(materializeExercise("python-framework-block-08", root).workspacePath, block.workspacePath);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
@@ -41,10 +62,13 @@ test("网页提供 VS Code 打开与固定测试证据入口", () => {
   const manager = readFileSync(new URL("../local-companion/workspace-manager.mjs", import.meta.url), "utf8");
   assert.match(component, /在 VS Code 中打开/);
   assert.match(component, /运行本关验证/);
+  assert.match(component, /下载 ZIP 备用/);
   assert.match(component, /exitCode/);
   assert.match(server, /\/workspace\/open/);
   assert.match(server, /\/workspace\/run/);
   assert.match(manager, /verifyArgs: \["-m", "pytest", "-q"\]/);
+  assert.match(manager, /python-framework-block-/);
+  assert.match(manager, /verify\.py/);
   assert.doesNotMatch(server, /payload\.(?:path|command|args)/);
 });
 

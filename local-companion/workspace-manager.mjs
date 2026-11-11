@@ -10,7 +10,19 @@ const defaultWorkspaceRoot = resolve(
   process.env.PYTHON_QUEST_WORKSPACE_ROOT ?? join(homedir(), "PythonQuestWorkspaces"),
 );
 
+const frameworkBlocksSource = resolve(projectDir, "course-starters", "python-framework-blocks");
+const frameworkBlockExercises = Object.fromEntries(Array.from({ length: 8 }, (_, index) => {
+  const blockId = index + 1;
+  return [`python-framework-block-${String(blockId).padStart(2, "0")}`, Object.freeze({
+    title: `Python 框架课前积木 ${blockId}`,
+    source: frameworkBlocksSource,
+    directory: "python-framework-blocks",
+    verifyArgs: ["verify.py", "--block", String(blockId)],
+  })];
+}));
+
 const exerciseRegistry = Object.freeze({
+  ...frameworkBlockExercises,
   "python-agent-level-08": Object.freeze({
     title: "Python → Agent 第 8 关：工单查询助手环境",
     source: resolve(projectDir, "course-starters", "python-agent-level-08"),

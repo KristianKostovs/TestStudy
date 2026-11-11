@@ -1,16 +1,54 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import LearningStepNav from "../../LearningStepNav";
 import BlueprintPracticeEditor from "../../BlueprintPracticeEditor";
+import WorkspacePractice from "../../WorkspacePractice";
 import { flowData, frameworkBlocks, frameworkConnections } from "./block-data";
 import "./building-blocks.css";
 
 const labels = ["目标与前置", "看输入输出", "逐行理解", "动手任务", "客观验收"];
 
+type BrowserCheck = { passed: boolean; output: string; trace: string[]; hints: string[] };
+
+function browserCheck(blockId: number, draft: string): BrowserCheck {
+  const checks: Array<[boolean, string]> = [];
+  let output = "";
+  let trace: string[] = [];
+  if (blockId === 1) {
+    checks.push([/amount\s*=\s*-3\b/.test(draft), "把 amount 改成 -3"]);
+    checks.push([/result\s*=\s*available\s*\+\s*amount/.test(draft), "保留 available + amount 的计算"]);
+    checks.push([/print\s*\(\s*result\s*\)/.test(draft), "显示 result"]);
+    output = "7";
+    trace = ["available = 10", "amount = -3", "result = 10 + (-3) = 7"];
+  } else if (blockId === 2) {
+    checks.push([/def\s+adjust_stock\s*\(/.test(draft), "保留 adjust_stock 函数"]);
+    checks.push([/adjust_stock\s*\(\s*10\s*,\s*-2\s*\)/.test(draft), "保留第一次 10、-2 调用"]);
+    checks.push([/adjust_stock\s*\(\s*10\s*,\s*5\s*\)/.test(draft), "增加 10、5 调用"]);
+    output = "8\n15";
+    trace = ["adjust_stock(10, -2) → 8", "adjust_stock(10, 5) → 15"];
+  } else if (blockId === 3) {
+    checks.push([!/NotImplementedError/.test(draft), "移除 TODO 的 NotImplementedError"]);
+    checks.push([/assert\s+adjust_stock\s*\(\s*10\s*,\s*5\s*\)\s*==\s*15/.test(draft), "增加 10 + 5 == 15 的断言"]);
+    checks.push([/print\s*\(\s*["']两项检查通过["']\s*\)/.test(draft), "显示“两项检查通过”"]);
+    output = "两项检查通过";
+    trace = ["第一项：10 + (-2) == 8", "第二项：10 + 5 == 15", "两个断言通过后显示完成提示"];
+  } else {
+    checks.push([/["']amount["']\s*:\s*0/.test(draft), "第三组 amount 使用 0"]);
+    checks.push([/["']expected["']\s*:\s*10/.test(draft), "第三组 expected 使用 10"]);
+    checks.push([/for\s+case\s+in\s+cases\s*:/.test(draft), "继续复用同一个 for 循环"]);
+    output = "通过 3 组";
+    trace = ["第 1 组：10 + (-2) → 8", "第 2 组：10 + 5 → 15", "第 3 组：10 + 0 → 10"];
+  }
+  const hints = checks.filter(([passed]) => !passed).map(([, hint]) => hint);
+  return { passed: hints.length === 0, output, trace, hints };
+}
+
 export default function FrameworkBlocksClient() {
   const [selected, setSelected] = useState(0);
   const [stage, setStage] = useState(1);
+  const [draft, setDraft] = useState("");
+  const [webCheck, setWebCheck] = useState<BrowserCheck | null>(null);
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       const id = Number(window.location.hash.match(/^#block-(\d+)$/)?.[1]);
@@ -25,8 +63,14 @@ export default function FrameworkBlocksClient() {
   function selectBlock(index: number) {
     setSelected(index);
     setStage(1);
+    setWebCheck(null);
     window.history.replaceState(null, "", `#block-${frameworkBlocks[index].id}`);
   }
+
+  const updateDraft = useCallback((nextDraft: string) => {
+    setDraft(nextDraft);
+    setWebCheck(null);
+  }, []);
 
   return <main className="course-workspace blocks-workspace ready">
     <header className="suite-topbar course-suite-topbar"><div><strong>Python 框架基础 · 课前积木</strong><span>建议先完成 8 块，再进入正式框架课程</span></div><div className="suite-live"><i />课前预备</div></header>
@@ -73,8 +117,16 @@ export default function FrameworkBlocksClient() {
             </section>}
             {stage === 4 && <section className="stage-panel blocks-panel">
               <div className="task"><div className="task-title"><span>这次只改这一点</span><b>练习</b></div><p>{block.task}</p></div>
-              <BlueprintPracticeEditor courseId="python-framework-blocks" levelId={block.id} starter={block.starter} files={[`exercises/${block.file}`]} />
+              <BlueprintPracticeEditor courseId="python-framework-blocks" levelId={block.id} starter={block.starter} files={[`exercises/${block.file}`]} onDraftChange={updateDraft} />
               <p className="blocks-note">编辑草稿保存在当前浏览器。下载练习包后，把修改写入对应 exercises 文件，在本机运行验证。</p>
+              {block.id <= 4 && <section className="blocks-browser-check" aria-label="网页快速检查">
+                <header><div><b>网页快速检查</b><span>适合前四块的小练习</span></div><button type="button" onClick={() => setWebCheck(browserCheck(block.id, draft))}>检查当前草稿</button></header>
+                <p>这里检查本关要求并展示值的变化，不执行任意 Python。需要断点和真实退出码时，请到下一步使用 VS Code 或 ZIP。</p>
+                {webCheck && <div className={webCheck.passed ? "passed" : "failed"} role="status">
+                  <strong>{webCheck.passed ? "✓ 当前草稿符合本关要求" : "还差几处才能通过"}</strong>
+                  {webCheck.passed ? <><ol>{webCheck.trace.map((item) => <li key={item}>{item}</li>)}</ol><pre><code>{webCheck.output}</code></pre></> : <ul>{webCheck.hints.map((item) => <li key={item}>{item}</li>)}</ul>}
+                </div>}
+              </section>}
               <button type="button" className="stage-continue" onClick={() => setStage(5)}>查看准确的验收方式 →</button>
             </section>}
             {stage === 5 && <section className="stage-panel blocks-panel">
@@ -82,7 +134,16 @@ export default function FrameworkBlocksClient() {
               <h4>修改后的预期输出</h4><pre className="blocks-output"><code>{block.taskOutput}</code></pre>
               {block.errorExpected && <p className="blocks-note">这次练习故意触发 {block.errorExpected}。子程序应非零退出，但验证器在确认异常类型及收尾输出正确后会通过。</p>}
               <ul>{block.checks.map((item) => <li key={item}>{item}</li>)}</ul>
-              <p className="blocks-note">运行结果不会自动回传网页。看懂示例、参考答案通过和自己修改后通过，需要分别判断。</p>
+              <p className="blocks-note">通过本机课程连接器运行时，退出码和日志会回传网页；手动下载 ZIP 运行时仍需自己核对终端结果。</p>
+              <WorkspacePractice
+                config={{
+                  exerciseId: `python-framework-block-${String(block.id).padStart(2, "0")}`,
+                  title: `课前积木 ${block.id} · ${block.title}`,
+                  requirement: `连接器会在本机创建同一套八块积木项目，并保留你在 exercises/${block.file} 中的修改。`,
+                  verification: `运行固定命令 python3 verify.py --block ${block.id}，把退出码和日志回传当前网页。`,
+                }}
+                downloadHref="/downloads/python-framework-blocks.zip"
+              />
               <details className="blocks-previous"><summary>完成后再看参考修改</summary><pre><code>{block.solution}</code></pre></details>
               {selected < frameworkBlocks.length - 1 ? <button type="button" className="stage-continue" onClick={() => selectBlock(selected + 1)}>接上下一块：{frameworkBlocks[selected + 1].title} →</button> : <a className="blocks-next" href="#framework-names">把已经认识的积木接回原框架 →</a>}
             </section>}

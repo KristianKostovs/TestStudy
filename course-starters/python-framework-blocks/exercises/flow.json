@@ -1,0 +1,20 @@
+{
+  "initial_available": 10,
+  "steps": [
+    {
+      "action": "stock.adjust",
+      "amount": -2,
+      "expected": 8
+    },
+    {
+      "action": "stock.adjust",
+      "amount": 5,
+      "expected": 13
+    },
+    {
+      "action": "stock.adjust",
+      "amount": 2,
+      "expected": 15
+    }
+  ]
+}

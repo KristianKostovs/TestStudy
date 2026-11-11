@@ -1,4 +1,4 @@
-import { readFile, mkdir } from "node:fs/promises";
+import { readFile, mkdir, rm, writeFile } from "node:fs/promises";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
@@ -10,6 +10,37 @@ const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKi
 const { frameworkBlocks, assembledRunner, flowData } = await import("data:text/javascript;base64," + Buffer.from(code).toString("base64"));
 const taskFlow = { ...flowData, steps: [...flowData.steps, { action: "stock.adjust", amount: 2, expected: 15 }] };
 const files = {
+  ".gitignore": ".venv/\n__pycache__/\n*.pyc\n",
+  ".vscode/settings.json": JSON.stringify({
+    "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+    "python.testing.unittestEnabled": true,
+    "python.testing.pytestEnabled": false,
+  }, null, 2),
+  ".vscode/launch.json": JSON.stringify({
+    version: "0.2.0",
+    configurations: [{
+      name: "调试当前积木验证",
+      type: "debugpy",
+      request: "launch",
+      program: "${workspaceFolder}/verify.py",
+      args: ["--block", "${input:blockNumber}"],
+      console: "integratedTerminal",
+      justMyCode: false,
+    }],
+    inputs: [{ id: "blockNumber", type: "promptString", description: "输入积木编号 1-8", default: "1" }],
+  }, null, 2),
+  ".vscode/tasks.json": JSON.stringify({
+    version: "2.0.0",
+    tasks: [{
+      label: "验证当前积木",
+      type: "shell",
+      command: "python3",
+      args: ["verify.py", "--block", "${input:blockNumber}"],
+      group: { kind: "test", isDefault: true },
+      problemMatcher: [],
+    }],
+    inputs: [{ id: "blockNumber", type: "promptString", description: "输入积木编号 1-8", default: "1" }],
+  }, null, 2),
   "runner.py": assembledRunner,
   "flow.json": JSON.stringify(flowData, null, 2),
   "examples/flow.json": JSON.stringify(flowData, null, 2),
@@ -32,7 +63,11 @@ exercises 是尚未完成的练习。每次只完成一项，再运行 python3 v
 
 solutions 提供参考修改，仅在自己完成后查看。python3 verify.py --block 1 --reference 只检查参考实现。
 
-网页草稿不会自动写到本目录，验证结果也不会自动回传网页。先在 exercises 文件里保存自己的代码，再执行验证。
+网页草稿不会自动写到本目录。先在 exercises 文件里保存自己的代码，再执行验证；通过本机课程连接器运行时，退出码和日志会回传当前网页。
+
+## 在 VS Code 中调试
+
+本项目已经提供 .vscode/launch.json 和 tasks.json。按 F5 可选择积木编号并调试 verify.py；运行默认测试任务也会提示选择 1-8。断点可以放在 exercises 对应文件或 verify.py 中。
 
 ## 验证小框架
 
@@ -127,6 +162,13 @@ for (const block of frameworkBlocks) {
   files["examples/" + block.file] = block.code;
   files["exercises/" + block.file] = block.starter;
   files["solutions/" + block.file] = block.solution;
+}
+const starterTarget = resolve(root, "course-starters/python-framework-blocks");
+await rm(starterTarget, { recursive: true, force: true });
+for (const [name, content] of Object.entries(files)) {
+  const path = resolve(starterTarget, name);
+  await mkdir(dirname(path), { recursive: true });
+  await writeFile(path, content, "utf8");
 }
 const target = resolve(root, "public/downloads/python-framework-blocks.zip");
 await mkdir(dirname(target), { recursive: true });

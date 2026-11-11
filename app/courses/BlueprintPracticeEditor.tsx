@@ -13,26 +13,29 @@ type BlueprintPracticeEditorProps = {
   levelId: number;
   starter: string;
   files: string[];
+  onDraftChange?: (draft: string) => void;
 };
 
 function draftKey(courseId: string, levelId: number) {
   return `learning-blueprint-draft-v1:${courseId}:${levelId}`;
 }
 
-export default function BlueprintPracticeEditor({ courseId, levelId, starter, files }: BlueprintPracticeEditorProps) {
+export default function BlueprintPracticeEditor({ courseId, levelId, starter, files, onDraftChange }: BlueprintPracticeEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const [saveState, setSaveState] = useState("框架代码已载入");
   const [changed, setChanged] = useState(false);
   const storageKey = draftKey(courseId, levelId);
+  const fileKey = files.join("\u0000");
 
   useEffect(() => {
     if (!hostRef.current) return;
     const savedDraft = window.localStorage.getItem(storageKey);
     const initialDraft = savedDraft ?? starter;
     setChanged(initialDraft !== starter);
+    onDraftChange?.(initialDraft);
 
-    const languageSupport = files.some((file) => file.endsWith(".py")) ? python() : [];
+    const languageSupport = fileKey.split("\u0000").some((file) => file.endsWith(".py")) ? python() : [];
     const view = new EditorView({
       parent: hostRef.current,
       doc: initialDraft,
@@ -47,6 +50,7 @@ export default function BlueprintPracticeEditor({ courseId, levelId, starter, fi
           if (!update.docChanged) return;
           const nextDraft = update.state.doc.toString();
           window.localStorage.setItem(storageKey, nextDraft);
+          onDraftChange?.(nextDraft);
           setChanged(nextDraft !== starter);
           setSaveState("当前浏览器已自动保存");
         }),
@@ -72,7 +76,7 @@ export default function BlueprintPracticeEditor({ courseId, levelId, starter, fi
       view.destroy();
       viewRef.current = null;
     };
-  }, [files, starter, storageKey]);
+  }, [fileKey, onDraftChange, starter, storageKey]);
 
   function restoreStarter() {
     if (changed && !window.confirm("恢复后会覆盖这一关在当前浏览器里的草稿，确认继续吗？")) return;
