@@ -2,12 +2,15 @@
 
 import { useCallback, useEffect, useState } from "react";
 import LearningStepNav from "../../LearningStepNav";
-import BlueprintPracticeEditor from "../../BlueprintPracticeEditor";
+import BlueprintPracticeEditor, { blueprintDraftKey } from "../../BlueprintPracticeEditor";
 import WorkspacePractice from "../../WorkspacePractice";
-import { flowData, frameworkBlocks, frameworkConnections } from "./block-data";
+import { flowData, frameworkBlocks, frameworkConnections, type FrameworkBlock } from "./block-data";
 import "./building-blocks.css";
 
-const labels = ["目标与前置", "看输入输出", "逐行理解", "动手任务", "客观验收"];
+const courseId = "python-framework-blocks";
+const labels = ["目标与前置", "看输入输出", "逐行理解", "练习与验证"];
+const steps = labels.map((_, index) => index + 1);
+const practiceStep = labels.length;
 
 type BrowserCheck = { passed: boolean; output: string; trace: string[]; hints: string[] };
 
@@ -44,11 +47,52 @@ function browserCheck(blockId: number, draft: string): BrowserCheck {
   return { passed: hints.length === 0, output, trace, hints };
 }
 
+function BrowserPractice({ block }: { block: FrameworkBlock }) {
+  const [expanded, setExpanded] = useState(false);
+  const [draft, setDraft] = useState("");
+  const [webCheck, setWebCheck] = useState<BrowserCheck | null>(null);
+  const updateDraft = useCallback((nextDraft: string) => {
+    setDraft(nextDraft);
+    setWebCheck(null);
+  }, []);
+
+  return <details className="blocks-previous blocks-browser-practice" onToggle={(event) => setExpanded(event.currentTarget.open)}>
+    <summary>在网页里试一试（可选）</summary>
+    {expanded && <>
+      <p>网页快速检查会核对代码写法并演示预期输出。草稿保存在当前浏览器，本机验证读取在 VS Code 中保存的文件。</p>
+      <BlueprintPracticeEditor courseId={courseId} levelId={block.id} starter={block.starter} files={[`exercises/${block.file}`]} onDraftChange={updateDraft} />
+      <div className="blocks-browser-check">
+        <button type="button" onClick={() => setWebCheck(browserCheck(block.id, draft))}>检查当前草稿</button>
+        {webCheck && <div className={webCheck.passed ? "passed" : "failed"} role="status">
+          <strong>{webCheck.passed ? "当前草稿已匹配本关写法" : "再检查这些地方"}</strong>
+          {webCheck.passed ? <><ol>{webCheck.trace.map((item) => <li key={item}>{item}</li>)}</ol><pre><code>{webCheck.output}</code></pre></> : <ul>{webCheck.hints.map((item) => <li key={item}>{item}</li>)}</ul>}
+        </div>}
+      </div>
+    </>}
+  </details>;
+}
+
+function PreviousBrowserDraft({ block }: { block: FrameworkBlock }) {
+  const [draft, setDraft] = useState<string | null>(null);
+  useEffect(() => {
+    try {
+      setDraft(window.localStorage.getItem(blueprintDraftKey(courseId, block.id)));
+    } catch {
+      setDraft(null);
+    }
+  }, [block.id]);
+
+  if (!draft || draft === block.starter) return null;
+  return <details className="blocks-previous">
+    <summary>查看以前保存的网页草稿</summary>
+    <p>可把这份草稿中的修改复制到 <code>exercises/{block.file}</code>，保存后运行本关验证。</p>
+    <pre><code>{draft}</code></pre>
+  </details>;
+}
+
 export default function FrameworkBlocksClient() {
   const [selected, setSelected] = useState(0);
   const [stage, setStage] = useState(1);
-  const [draft, setDraft] = useState("");
-  const [webCheck, setWebCheck] = useState<BrowserCheck | null>(null);
   useEffect(() => {
     const frame = window.requestAnimationFrame(() => {
       const id = Number(window.location.hash.match(/^#block-(\d+)$/)?.[1]);
@@ -63,14 +107,8 @@ export default function FrameworkBlocksClient() {
   function selectBlock(index: number) {
     setSelected(index);
     setStage(1);
-    setWebCheck(null);
     window.history.replaceState(null, "", `#block-${frameworkBlocks[index].id}`);
   }
-
-  const updateDraft = useCallback((nextDraft: string) => {
-    setDraft(nextDraft);
-    setWebCheck(null);
-  }, []);
 
   return <main className="course-workspace blocks-workspace ready">
     <header className="suite-topbar course-suite-topbar"><div><strong>Python 框架基础 · 课前积木</strong><span>建议先完成 8 块，再进入正式框架课程</span></div><div className="suite-live"><i />课前预备</div></header>
@@ -97,7 +135,7 @@ export default function FrameworkBlocksClient() {
         <div className="level-copy">
           <header className="blocks-heading"><span className="level-no">BUILDING BLOCK {block.id}</span><h3>{block.title}</h3><p>{block.problem}</p></header>
           <div className="level-body">
-            <LearningStepNav active={stage} unlocked={5} onSelect={setStage} labels={labels} />
+            <LearningStepNav active={stage} unlocked={practiceStep} onSelect={setStage} steps={steps} labels={labels} />
             {stage === 1 && <section className="stage-panel blocks-panel">
               <div className="objective"><b>这次只增加什么</b><p>{block.addition}</p></div>
               <h4>先认清这几个小积木</h4><ul>{block.prerequisites.map((item) => <li key={item}>{item}</li>)}</ul>
@@ -113,46 +151,36 @@ export default function FrameworkBlocksClient() {
               <div className="beginner-note"><b>新增行用绿色标出</b><p>{block.addition}</p></div>
               <pre className="blocks-code"><code>{block.code.trimEnd().split("\n").map((line, index) => <span className={block.added.some((part) => line.includes(part)) ? "blocks-code-new" : ""} key={index}><i aria-hidden="true">{index + 1}</i>{line || " "}</span>)}</code></pre>
               {previous && <details className="blocks-previous"><summary>回看上一块：{previous.title}</summary><pre><code>{previous.code}</code></pre></details>}
-              <button type="button" className="stage-continue" onClick={() => setStage(4)}>改一个地方，观察变化 →</button>
+              <button type="button" className="stage-continue" onClick={() => setStage(practiceStep)}>进入练习与验证</button>
             </section>}
-            {stage === 4 && <section className="stage-panel blocks-panel">
-              <div className="task"><div className="task-title"><span>这次只改这一点</span><b>练习</b></div><p>{block.task}</p></div>
-              <BlueprintPracticeEditor courseId="python-framework-blocks" levelId={block.id} starter={block.starter} files={[`exercises/${block.file}`]} onDraftChange={updateDraft} />
-              <p className="blocks-note">编辑草稿保存在当前浏览器。下载练习包后，把修改写入对应 exercises 文件，在本机运行验证。</p>
-              {block.id <= 4 && <section className="blocks-browser-check" aria-label="网页快速检查">
-                <header><div><b>网页快速检查</b><span>适合前四块的小练习</span></div><button type="button" onClick={() => setWebCheck(browserCheck(block.id, draft))}>检查当前草稿</button></header>
-                <p>这里检查本关要求并展示值的变化，不执行任意 Python。需要断点和真实退出码时，请到下一步使用 VS Code 或 ZIP。</p>
-                {webCheck && <div className={webCheck.passed ? "passed" : "failed"} role="status">
-                  <strong>{webCheck.passed ? "✓ 当前草稿符合本关要求" : "还差几处才能通过"}</strong>
-                  {webCheck.passed ? <><ol>{webCheck.trace.map((item) => <li key={item}>{item}</li>)}</ol><pre><code>{webCheck.output}</code></pre></> : <ul>{webCheck.hints.map((item) => <li key={item}>{item}</li>)}</ul>}
-                </div>}
-              </section>}
-              <button type="button" className="stage-continue" onClick={() => setStage(5)}>查看准确的验收方式 →</button>
-            </section>}
-            {stage === 5 && <section className="stage-panel blocks-panel">
-              <h4>本机运行</h4><pre><code>python3 verify.py --block {block.id}</code></pre>
-              <h4>修改后的预期输出</h4><pre className="blocks-output"><code>{block.taskOutput}</code></pre>
-              {block.errorExpected && <p className="blocks-note">这次练习故意触发 {block.errorExpected}。子程序应非零退出，但验证器在确认异常类型及收尾输出正确后会通过。</p>}
-              <ul>{block.checks.map((item) => <li key={item}>{item}</li>)}</ul>
-              <p className="blocks-note">通过本机课程连接器运行时，退出码和日志会回传网页；手动下载 ZIP 运行时仍需自己核对终端结果。</p>
+            {stage === practiceStep && <section key={block.id} className="stage-panel blocks-panel" aria-label="练习与验证">
               <WorkspacePractice
                 config={{
                   exerciseId: `python-framework-block-${String(block.id).padStart(2, "0")}`,
-                  title: `课前积木 ${block.id} · ${block.title}`,
-                  requirement: `连接器会在本机创建同一套八块积木项目，并保留你在 exercises/${block.file} 中的修改。`,
-                  verification: `运行固定命令 python3 verify.py --block ${block.id}，把退出码和日志回传当前网页。`,
+                  title: block.title,
+                  requirement: block.task,
+                  exerciseFile: `exercises/${block.file}`,
                 }}
                 downloadHref="/downloads/python-framework-blocks.zip"
               />
+              {block.id <= 4 ? <BrowserPractice block={block} /> : <PreviousBrowserDraft block={block} />}
+              <details className="blocks-previous">
+                <summary>查看预期输出与手动验证方法</summary>
+                <h4>预期输出</h4><pre className="blocks-output"><code>{block.taskOutput}</code></pre>
+                {block.errorExpected && <p>本关会触发 {block.errorExpected}。验证器会同时检查异常类型、非零退出码和收尾输出。</p>}
+                <ul>{block.checks.map((item) => <li key={item}>{item}</li>)}</ul>
+                <h4>在终端运行</h4><p>解压 ZIP 后，在含有 <code>verify.py</code> 的目录执行下面的命令。</p>
+                <pre><code>python3 verify.py --block {block.id}</code></pre>
+              </details>
               <details className="blocks-previous"><summary>完成后再看参考修改</summary><pre><code>{block.solution}</code></pre></details>
-              {selected < frameworkBlocks.length - 1 ? <button type="button" className="stage-continue" onClick={() => selectBlock(selected + 1)}>接上下一块：{frameworkBlocks[selected + 1].title} →</button> : <a className="blocks-next" href="#framework-names">把已经认识的积木接回原框架 →</a>}
+              {selected < frameworkBlocks.length - 1 ? <button type="button" className="stage-continue" onClick={() => selectBlock(selected + 1)}>下一块 · {frameworkBlocks[selected + 1].title}</button> : <a className="blocks-next" href="#framework-names">查看这些积木在框架里的名字</a>}
             </section>}
           </div>
         </div>
       </article>
     </section>
 
-    {block.id === 8 && stage === 5 && <section className="map-section blocks-connections" id="framework-names">
+    {block.id === 8 && stage === practiceStep && <section className="map-section blocks-connections" id="framework-names">
       <div className="section-heading"><p>CONNECT THE NAMES</p><h2>现在再看框架里的名字</h2><span>先知道这块代码做什么，再认识它在框架里的名字。</span></div>
       <div className="blocks-table-wrap"><table><thead><tr><th>刚刚已经理解的做法</th><th>框架里的名字</th><th>它解决什么问题</th></tr></thead><tbody>{frameworkConnections.map((item) => <tr key={item.name}><td>{item.plain}</td><td><a href={item.href}>{item.name} →</a></td><td>{item.role}</td></tr>)}</tbody></table></div>
       <p className="blocks-note">这个小框架用内存数字和本地 JSON 演示编排。完成后进入正式框架课程，继续学习数据库、真实 HTTP、Schema 校验、并发和复杂清理。</p>

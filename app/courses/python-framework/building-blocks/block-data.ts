@@ -149,7 +149,7 @@ export const frameworkBlocks: FrameworkBlock[] = [
     prerequisites: ["= 是把右边的值交给左边的名字", "负数表示减少", "# 后面是给人看的注释"],
     code: calculation, output: "8\n", trace: ["available 是 10", "amount 是 -2", "10 + (-2) 得到 8"],
     added: ["available =", "amount =", "result =", "print("],
-    task: "把减少量改成 3，运行后应显示 7。其余代码保持相同含义。",
+    task: "库存原有 10 件，把减少量从 2 改成 3，预期输出 7。",
     starter: calculation.replace("amount = -2", "amount = None  # TODO：填写调整量；None 暂时表示未填写"),
     solution: calculation.replace("amount = -2", "amount = -3").replace("本次减少 2", "本次减少 3"),
     taskOutput: "7\n", checks: ["运行显示 7", "能指出原库存、变化量和结果分别在哪一行"],

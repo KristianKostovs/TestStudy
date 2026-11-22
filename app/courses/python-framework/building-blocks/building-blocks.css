@@ -9,6 +9,9 @@
 .blocks-heading > h3 { margin: 10px 0; font-size: 28px; }
 .blocks-heading > p { color: #5d6c61; line-height: 1.8; }
 .blocks-workspace .blocks-section > .level { display: grid; grid-template-columns: 54px minmax(0, 1fr); max-width: none; }
+.blocks-workspace .stage-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.blocks-workspace .stage-tabs button { font-size: .875rem; }
+.blocks-workspace .stage-tabs button.finished:not(.active) b { color: #fff; }
 .blocks-workspace .blocks-panel { font-size: 15px; line-height: 1.85; }
 .blocks-panel h4 { color: #24533c; font-size: 18px; margin: 24px 0 12px; }
 .blocks-panel pre { margin: 15px 0; overflow: auto; border-radius: 10px; padding: 20px; background: #11291f; color: #e2eee6; font-size: 13px; line-height: 1.9; }
@@ -17,12 +20,16 @@
 .blocks-code code > span.blocks-code-new { border-left-color: #67d09c; background: #1b402e; }
 .blocks-code code > span > i { display: inline-block; min-width: 38px; margin-right: 12px; color: #7d9a89; text-align: right; user-select: none; font-size: 11px; font-style: normal; }
 .blocks-workspace .blocks-note { margin: 18px 0; color: #66766a; font-size: 13px; line-height: 1.8; }
-.blocks-browser-check { margin: 18px 0; padding: 18px; border: 1px solid #b8d4c8; border-radius: 11px; background: #f3f9f6; }
-.blocks-browser-check > header { display: flex; align-items: center; justify-content: space-between; gap: 18px; }
-.blocks-browser-check > header div { display: grid; gap: 3px; }
-.blocks-browser-check > header b { color: #175b43; font-size: 14px; }
-.blocks-browser-check > header span, .blocks-browser-check > p { color: #6b776f; font-size: 11px; line-height: 1.7; }
-.blocks-browser-check > header button { padding: 9px 13px; color: #fff; border: 0; border-radius: 8px; background: #25765f; font-size: 11px; font-weight: 800; cursor: pointer; }
+.blocks-panel .workspace-practice > .workspace-task { margin: 0; color: #173d31; font-size: 1.125rem; font-weight: 650; line-height: 1.6; }
+.blocks-panel .workspace-practice > .workspace-file { margin: .5rem 0 1rem; font-size: 1rem; overflow-wrap: anywhere; }
+.blocks-panel .workspace-file code { color: #175b43; }
+.blocks-panel .workspace-practice .workspace-actions :is(button, a),
+.blocks-browser-check > button { display: inline-flex; align-items: center; min-height: 44px; padding: .6rem .9rem; font-size: .875rem; }
+.blocks-panel .workspace-practice .workspace-evidence > strong { font-size: 1rem; }
+.blocks-panel .workspace-practice .workspace-evidence pre { font-size: .875rem; overflow-wrap: anywhere; }
+.blocks-browser-practice > p { font-size: 1rem; }
+.blocks-browser-check { margin-top: 1rem; }
+.blocks-browser-check > button { color: #fff; border: 0; border-radius: 8px; background: #25765f; font-weight: 700; cursor: pointer; }
 .blocks-browser-check > div { margin-top: 13px; padding: 13px; border: 1px solid #c8dbd2; border-radius: 8px; background: #fff; }
 .blocks-browser-check > div.passed { border-color: #74b99f; background: #edf8f3; }
 .blocks-browser-check > div.failed { border-color: #e0b09f; background: #fff6f2; }
@@ -41,4 +48,11 @@
 .blocks-table-wrap th { background: #edf4ee; color: #24543c; }
 .blocks-table-wrap a { color: #087455; white-space: nowrap; font-weight: 700; }
 @media (max-width: 850px) { .blocks-selector { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-@media (max-width: 540px) { .blocks-workspace .blocks-section > .level { grid-template-columns: 1fr; } .blocks-workspace .blocks-section > .level > .seal { display: none; } .blocks-selector button { font-size: 12px; padding: 10px; } .blocks-code code > span > i { min-width: 24px; margin-right: 7px; } .blocks-browser-check > header { align-items: stretch; flex-direction: column; } }
+@media (max-width: 760px) {
+  .blocks-workspace .stage-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .blocks-workspace .stage-tabs button { gap: .45rem; padding: .5rem .6rem; border: 0; }
+  .blocks-workspace .stage-tabs button span { white-space: normal; }
+  .blocks-workspace .stage-tabs li:nth-child(odd) { border-right: 1px solid #dce4df; }
+  .blocks-workspace .stage-tabs li:nth-child(-n+2) { border-bottom: 1px solid #dce4df; }
+}
+@media (max-width: 540px) { .blocks-workspace .blocks-section > .level { grid-template-columns: 1fr; } .blocks-workspace .blocks-section > .level > .seal { display: none; } .blocks-selector button { font-size: 12px; padding: 10px; } .blocks-code code > span > i { min-width: 24px; margin-right: 7px; } }

@@ -8,6 +8,7 @@ export type WorkspacePracticeConfig = {
   exerciseId: string;
   title: string;
   requirement: string;
+  exerciseFile?: string;
   verification?: string;
 };
 
@@ -61,14 +62,19 @@ export default function WorkspacePractice({ config, downloadHref }: { config: Wo
     }
   }
 
-  return <section className="workspace-practice" aria-label="可运行项目技术样板">
-    <header><span>可运行项目技术样板</span><strong>{config.title}</strong></header>
-    <p>{config.requirement}</p>
-    <ol>
-      <li>打开课程创建的独立小型仓库，不会覆盖已有练习。</li>
-      <li>在 VS Code 中补 TODO、打断点并观察测试失败原因。</li>
-      <li>{config.verification ?? "运行固定的 pytest 命令，以退出码和日志作为真实证据。"}</li>
-    </ol>
+  return <section className="workspace-practice" aria-label={config.exerciseFile ? `${config.title} · 本机练习` : "可运行项目技术样板"}>
+    {config.exerciseFile ? <>
+      <p className="workspace-task">{config.requirement}</p>
+      <p className="workspace-file">在 VS Code 中修改 <code>{config.exerciseFile}</code>，保存后运行验证。</p>
+    </> : <>
+      <header><span>可运行项目技术样板</span><strong>{config.title}</strong></header>
+      <p>{config.requirement}</p>
+      <ol>
+        <li>打开课程创建的独立小型仓库，不会覆盖已有练习。</li>
+        <li>在 VS Code 中补 TODO、打断点并观察测试失败原因。</li>
+        <li>{config.verification ?? "运行固定的 pytest 命令，以退出码和日志作为真实证据。"}</li>
+      </ol>
+    </>}
     <div className="workspace-actions">
       <button type="button" disabled={pending !== null || bridgeReady === false} onClick={() => void invoke("open")}>{pending === "open" ? "正在打开…" : "在 VS Code 中打开"}</button>
       <button type="button" disabled={pending !== null || bridgeReady === false} onClick={() => void invoke("run")}>{pending === "run" ? "正在运行…" : "运行本关验证"}</button>

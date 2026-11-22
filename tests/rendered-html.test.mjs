@@ -224,6 +224,10 @@ test("Python 框架课前积木明确先学八块再进入正式课程", async (
   assert.match(html, /建议先完成 8 块，再进入正式框架课程/);
   assert.match(html, /先看懂积木/);
   assert.match(html, /积木拼装步骤/);
+  const stageNav = html.match(/<ol\b[^>]*aria-label="本关学习步骤"[^>]*>([\s\S]*?)<\/ol>/)?.[1];
+  assert.ok(stageNav);
+  assert.deepEqual([...stageNav.matchAll(/<span>([^<]+)<\/span>/g)].map((match) => match[1]),
+    ["目标与前置", "看输入输出", "逐行理解", "练习与验证"]);
   assert.match(html, /普通计算|先写一次普通计算/);
   assert.match(html, /动作表|用名字选一个动作/);
   assert.match(html, /下载完整例子与练习/);

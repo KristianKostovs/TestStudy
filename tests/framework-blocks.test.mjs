@@ -57,7 +57,7 @@ test("课前积木同时提供网页快速检查、VS Code 项目和 ZIP 备用�
     readFile(new URL("../course-starters/python-framework-blocks/README.md", import.meta.url), "utf8"),
   ]);
   assert.match(component, /网页快速检查/);
-  assert.match(component, /不执行任意 Python/);
+  assert.match(component, /核对代码写法并演示预期输出/);
   assert.match(component, /<WorkspacePractice/);
   assert.match(component, /python-framework-block-/);
   assert.match(component, /downloads\/python-framework-blocks\.zip/);

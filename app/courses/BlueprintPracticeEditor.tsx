@@ -16,7 +16,7 @@ type BlueprintPracticeEditorProps = {
   onDraftChange?: (draft: string) => void;
 };
 
-function draftKey(courseId: string, levelId: number) {
+export function blueprintDraftKey(courseId: string, levelId: number) {
   return `learning-blueprint-draft-v1:${courseId}:${levelId}`;
 }
 
@@ -25,7 +25,7 @@ export default function BlueprintPracticeEditor({ courseId, levelId, starter, fi
   const viewRef = useRef<EditorView | null>(null);
   const [saveState, setSaveState] = useState("框架代码已载入");
   const [changed, setChanged] = useState(false);
-  const storageKey = draftKey(courseId, levelId);
+  const storageKey = blueprintDraftKey(courseId, levelId);
   const fileKey = files.join("\u0000");
 
   useEffect(() => {
