@@ -51,6 +51,7 @@ type LearningSupport = {
   example: string;
   walkthrough: string[];
   starter: string;
+  practiceFile: string | null;
   verifyCommand: string;
   expected: string;
   hint: string;
@@ -489,10 +490,9 @@ response = {
 }
 
 # TODO（你来完成）：补充正常路径、缺失路径和“不修改输入”的断言`,
+    practiceFile: "level_01.py",
     verifyCommand: "python level_01.py",
-    expected: `FLOW-710
-KeyError: '找不到字段: data.flowNo'
-原始 response 保持不变`,
+    expected: "补齐断言后，脚本正常退出。断言失败时会显示回溯。",
     hint: "先用 path.split(\".\") 看看能得到什么；每轮循环用 current = current[part] 向内走一层。",
     referenceAnswer: referenceAnswers[1],
     quiz: {
@@ -528,16 +528,19 @@ print(case_b["request"]["businessStatus"])  # 720！`,
 from copy import deepcopy
 
 
-fixture = {"request": {"businessStatus": 710}}
+def make_fixture():
+    return {"request": {"businessStatus": 710}}
 
 
 def test_shallow_copy_reproduces_pollution():
+    fixture = make_fixture()
     case_a = dict(fixture)
     case_b = dict(fixture)
     # TODO（你来完成）：修改 case_a，并断言 case_b 也被污染
 
 
 def test_deepcopy_isolates_and_cleanup_always_runs():
+    fixture = make_fixture()
     case_a = deepcopy(fixture)
     case_b = deepcopy(fixture)
     cleanup_log = []
@@ -550,7 +553,8 @@ def test_deepcopy_isolates_and_cleanup_always_runs():
             cleanup_log.append("client.close")
 
     # TODO（你来完成）：断言 case_b 未污染，并检查 cleanup_log`,
-    verifyCommand: "pytest -q test_level_02.py",
+    practiceFile: "test_level_02.py",
+    verifyCommand: "python -m pytest -q test_level_02.py",
     expected: "2 passed",
     hint: "先写一条故意失败的测试复现污染，再把 dict(fixture) 改为 deepcopy(fixture)。",
     referenceAnswer: referenceAnswers[2],
@@ -596,9 +600,22 @@ def test_real_function():
 def test_missing_module():
     import pytest
     with pytest.raises(ModuleNotFoundError):
-        resolve_callable("missing_package:run")`,
-    verifyCommand: "pytest -q test_level_03.py",
-    expected: "3 passed（成功导入、模块不存在、函数不存在）",
+        resolve_callable("missing_package:run")
+
+
+def test_missing_function():
+    import pytest
+    with pytest.raises(AttributeError):
+        resolve_callable("math:missing_function")
+
+
+def test_rejects_non_callable_attribute():
+    import pytest
+    with pytest.raises(TypeError):
+        resolve_callable("math:pi")`,
+    practiceFile: "test_level_03.py",
+    verifyCommand: "python -m pytest -q test_level_03.py",
+    expected: "4 passed（可调用函数、缺少模块、缺少函数、属性不可调用）",
     hint: "需要 import_module、getattr 和 callable 三步。",
     referenceAnswer: referenceAnswers[3],
     quiz: { question: "package.module:function 中冒号右边是什么？", options: ["文件夹", "Python 版本", "模块中的函数名", "HTTP method"], correct: 2, explanation: "左边是模块路径，右边是要取出的函数名。" },
@@ -647,8 +664,9 @@ def adjust_stock_action(sku_id: str, adjust_amount: int) -> ActionResult:
 first = ActionResult(success=True)
 second = ActionResult(success=True)
 # TODO（你来完成）：修改 first.outputs/side_effects，再断言 second 仍为空`,
-    verifyCommand: "python -m mypy action_result.py && pytest -q test_action_result.py",
-    expected: "Success: no issues found\n2 passed",
+    practiceFile: "action_result.py",
+    verifyCommand: "python action_result.py",
+    expected: "补齐并执行两个实例的断言后正常退出。可另用 python -m mypy action_result.py 检查类型标注。",
     hint: "request/response 可能为 None，outputs 和 side_effects 用 default_factory 避免共享默认值。",
     referenceAnswer: referenceAnswers[4],
     quiz: { question: "Protocol 在 Provider 里最主要的作用是什么？", options: ["保存密码", "规定可替换实现必须提供的方法", "自动连接 MySQL", "替代 pytest"], correct: 1, explanation: "Protocol 表达能力契约，让真实实现与 Fake 实现可替换。" },
@@ -702,7 +720,8 @@ def api_client():
 def test_status(api_client, status):
     assert api_client.closed is False
     assert status in (710, 720)`,
-    verifyCommand: "pytest --collect-only -q && pytest -q test_level_05.py",
+    practiceFile: "test_level_05.py",
+    verifyCommand: "python -m pytest --collect-only -q test_level_05.py && python -m pytest -q test_level_05.py",
     expected: "2 tests collected\n2 passed",
     hint: "先不写参数化，确保 fixture 可用；再加 @pytest.mark.parametrize。collect-only 不执行普通 fixture，判断网络风险时要检查模块顶层代码和收集钩子。",
     referenceAnswer: referenceAnswers[5],
@@ -754,7 +773,8 @@ def test_request_entry_is_valid():
 def test_empty_entry_is_rejected():
     with pytest.raises(ValidationError, match="必须声明 action 或 request"):
         FlowEntry()`,
-    verifyCommand: "pytest -q test_flow_entry_schema.py",
+    practiceFile: "test_flow_entry_schema.py",
+    verifyCommand: "python -m pytest -q test_flow_entry_schema.py",
     expected: "3 passed",
     hint: "使用 model_validator(mode=\"after\")，在 action 和 request 都为空时 raise ValueError。",
     referenceAnswer: referenceAnswers[6],
@@ -809,8 +829,9 @@ adapters = {
 context = {}
 
 # TODO（你来完成）：依次执行 fixture.resolve 和 request.build，并断言 context 中的结果`,
-    verifyCommand: "pytest -q test_mini_runner.py",
-    expected: "4 passed",
+    practiceFile: "mini_runner.py",
+    verifyCommand: "python mini_runner.py",
+    expected: "执行两个动作并检查 context。断言全部成立时脚本正常退出。",
     hint: "先不做模板渲染，只实现 action 查找和 save_as；然后再增加第二步读取 context。",
     referenceAnswer: referenceAnswers[7],
     quiz: { question: "save_as 最主要的用途是什么？", options: ["修改 HTTP method", "给步骤输出命名并存入 context", "关闭数据库", "安装 adapter"], correct: 1, explanation: "save_as 是步骤输出在当前用例 context 中的名字。" },
@@ -871,8 +892,9 @@ with httpx.Client(transport=transport, timeout=2.0) as client:
     )
 
 # TODO（你来完成）：对三条响应分别断言 HTTP 状态和业务字段`,
-    verifyCommand: "pytest -q test_http_modes.py",
-    expected: "3 passed（成功、HTTP 500、HTTP 200 + success=false）",
+    practiceFile: "http_modes.py",
+    verifyCommand: "python http_modes.py",
+    expected: "MockTransport 产生三种响应。补齐成功、HTTP 500 和业务失败的断言后，脚本正常退出。",
     hint: "可先输入 request. 查看本关提供的 HTTPX Request 属性补全；运行代码仍需要 import httpx。然后用 json.loads(request.content) 读取题目给定的请求体。",
     referenceAnswer: referenceAnswers[8],
     quiz: { question: "HTTP 200 且 response.success=false 代表什么？", options: ["传输层和业务都成功", "传输层成功，业务失败", "网络超时", "Python 语法错误"], correct: 1, explanation: "HTTP status 和业务 success 是两层不同的判定。" },
@@ -927,8 +949,9 @@ class FakeProvider:
 rows = capture_inventory_snapshot(FakeProvider(), "SKU-001")
 selected = select_legal_after_sale_sku(rows, {"minimum_available": 100})
 # TODO（你来完成）：断言最终选择 120 且未锁定`,
-    verifyCommand: "pytest -q tests/provider tests/shared_actions tests/requirements",
-    expected: "三组测试独立通过",
+    practiceFile: "inventory_layers.py",
+    verifyCommand: "python inventory_layers.py",
+    expected: "断言选出的库存为 120 且未锁定，脚本正常退出。",
     hint: "先不移动代码，只给每个函数标注它应属于哪层以及理由。",
     referenceAnswer: referenceAnswers[9],
     quiz: { question: "“这个需求应该选哪个库存 SKU”应放在哪里？", options: ["DatabaseProvider", "HTTP Client", "需求/场景层 resolve", "Registry"], correct: 2, explanation: "选什么数据是业务求解，不是基础访问能力。" },
@@ -955,6 +978,7 @@ selected = select_legal_after_sale_sku(rows, {"minimum_available": 100})
 5. 成功和失败都生成 evidence`,
     walkthrough: ["先选一条只有 2–3 个动作的短链路。", "先做静态门禁，再做 Mock，最后才讨论真实环境。", "任何一步失败都要保留主异常和已经产生的证据。"],
     starter: `# ===== requirements/BOSS_01/requirement_cases.yaml =====
+# 按每个文件标题的路径分别保存内容，再从项目根目录运行测试。
 name: boss_01_after_sale
 common_flow:
   setup:
@@ -1128,12 +1152,10 @@ def test_boss_flow_success_and_failure():
   "side_effects": [],
   "error": null,
   "teardown": []
-}
-
-# common_flow 由上面的 requirement_cases.yaml 读取；这里只集中展示多文件骨架。
-# 只修改 TODO 区域；目录、字段名、action 名、函数签名和生命周期结构已经固定。`,
-    verifyCommand: "python verify_declarative_delivery.py ... && pytest -q tests/test_boss_mock.py",
-    expected: "三级静态门禁通过\nMock 全链路通过\nevidence JSON 包含 request/response",
+}`,
+    practiceFile: null,
+    verifyCommand: "python -m pytest -q tests/test_boss_mock.py",
+    expected: "按草稿中的文件名分别保存后，在项目根目录运行。两个 Mock 场景均通过，生成的 evidence 包含 request 和 response。",
     hint: "可以直接复用第 5、6、7、8 关产物，不要重写 Client、Provider 或 Runner。",
     referenceAnswer: referenceAnswers[10],
     quiz: { question: "Boss 链路第一次运行应优先选什么？", options: ["直接扣减真实 SIT 库存", "先跑静态门禁和 Mock 全链路", "先写管理面", "删除 teardown 简化流程"], correct: 1, explanation: "静态门禁和 Mock 能先验证结构、导入、模板、断言和清理，不产生真实副作用。" },
@@ -2280,6 +2302,7 @@ export default function Home({ chapterId }: { chapterId?: number }) {
                           <Suspense fallback={<div className="editor-loading" role="status">正在启动 Python IDE 检查器…</div>}>
                             <PythonAnswerEditor
                               levelId={level.id}
+                              fileName={support.practiceFile}
                               value={currentDraft}
                               starter={support.starter}
                               onChange={(value) => updateTaskDraft(level.id, value)}

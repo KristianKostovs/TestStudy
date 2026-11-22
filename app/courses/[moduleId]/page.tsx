@@ -16,5 +16,5 @@ export default async function BlueprintCoursePage({ params }: Props) {
   const { moduleId } = await params;
   const course = learningModules.find((item) => item.id === moduleId && item.status === "blueprint");
   if (!course) notFound();
-  return <BlueprintCourseClient course={course} sources={sourcesForModule(course)} />;
+  return <BlueprintCourseClient key={course.id} course={course} sources={sourcesForModule(course)} />;
 }

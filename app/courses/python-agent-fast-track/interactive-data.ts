@@ -255,7 +255,8 @@ export const agentCourseConfig: InteractiveCourseConfig = {
       workspace: lesson.id === 8 ? {
         exerciseId: "python-agent-level-08",
         title: "工单查询客户端必须安全加载部署配置",
-        requirement: "本地开发允许使用默认接口地址，但 TICKET_API_KEY 缺失时必须立即失败；HTTP 行为用 MockTransport 验证，不能访问真实网络。",
+        exerciseFile: "src/ticket_assistant/settings.py",
+        requirement: "补齐 load_settings() 的两处配置读取。测试会检查默认地址、显式地址和缺少必填配置的情况。",
       } : undefined,
       reference: `${lesson.referenceAnswer}\n\n# 参考解释\n${lesson.referenceExplanation.split("\n").map((line) => `# ${line}`).join("\n")}`,
       quizCode: lesson.diagnostic.code,

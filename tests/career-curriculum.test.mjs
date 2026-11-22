@@ -18,6 +18,34 @@ const chaptersUrl = await moduleUrl("../app/courses/blueprint-chapters.ts", { ".
 const registry = await import(registryUrl);
 const career = await import(careerUrl);
 const chapters = await import(chaptersUrl);
+const { blueprintStarterFor } = await import(await moduleUrl("../app/blueprint-starters.ts"));
+
+test("旧行首标记已从起步代码移除，职业测试与网页文件对应", async () => {
+  const parseable = {
+    "ui-automation": [7, 9], "api-automation": [2, 3, 4, 6, 7, 8], "ai-testing": [5, 6],
+    "performance-testing": [1, 2, 4, 5, 9], "quality-engineering": [6],
+  };
+  const pythonDrafts = [];
+  for (const course of registry.learningModules.filter((item) => item.status === "blueprint")) {
+    for (const [index, item] of course.roadmap.entries()) {
+      const draft = blueprintStarterFor(course.id, index, item);
+      for (const line of draft.legacyMarkedLines ?? []) {
+        assert.ok(line && draft.code.split("\n").includes(line));
+        assert.ok(!draft.code.split("\n").includes("+" + line));
+      }
+      if (parseable[course.id]?.includes(index + 1)) pythonDrafts.push(draft.code);
+    }
+  }
+  const checked = spawnSync("python3", ["-c", "import ast,json,sys\nfor code in json.load(sys.stdin): ast.parse(code)"], { input: JSON.stringify(pythonDrafts), encoding: "utf8" });
+  assert.equal(checked.status, 0, checked.stderr);
+
+  const lab = JSON.parse(await readFile(new URL("../config/quality-lab.json", import.meta.url), "utf8"));
+  for (const { courseId, levelId, symbol } of lab.tasks) {
+    const item = registry.learningModules.find((course) => course.id === courseId).roadmap[levelId - 1];
+    assert.deepEqual(item.starter.files, [lab.file]);
+    assert.ok(item.starter.code.includes(`def ${symbol.split(".").at(-1)}(`));
+  }
+});
 
 test("岗位路线覆盖全部新增课程，前置依赖存在且无环", () => {
   const ids = new Set(registry.learningModules.map((course) => course.id));

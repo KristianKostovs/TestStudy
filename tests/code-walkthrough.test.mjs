@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
-import { readFile } from 'node:fs/promises';
+import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
 import test from 'node:test';
 import ts from 'typescript';
@@ -20,6 +22,27 @@ async function sourceConstant(path, name, bindings = {}) {
 const helper = await readFile(new URL('../app/courses/code-walkthrough.ts', import.meta.url), 'utf8');
 const { outputText } = ts.transpileModule(helper, { compilerOptions: { module: ts.ModuleKind.ES2022, target: ts.ScriptTarget.ES2022 } });
 const { codeWithComments, walkthroughAnchors } = await import(`data:text/javascript;base64,${Buffer.from(outputText).toString('base64')}`);
+
+test('正课验证命令使用编辑器标示的文件，项目关命令指向骨架中的测试', async () => {
+  const support = await sourceConstant('../app/courses/python-framework/PythonCourseClient.tsx', 'supportByLevel', { referenceAnswers: {} });
+  for (const lesson of Object.values(support)) {
+    const files = lesson.practiceFile ? [lesson.practiceFile] : Array.from(lesson.starter.matchAll(/^# ===== (.+?) =====$/gm), (match) => match[1]);
+    const commandFiles = lesson.verifyCommand.match(/[\w./-]+\.py\b/g);
+    assert.ok(commandFiles?.length);
+    for (const name of commandFiles) assert.ok(files.includes(name), name);
+  }
+});
+
+test('框架第二关的一份参考答案可连续完成浅拷贝和深拷贝两项测试', async (t) => {
+  if (spawnSync('python3', ['-c', 'import pytest']).status !== 0) return t.skip('当前 Python 环境未安装 pytest');
+  const answers = await sourceConstant('../app/courses/python-framework/reference-answers.ts', 'referenceAnswers');
+  const dir = await mkdtemp(join(tmpdir(), 'framework-reference-'));
+  t.after(() => rm(dir, { recursive: true, force: true }));
+  await writeFile(join(dir, 'test_level_02.py'), answers[2]);
+  const run = spawnSync('python3', ['-m', 'pytest', '-q', 'test_level_02.py'], { cwd: dir, encoding: 'utf8' });
+  assert.equal(run.status, 0, run.stdout + run.stderr);
+  assert.match(run.stdout, /2 passed/);
+});
 
 test('三门课程 35 关及框架数据示例的每条解释均放在指定代码旁，Python 语义不变', async () => {
   const agent = await sourceConstant('../app/courses/python-agent-fast-track/course-data.ts', 'agentFastTrackLessons');

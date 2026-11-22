@@ -12,6 +12,7 @@ import {
   materializeExercise,
   openExercise,
   registeredExerciseIds,
+  runExerciseVerification,
   workspaceHealth,
 } from "../local-companion/workspace-manager.mjs";
 
@@ -78,7 +79,7 @@ test("从每块积木打开 VS Code 都选中验证器读取的练习文件", as
   }
 
   const project = await openExercise("python-agent-level-08", root, launchEditor);
-  assert.deepEqual(launchEditor.mock.calls.at(-1).arguments, [["--new-window", project.workspacePath]]);
+  assert.deepEqual(launchEditor.mock.calls.at(-1).arguments, [[project.workspacePath, join(project.workspacePath, "src/ticket_assistant/settings.py")]]);
   rmSync(join(workspacePath, "exercises", "01_values.py"));
   await assert.rejects(openExercise("python-framework-block-01", root, launchEditor), /缺少本关练习文件/);
   assert.equal(launchEditor.mock.callCount(), blocks.length + 1);
@@ -97,6 +98,7 @@ test("本地项目桥只创建登记过的课程项目，并保留已有练习",
       "python-framework-block-07",
       "python-framework-block-08",
       "python-agent-level-08",
+      "quality-lab-summary", "quality-lab-inventory", "quality-lab-classification", "quality-lab-gate", "quality-lab-metrics",
     ]);
     assert.throws(() => materializeExercise("../../private", root), /未登记/);
     const first = materializeExercise("python-agent-level-08", root);
@@ -128,6 +130,28 @@ test("本地项目桥只创建登记过的课程项目，并保留已有练习",
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+test("五项职业练习定位学员文件中的对应函数，并只运行本项测试", async (t) => {
+  const root = mkdtempSync(join(tmpdir(), "quality-lab-workspace-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const { file, tasks } = JSON.parse(readFileSync(new URL("../config/quality-lab.json", import.meta.url), "utf8"));
+  const launch = t.mock.fn();
+  for (const { task, symbol } of tasks) {
+    const id = `quality-lab-${task}`;
+    const { workspacePath } = await openExercise(id, root, launch);
+    const target = join(workspacePath, file);
+    const line = readFileSync(target, "utf8").split("\n").findIndex((s) => s.trimStart().startsWith(`def ${symbol.split(".").at(-1)}(`)) + 1;
+    assert.ok(line > 0);
+    assert.deepEqual(launch.mock.calls.at(-1).arguments, [[workspacePath, "--goto", `${target}:${line}:1`]]);
+    const result = runExerciseVerification(id, root);
+    assert.equal(result.exitCode, 1);
+    assert.match(result.command, new RegExp(`run_tests\\.py --task ${task}$`));
+    assert.match(result.stdout, /LEARNER IMPLEMENTATION/);
+  }
+  const path = join(root, "quality-engineering-lab");
+  copyFileSync(join(path, "solutions/lab.py"), join(path, file));
+  for (const { task } of tasks) assert.equal(runExerciseVerification(`quality-lab-${task}`, root).exitCode, 0);
 });
 
 test("网页提供 VS Code 打开与固定测试证据入口", () => {

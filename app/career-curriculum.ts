@@ -93,7 +93,7 @@ const coding = [
     prerequisites: ["前七关", "边界测试", "代码评审"],
     explanation: "编码能力要通过陌生输入、故障修改和解释取舍来检验。可以使用 AI，但提交者负责理解每个关键分支、补反例、审阅改动及报告验证范围。",
     example: "离线包 summary 任务：同名失败归组；输入为空返回 {}；输入中的记录不被修改。",
-    task: "下载离线练习包，完成 summary 函数；新增一条反例，并写出算法、异常和验证说明。",
+    task: "实现失败记录统计，新增一条反例，并写出算法、异常和验证说明。",
     output: "实现、测试日志、diff 与一页技术说明。",
     checks: ["summary 测试通过", "能独立解释关键分支", "新增反例覆盖真实边界"],
     file: "src/lab.py", code: "def summarize_failures(records):\n    # TODO：按非空 error_code 统计失败记录，忽略成功记录\n    raise NotImplementedError\n",
@@ -186,7 +186,7 @@ const backend = [
     prerequisites: ["消息确认", "业务幂等键", "持久化约束"],
     explanation: "消费成功后确认丢失，消息可能再次投递。幂等键应指向业务动作，去重记录与业务写入需要合适的原子边界。内存集合仅能演示，不能证明跨进程和崩溃恢复安全。",
     example: "相同 event_id=E1 的扣减事件投递两次 → 库存只扣一次；同键不同载荷需拒绝。",
-    task: "完成离线包库存任务，再补真实系统所需的唯一约束、事务和崩溃恢复方案。",
+    task: "实现库存事件的幂等处理，再写出真实系统所需的唯一约束、事务和崩溃恢复方案。",
     output: "幂等实现、重复投递测试与持久化方案。",
     checks: ["重复事件不重复扣减", "同键异载荷失败", "明确内存演示的局限"],
     file: "src/lab.py", code: "class Inventory:\n    def __init__(self, available):\n        self.available, self.events = available, {}\n\n    def apply(self, event_id, amount):\n        # TODO：校验、幂等与结果保存\n        raise NotImplementedError\n",
@@ -229,7 +229,7 @@ const delivery = [
     prerequisites: ["HTTP 与进程基础", "最小复现"],
     explanation: "先保存原始失败，再按可验证假设排查。每次只改变一个相关变量，记录支持与反证。测试环境登录失败不应计作业务断言失败。",
     example: "连接被拒绝、HTTP 401、HTTP 200 success=false，分别对应网络连接、认证和业务层证据。",
-    task: "完成离线包 classify_failure，并为每类列一项下一步检查。",
+    task: "实现故障分类，并为每类故障列一项下一步检查。",
     output: "分类函数、测试日志和排查表。",
     checks: ["分类覆盖三层", "未知现象保持 unknown", "归因包含原始证据"],
     file: "src/lab.py", code: "def classify_failure(http_status=None, business_success=None, transport_error=None):\n    # TODO：返回 transport/auth/http/business/ok/unknown\n    raise NotImplementedError\n",
@@ -279,7 +279,7 @@ const delivery = [
     prerequisites: ["风险分级", "回归测试", "CI"],
     explanation: "门禁应对应明确风险和证据。关键测试失败要阻断，结果缺失不能当通过。flaky 用例需要隔离原因、责任人和期限，反复重跑到绿会掩盖真实问题。",
     example: "关键失败 1 → block；证据未收集 → review；关键失败 0 且证据完整 → pass。",
-    task: "实现离线包 release_gate，再为 flaky 隔离写责任与到期处理。",
+    task: "实现发布门禁，再写出隔离不稳定用例后的负责人和到期处理方式。",
     output: "决策函数、边界测试和隔离记录。",
     checks: ["关键失败必阻断", "缺证据不通过", "隔离有责任和到期动作"],
     file: "src/lab.py", code: "def release_gate(critical_failures, evidence_complete):\n    # TODO：返回 block/review/pass\n    raise NotImplementedError\n",
@@ -355,7 +355,7 @@ export const aiCareerExtensions = [
     prerequisites: ["故障分类", "混淆矩阵", "precision 与 recall"],
     explanation: "先用人工核验标签建立基线，再比较预测。关键类 precision 检查预测有多少正确，recall 检查实际问题找到多少；无证据样本应允许弃权，不能强行归因。",
     example: "真实标签 [business,business,env,env]，预测 [business,env,business,env]；business 的 TP=1、FP=1、FN=1。",
-    task: "实现离线包 classification_metrics，补充弃权率、人工复核量和关键类漏判分析。",
+    task: "计算分类指标，补充弃权率、人工复核量和关键类漏判分析。",
     output: "固定标签、分类指标、失败样例与复核表。",
     checks: ["precision/recall 口径正确", "分母为零返回 None", "预测与真实标签长度不符时报错"],
     file: "src/lab.py", code: "def classification_metrics(actual, predicted, positive='business'):\n    # TODO：返回 tp/fp/fn/precision/recall\n    raise NotImplementedError\n",
@@ -429,8 +429,6 @@ export const coursePreparation: Record<string, string[]> = {
   "ai-testing": ["api-automation", "quality-engineering", "python-agent-fast-track"],
   "ui-automation": ["python-framework", "api-automation"],
 };
-
-export const labCourses = new Set(["coding-debugging", "backend-foundations", "delivery-debugging", "ai-testing"]);
 
 const coreExplanations: Record<string, Array<[string, string]>> = {
   "api-automation": [

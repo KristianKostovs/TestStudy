@@ -1,0 +1,10 @@
+{
+  "file": "src/lab.py",
+  "tasks": [
+    { "courseId": "coding-debugging", "levelId": 8, "task": "summary", "symbol": "summarize_failures" },
+    { "courseId": "backend-foundations", "levelId": 9, "task": "inventory", "symbol": "Inventory.apply" },
+    { "courseId": "delivery-debugging", "levelId": 1, "task": "classification", "symbol": "classify_failure" },
+    { "courseId": "delivery-debugging", "levelId": 6, "task": "gate", "symbol": "release_gate" },
+    { "courseId": "ai-testing", "levelId": 12, "task": "metrics", "symbol": "classification_metrics" }
+  ]
+}

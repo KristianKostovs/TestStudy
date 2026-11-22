@@ -26,6 +26,8 @@ VS Code 练习和本关验证仅需本地连接器。使用 AI 助教时，还�
 
 网页只能请求登记过的课程项目和固定测试命令，不能传入任意本地路径或 Shell 命令。测试输出、退出码和耗时会回到网页。Python 框架课前积木的八个练习使用 Python 标准库，Python → Agent 第 8 关使用 pytest。
 
+Python → Agent 第 8 关的选做练习会打开 `src/ticket_assistant/settings.py`。职业课程的五项本机测试共用 `quality-engineering-lab/src/lab.py`，按钮会定位到本关函数。网页登记本机测试结果，手动运行的结果可以写入自查记录。
+
 ## 已单独配置登录自启的 Mac
 
 - 配置文件：`~/Library/LaunchAgents/com.baiyi.python-framework-quest-codex.plist`

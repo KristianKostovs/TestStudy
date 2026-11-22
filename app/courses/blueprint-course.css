@@ -30,6 +30,38 @@
 .blueprint-workspace .blueprint-source-grid p { color: #65756a; font-size: 10px; line-height: 1.6; }
 .blueprint-workspace .blueprint-source-grid a { color: #25765f; font-size: 10px; }
 .blueprint-workspace .chapter-pager > span:last-child { text-align: right; }
+.blueprint-workspace .stage-tabs { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.blueprint-workspace .stage-tabs button { font-size: .875rem; }
+.blueprint-workspace .stage-tabs button.finished:not(.active) b { color: #fff; }
+.blueprint-finish { display: grid; gap: 1rem; }
+.blueprint-finish > .workspace-practice, .blueprint-finish > .blueprint-practice { margin: 0; }
+.blueprint-assignment, .blueprint-criteria, .blueprint-review { min-width: 0; border: 1px solid #d5e2db; border-radius: 10px; background: #fff; }
+.blueprint-assignment { padding: 1rem 1.2rem; border-left: 4px solid #25765f; }
+.blueprint-finish h4 { margin: 0; color: #1d4737; font-size: 1.125rem; }
+.blueprint-finish p, .blueprint-finish .verify-card li, .blueprint-finish .blueprint-focus { font-size: 1rem; line-height: 1.65; }
+.blueprint-finish p { margin: .55rem 0; }
+.blueprint-finish .blueprint-targets { display: flex; gap: .4rem .65rem; align-items: baseline; flex-wrap: wrap; }
+.blueprint-targets code, .blueprint-finish .workspace-file code { overflow-wrap: anywhere; color: #175b43; }
+.blueprint-finish summary { cursor: pointer; color: #215e49; font-size: .9375rem; font-weight: 650; }
+.blueprint-finish .blueprint-practice > summary, .blueprint-review > summary { padding: .85rem 1.1rem; font-size: .9375rem; }
+.blueprint-review form { display: grid; gap: .6rem; padding: 0 1.1rem 1rem; }
+.blueprint-review textarea { box-sizing: border-box; width: 100%; min-width: 0; resize: vertical; padding: .65rem; border: 1px solid #8da99c; border-radius: 6px; font: inherit; }
+.blueprint-review button { justify-self: start; padding: .65rem 1rem; color: #fff; background: #25765f; border: 0; border-radius: 7px; cursor: pointer; }
+.blueprint-finish .workspace-practice > p { font-size: 1rem; }
+.blueprint-finish .blueprint-evidence-note { font-size: 1rem; }
+.blueprint-finish .workspace-actions { flex-wrap: wrap; }
+.blueprint-finish .workspace-actions :is(button, a), .blueprint-finish .blueprint-next-level { font-size: .875rem; min-height: 44px; }
+.blueprint-finish .workspace-evidence pre, .blueprint-manual pre { max-width: 100%; white-space: pre-wrap; overflow-wrap: anywhere; }
+.blueprint-finish .workspace-evidence > strong { font-size: 1rem; }
+.blueprint-finish .workspace-evidence pre { font-size: .875rem; }
+.blueprint-manual { margin-top: .75rem; }
+@media (max-width: 700px) {
+  .blueprint-workspace .stage-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .blueprint-workspace .stage-tabs button { gap: .4rem; padding: .5rem; border: 0; }
+  .blueprint-workspace .stage-tabs button span { white-space: normal; }
+  .blueprint-workspace .stage-tabs li:nth-child(odd) { border-right: 1px solid #dce4df; }
+  .blueprint-workspace .stage-tabs li:nth-child(-n+2) { border-bottom: 1px solid #dce4df; }
+}
 @media (max-width: 700px) { .blueprint-workspace .blueprint-concept-grid, .blueprint-workspace .blueprint-source-grid { grid-template-columns: 1fr; } .blueprint-workspace .blueprint-sources { width: calc(100% - 28px); } }
 .course-prerequisites { font-size: 13px; line-height: 1.9; color: #68756e; margin: 10px 0; }
 .course-prerequisites a { color: #08765a; display: inline-block; margin-right: 14px; text-decoration: none; }

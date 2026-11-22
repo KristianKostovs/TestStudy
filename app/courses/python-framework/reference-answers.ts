@@ -24,10 +24,12 @@ except KeyError as error:
 from copy import deepcopy
 
 
-fixture = {"request": {"businessStatus": 710}}
+def make_fixture():
+    return {"request": {"businessStatus": 710}}
 
 
 def test_shallow_copy_reproduces_pollution():
+    fixture = make_fixture()
     case_a = dict(fixture)
     case_b = dict(fixture)
     case_a["request"]["businessStatus"] = 720
@@ -35,6 +37,7 @@ def test_shallow_copy_reproduces_pollution():
 
 
 def test_deepcopy_isolates_and_cleanup_always_runs():
+    fixture = make_fixture()
     case_a = deepcopy(fixture)
     case_b = deepcopy(fixture)
     cleanup_log = []

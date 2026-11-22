@@ -20,6 +20,7 @@ type Problem = {
 type PythonAnswerEditorProps = {
   levelId: number;
   courseId?: string;
+  fileName?: string | null;
   value: string;
   starter: string;
   onChange: (value: string) => void;
@@ -358,7 +359,7 @@ function courseCompletions(levelId: number) {
   };
 }
 
-export default function PythonAnswerEditor({ levelId, courseId = "python-framework", value, starter, onChange }: PythonAnswerEditorProps) {
+export default function PythonAnswerEditor({ levelId, courseId = "python-framework", fileName = `level_${String(levelId).padStart(2, "0")}.py`, value, starter, onChange }: PythonAnswerEditorProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const onChangeRef = useRef(onChange);
@@ -454,7 +455,8 @@ export default function PythonAnswerEditor({ levelId, courseId = "python-framewo
       <div className="code-editor-shell ide-editor-shell">
         <header className="code-editor-toolbar">
           <div className="editor-window-dots" aria-hidden="true"><i /><i /><i /></div>
-          <div className="editor-file-tab"><b>PY</b><span>{`level_${String(levelId).padStart(2, "0")}.py`}</span></div>
+          <div className="editor-file-tab"><b>{fileName ? "PY" : "项目"}</b><span>{fileName ?? "多文件练习"}</span></div>
+          {fileName && courseId === "python-framework" && <a className="editor-download" href={`data:text/plain;charset=utf-8,${encodeURIComponent(value)}`} download={fileName}>下载当前文件</a>}
           <button type="button" disabled={isStarter} onClick={loadStarter}>{isStarter ? "最新版起步代码已载入" : value.trim() ? "恢复最新版起步代码" : "载入最新版起步代码"}</button>
         </header>
         <div className="codemirror-host" ref={hostRef} />

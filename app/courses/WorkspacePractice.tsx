@@ -9,10 +9,12 @@ export type WorkspacePracticeConfig = {
   title: string;
   requirement: string;
   exerciseFile?: string;
+  symbol?: string;
   verification?: string;
 };
 
 type VerificationResult = {
+  exerciseId: string;
   ok: boolean;
   workspacePath: string;
   command: string;
@@ -23,7 +25,11 @@ type VerificationResult = {
   hint: string;
 };
 
-export default function WorkspacePractice({ config, downloadHref }: { config: WorkspacePracticeConfig; downloadHref?: string }) {
+export default function WorkspacePractice({ config, downloadHref, onVerification }: {
+  config: WorkspacePracticeConfig;
+  downloadHref?: string;
+  onVerification?: (passed: boolean) => void;
+}) {
   const [bridgeReady, setBridgeReady] = useState<boolean | null>(null);
   const [pending, setPending] = useState<"open" | "run" | null>(null);
   const [message, setMessage] = useState("");
@@ -50,10 +56,17 @@ export default function WorkspacePractice({ config, downloadHref }: { config: Wo
         body: JSON.stringify({ exerciseId: config.exerciseId }),
       });
       const payload = await response.json();
-      if (!response.ok) throw new Error(payload.error ?? "本地课程项目操作失败");
-      if (action === "open") setMessage(`${payload.message}：${payload.workspacePath}`);
-      else setResult(payload as VerificationResult);
       setBridgeReady(true);
+      if (!response.ok) {
+        setMessage(payload.error === "未登记的课程项目" ? "请更新本机 TestStudy 并重启课程连接器，再打开这项练习。" : payload.error ?? "本地课程项目操作失败");
+        return;
+      }
+      if (action === "open") setMessage(`${payload.message}：${payload.workspacePath}`);
+      else if (payload.exerciseId === config.exerciseId && typeof payload.ok === "boolean") {
+        const passed = payload.ok && payload.exitCode === 0;
+        setResult({ ...payload, ok: passed } as VerificationResult);
+        onVerification?.(passed);
+      } else setMessage("连接器返回的结果与本关不符，请重新运行。");
     } catch (error) {
       setBridgeReady(false);
       setMessage(error instanceof Error ? error.message : "无法连接本地课程项目");
@@ -65,7 +78,7 @@ export default function WorkspacePractice({ config, downloadHref }: { config: Wo
   return <section className="workspace-practice" aria-label={config.exerciseFile ? `${config.title} · 本机练习` : "可运行项目技术样板"}>
     {config.exerciseFile ? <>
       <p className="workspace-task">{config.requirement}</p>
-      <p className="workspace-file">在 VS Code 中修改 <code>{config.exerciseFile}</code>，保存后运行验证。</p>
+      <p className="workspace-file">在 VS Code 中修改 <code>{config.exerciseFile}</code>{config.symbol && <> 里的 <code>{config.symbol}</code></>}，保存后运行验证。</p>
     </> : <>
       <header><span>可运行项目技术样板</span><strong>{config.title}</strong></header>
       <p>{config.requirement}</p>

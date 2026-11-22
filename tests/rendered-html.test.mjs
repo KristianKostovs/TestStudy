@@ -456,9 +456,9 @@ test("蓝图课程沿用 Python 基础的分步学习结构，按各自主题分
   assert.match(client, /<UnderstandingCheck/);
   assert.match(client, /本关目标/);
   assert.match(client, /简明讲解/);
-  assert.match(client, /通关任务/);
-  assert.match(client, /客观验收/);
-  assert.match(client, /实际运行结果/);
+  assert.match(client, /练习与验证/);
+  assert.match(client, /验收标准/);
+  assert.match(client, /保存自查记录/);
   assert.match(editor, /learning-blueprint-draft-v1/);
   assert.match(editor, /window\.localStorage\.setItem/);
   assert.match(editor, /恢复默认框架/);

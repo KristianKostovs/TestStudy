@@ -18,5 +18,5 @@ export default async function BlueprintChapterPage({ params }: Props) {
   const { moduleId, chapterId } = await params;
   const course = learningModules.find((item) => item.id === moduleId && item.status === "blueprint");
   if (!course || !blueprintChapters(course).some((item) => item.id === Number(chapterId))) notFound();
-  return <BlueprintCourseClient course={course} sources={sourcesForModule(course)} chapterId={Number(chapterId)} />;
+  return <BlueprintCourseClient key={`${course.id}-${chapterId}`} course={course} sources={sourcesForModule(course)} chapterId={Number(chapterId)} />;
 }
