@@ -1,9 +1,12 @@
-import { spawn, spawnSync } from "node:child_process";
-import { cpSync, existsSync, mkdirSync } from "node:fs";
+import { execFile, spawnSync } from "node:child_process";
+import { cpSync, existsSync, mkdirSync, statSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { promisify } from "node:util";
+import frameworkBlocks from "../course-starters/python-framework-blocks/metadata.json" with { type: "json" };
 
+const runCodeCli = promisify(execFile);
 const companionDir = dirname(fileURLToPath(import.meta.url));
 const projectDir = resolve(companionDir, "..");
 const defaultWorkspaceRoot = resolve(
@@ -11,15 +14,15 @@ const defaultWorkspaceRoot = resolve(
 );
 
 const frameworkBlocksSource = resolve(projectDir, "course-starters", "python-framework-blocks");
-const frameworkBlockExercises = Object.fromEntries(Array.from({ length: 8 }, (_, index) => {
-  const blockId = index + 1;
-  return [`python-framework-block-${String(blockId).padStart(2, "0")}`, Object.freeze({
-    title: `Python 框架课前积木 ${blockId}`,
+const frameworkBlockExercises = Object.fromEntries(frameworkBlocks.map(({ id, file }) => [
+  `python-framework-block-${String(id).padStart(2, "0")}`, Object.freeze({
+    title: `Python 框架课前积木 ${id}`,
     source: frameworkBlocksSource,
     directory: "python-framework-blocks",
-    verifyArgs: ["verify.py", "--block", String(blockId)],
-  })];
-}));
+    practiceFile: `exercises/${file}`,
+    verifyArgs: ["verify.py", "--block", String(id)],
+  }),
+]));
 
 const exerciseRegistry = Object.freeze({
   ...frameworkBlockExercises,
@@ -68,19 +71,31 @@ function findCodeCommand() {
   throw new Error("没有找到 VS Code。请先安装 VS Code，并让 code 命令可用");
 }
 
-export function openExercise(exerciseId, workspaceRoot = defaultWorkspaceRoot) {
-  const materialized = materializeExercise(exerciseId, workspaceRoot);
-  const child = spawn(findCodeCommand(), ["--new-window", materialized.workspacePath], {
-    detached: true,
-    stdio: "ignore",
-  });
-  child.unref();
+function launchVSCode(args) {
+  return runCodeCli(findCodeCommand(), args, { timeout: 30_000 });
+}
+
+export async function openExercise(exerciseId, workspaceRoot = defaultWorkspaceRoot, launchEditor = launchVSCode) {
+  const { exercise, workspacePath, created } = materializeExercise(exerciseId, workspaceRoot);
+  const args = [workspacePath];
+  let message = created ? "项目骨架已创建并在 VS Code 中打开" : "已保留你的代码并重新打开项目";
+  if (exercise.practiceFile) {
+    const filePath = join(workspacePath, exercise.practiceFile);
+    if (!statSync(filePath, { throwIfNoEntry: false })?.isFile()) {
+      throw new Error(`缺少本关练习文件 ${exercise.practiceFile}，请从课程 ZIP 恢复这个文件后重试。`);
+    }
+    args.push(filePath);
+    message = `已在 VS Code 打开本关练习 ${exercise.practiceFile}。项目目录`;
+  } else {
+    args.unshift("--new-window");
+  }
+  await launchEditor(args);
   return {
     ok: true,
-    created: materialized.created,
-    title: materialized.exercise.title,
-    workspacePath: materialized.workspacePath,
-    message: materialized.created ? "项目骨架已创建并在 VS Code 中打开" : "已保留你的代码并重新打开项目",
+    created,
+    title: exercise.title,
+    workspacePath,
+    message,
   };
 }
 
@@ -106,6 +121,9 @@ export function runExerciseVerification(exerciseId, workspaceRoot = defaultWorks
   const stderr = String(result.stderr ?? "").slice(-20_000);
   const exitCode = Number.isInteger(result.status) ? result.status : null;
   const needsEnvironment = exercise.needsPytest && exitCode !== 0 && !existsSync(join(workspacePath, ".venv"));
+  const retryHint = exercise.practiceFile
+    ? `本关验证读取 ${exercise.practiceFile}。请在 VS Code 保存这个文件后重试。`
+    : "测试没有通过，请根据上面的失败信息继续调试。";
   return {
     ok: exitCode === 0,
     exerciseId,
@@ -118,7 +136,7 @@ export function runExerciseVerification(exerciseId, workspaceRoot = defaultWorks
     stderr: result.error ? `${stderr}\n${result.error.message}`.trim() : stderr,
     hint: needsEnvironment
       ? "当前项目还没有 .venv。请先在 VS Code 终端按 README 创建环境并安装依赖。"
-      : exitCode === 0 ? "真实测试已经通过，可以保留这份运行记录。" : "测试没有通过，请根据上面的失败信息继续调试。",
+      : exitCode === 0 ? "真实测试已经通过，可以保留这份运行记录。" : retryHint,
   };
 }
 

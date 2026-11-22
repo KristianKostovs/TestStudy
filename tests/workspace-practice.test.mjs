@@ -10,6 +10,7 @@ import { fileURLToPath } from "node:url";
 
 import {
   materializeExercise,
+  openExercise,
   registeredExerciseIds,
   workspaceHealth,
 } from "../local-companion/workspace-manager.mjs";
@@ -48,12 +49,39 @@ test("没有 Codex 和虚拟环境时，连接器仍可返回积木练习的真�
   const starter = await verify();
   assert.equal(starter.exitCode, 1);
   assert.match(starter.stdout, /FAIL 1/);
+  assert.match(starter.hint, /exercises\/01_values\.py/);
   assert.doesNotMatch(starter.hint, /\.venv/);
   const project = join(root, "python-framework-blocks");
   copyFileSync(join(project, "solutions/01_values.py"), join(project, "exercises/01_values.py"));
   const completed = await verify();
   assert.equal(completed.exitCode, 0);
   assert.match(completed.stdout, /PASS 1/);
+});
+
+test("从每块积木打开 VS Code 都选中验证器读取的练习文件", async (t) => {
+  const root = mkdtempSync(join(tmpdir(), "python-quest-editor-"));
+  t.after(() => rmSync(root, { recursive: true, force: true }));
+  const launchEditor = t.mock.fn();
+  const workspacePath = join(root, "python-framework-blocks");
+  const manifest = new URL("../course-starters/python-framework-blocks/metadata.json", import.meta.url);
+  const blocks = JSON.parse(readFileSync(manifest, "utf8"));
+
+  for (const [index, { id, file }] of blocks.entries()) {
+    const exerciseId = `python-framework-block-${String(id).padStart(2, "0")}`;
+    const opened = await openExercise(exerciseId, root, launchEditor);
+    const filePath = join(workspacePath, "exercises", file);
+    assert.equal(opened.created, index === 0);
+    assert.equal(opened.workspacePath, workspacePath);
+    assert.ok(existsSync(filePath));
+    assert.deepEqual(launchEditor.mock.calls.at(-1).arguments, [[workspacePath, filePath]]);
+    assert.ok(opened.message.includes(`exercises/${file}`));
+  }
+
+  const project = await openExercise("python-agent-level-08", root, launchEditor);
+  assert.deepEqual(launchEditor.mock.calls.at(-1).arguments, [["--new-window", project.workspacePath]]);
+  rmSync(join(workspacePath, "exercises", "01_values.py"));
+  await assert.rejects(openExercise("python-framework-block-01", root, launchEditor), /缺少本关练习文件/);
+  assert.equal(launchEditor.mock.callCount(), blocks.length + 1);
 });
 
 test("本地项目桥只创建登记过的课程项目，并保留已有练习", () => {

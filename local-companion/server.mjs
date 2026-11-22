@@ -188,7 +188,7 @@ const server = http.createServer(async (request, response) => {
       const payload = await readBody(request);
       const exerciseId = cleanText(payload.exerciseId, 100);
       const result = url.pathname === "/workspace/open"
-        ? openExercise(exerciseId)
+        ? await openExercise(exerciseId)
         : runExerciseVerification(exerciseId);
       return sendJson(response, 200, result, origin);
     } catch (error) {
