@@ -10,8 +10,12 @@ const companionDir = dirname(fileURLToPath(import.meta.url));
 const projectDir = resolve(companionDir, "..");
 const schemaPath = join(companionDir, "grade-response.schema.json");
 const port = Number(process.env.PYTHON_QUEST_CODEX_PORT ?? 4317);
-const preferredCodex = process.env.PYTHON_QUEST_CODEX_BIN ?? "/Applications/ChatGPT.app/Contents/Resources/codex";
-const codexBin = existsSync(preferredCodex) ? preferredCodex : "codex";
+const macCodexBins = ["/Applications/ChatGPT.app", "/Applications/Codex.app"].flatMap((app) => [
+  join(app, "Contents/Resources/codex-cli/bin/codex"),
+  join(app, "Contents/Resources/codex"),
+]);
+const codexBin = process.env.PYTHON_QUEST_CODEX_BIN ||
+  (process.platform === "darwin" && macCodexBins.find(existsSync)) || "codex";
 const allowedOrigins = new Set([
   "http://localhost:3000",
   "http://127.0.0.1:3000",
@@ -19,7 +23,9 @@ const allowedOrigins = new Set([
 ]);
 
 const login = spawnSync(codexBin, ["login", "status"], { encoding: "utf8", timeout: 10_000 });
-const loginMessage = `${login.stdout ?? ""}${login.stderr ?? ""}`.trim();
+const loginMessage = login.error?.code === "ENOENT"
+  ? "使用 AI 助教需要安装 Codex 并登录。VS Code 练习和本关验证可用。"
+  : `${login.stdout ?? ""}${login.stderr ?? ""}`.trim();
 const codexReady = login.status === 0 && /Logged in/i.test(loginMessage);
 
 function sendJson(response, status, value, origin) {
@@ -209,7 +215,7 @@ const server = http.createServer(async (request, response) => {
 });
 
 server.listen(port, "127.0.0.1", () => {
-  console.log(`本地 Codex 学习桥已启动：http://127.0.0.1:${port}`);
+  console.log(`本地 Codex 学习桥已启动：http://127.0.0.1:${server.address().port}`);
   console.log(codexReady ? "已连接当前 ChatGPT/Codex 登录。" : `Codex 未就绪：${loginMessage || "请先登录"}`);
 });
 

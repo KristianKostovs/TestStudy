@@ -27,6 +27,7 @@ const exerciseRegistry = Object.freeze({
     title: "Python → Agent 第 8 关：工单查询助手环境",
     source: resolve(projectDir, "course-starters", "python-agent-level-08"),
     directory: "ticket-assistant-level-08",
+    needsPytest: true,
     verifyArgs: ["-m", "pytest", "-q"],
   }),
 });
@@ -104,7 +105,7 @@ export function runExerciseVerification(exerciseId, workspaceRoot = defaultWorks
   const stdout = String(result.stdout ?? "").slice(-20_000);
   const stderr = String(result.stderr ?? "").slice(-20_000);
   const exitCode = Number.isInteger(result.status) ? result.status : null;
-  const missingEnvironment = !existsSync(join(workspacePath, ".venv"));
+  const needsEnvironment = exercise.needsPytest && exitCode !== 0 && !existsSync(join(workspacePath, ".venv"));
   return {
     ok: exitCode === 0,
     exerciseId,
@@ -115,7 +116,7 @@ export function runExerciseVerification(exerciseId, workspaceRoot = defaultWorks
     durationMs: Date.now() - startedAt,
     stdout,
     stderr: result.error ? `${stderr}\n${result.error.message}`.trim() : stderr,
-    hint: missingEnvironment
+    hint: needsEnvironment
       ? "当前项目还没有 .venv。请先在 VS Code 终端按 README 创建环境并安装依赖。"
       : exitCode === 0 ? "真实测试已经通过，可以保留这份运行记录。" : "测试没有通过，请根据上面的失败信息继续调试。",
   };

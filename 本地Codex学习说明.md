@@ -2,11 +2,11 @@
 
 ## 怎么使用
 
-在 Codex 内嵌浏览器中，推荐直接打开本机学习入口：
+在 Mac 上双击仓库中的 `启动本地Codex学习站.command`。课程连接器与学习网页就绪后，浏览器会打开以下地址。练习时请保留启动窗口。
 
 `http://127.0.0.1:3000/courses/python-framework`
 
-本机学习网页和 Codex 后台服务都会随 macOS 登录自动启动。网页与 Codex 都位于本机地址，不再依赖浏览器的“本地网络访问”授权弹窗。
+VS Code 练习和本关验证仅需本地连接器。使用 AI 助教时，还需要本机已登录 Codex。
 
 也可以先打开正式网站。页面检测到 Codex 内嵌浏览器无法连接时，点击“进入本机学习模式”，会在当前浏览器切换到本机页面，并迁移已有课程进度、答案和对话。
 
@@ -22,9 +22,9 @@
 
 支持真实项目的关卡会显示“在 VS Code 中打开”和“运行本关验证”。第一次打开时，本地连接器会把课程登记过的项目复制到 `~/PythonQuestWorkspaces/`；再次打开会保留已有代码，不会用新版骨架覆盖练习。
 
-网页只能请求登记过的课程项目和固定测试命令，不能传入任意本地路径或 Shell 命令。测试输出、退出码和耗时会回到网页，作为实际执行证据。当前首个试点是 Python → Agent 第 8 关。
+网页只能请求登记过的课程项目和固定测试命令，不能传入任意本地路径或 Shell 命令。测试输出、退出码和耗时会回到网页。Python 框架课前积木的八个练习使用 Python 标准库，Python → Agent 第 8 关使用 pytest。
 
-## 后台服务
+## 已单独配置登录自启的 Mac
 
 - 配置文件：`~/Library/LaunchAgents/com.baiyi.python-framework-quest-codex.plist`
 - 服务名称：`com.baiyi.python-framework-quest-codex`
@@ -32,7 +32,7 @@
 - 本机网页配置：`~/Library/LaunchAgents/com.baiyi.python-framework-quest-site.plist`
 - 本机网页服务：`com.baiyi.python-framework-quest-site`
 - 本机网页日志：`~/Library/Logs/python-framework-quest-site.log`
-- 旧的 `启动本地Codex学习站.command` 只保留为开发调试备用，不再是日常入口。
+- 如果以上服务已在运行，双击启动文件会复用已就绪的服务。
 
 ## 安全边界
 

@@ -322,6 +322,7 @@ test("Python 关卡使用在线 DeepSeek 助教并保留本机 Codex 与在线�
   assert.match(bridge, /Logged in/);
   assert.match(bridge, /python-framework-quest\.leafy-slug-3142\.chatgpt\.site/);
   assert.match(launcher, /node local-companion\/server\.mjs/);
+  assert.doesNotMatch(launcher, /\blogin status\b/);
   assert.match(localSiteAgent, /127\.0\.0\.1/);
   assert.match(localSiteAgent, /<string>3000<\/string>/);
   assert.match(localSiteAgent, /KeepAlive/);

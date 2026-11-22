@@ -1,14 +1,60 @@
 import assert from "node:assert/strict";
-import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { once } from "node:events";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { createInterface } from "node:readline";
 import test from "node:test";
+import { fileURLToPath } from "node:url";
 
 import {
   materializeExercise,
   registeredExerciseIds,
   workspaceHealth,
 } from "../local-companion/workspace-manager.mjs";
+
+test("没有 Codex 和虚拟环境时，连接器仍可返回积木练习的真实结果", async (t) => {
+  const root = mkdtempSync(join(tmpdir(), "python-quest-bridge-test-"));
+  const server = spawn(process.execPath, [fileURLToPath(new URL("../local-companion/server.mjs", import.meta.url))], {
+    env: { ...process.env, PYTHON_QUEST_WORKSPACE_ROOT: root, PYTHON_QUEST_CODEX_BIN: join(root, "no-codex"), PYTHON_QUEST_CODEX_PORT: "0" },
+    stdio: ["ignore", "pipe", "inherit"],
+  });
+  const closed = once(server, "close");
+  t.after(async () => {
+    server.kill();
+    await closed;
+    rmSync(root, { recursive: true, force: true });
+  });
+
+  const lines = createInterface({ input: server.stdout });
+  const [start] = await once(lines, "line", { signal: AbortSignal.timeout(10_000) });
+  const base = start.match(/http:\/\/127\.0\.0\.1:\d+/)?.[0];
+  assert.ok(base, start);
+  const health = await (await fetch(new URL("/health", base))).json();
+  assert.equal(health.ok, false);
+  assert.equal(health.workspaceBridge, true);
+
+  async function verify() {
+    const response = await fetch(new URL("/workspace/run", base), {
+      method: "POST",
+      headers: { Origin: "http://127.0.0.1:3000", "Content-Type": "application/json" },
+      body: JSON.stringify({ exerciseId: "python-framework-block-01" }),
+    });
+    assert.equal(response.status, 200);
+    return response.json();
+  }
+
+  const starter = await verify();
+  assert.equal(starter.exitCode, 1);
+  assert.match(starter.stdout, /FAIL 1/);
+  assert.doesNotMatch(starter.hint, /\.venv/);
+  const project = join(root, "python-framework-blocks");
+  copyFileSync(join(project, "solutions/01_values.py"), join(project, "exercises/01_values.py"));
+  const completed = await verify();
+  assert.equal(completed.exitCode, 0);
+  assert.match(completed.stdout, /PASS 1/);
+});
 
 test("本地项目桥只创建登记过的课程项目，并保留已有练习", () => {
   const root = mkdtempSync(join(tmpdir(), "python-quest-workspace-test-"));
